@@ -99,9 +99,14 @@ void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::Route
 	}
 
 	try {
+		// This page is cached between streams. Recreate a removed device before
+		// attaching its swapchain or handing it to the next decoder.
+		m_deviceResources->ValidateDevice();
 		m_deviceResources->SetSwapChainPanel(swapChainPanel);
 	} catch (...) {
-		Utils::Log("StreamPage::Page_Loaded: SetSwapChainPanel failed\n");
+		Utils::Log("StreamPage::Page_Loaded: graphics initialization failed\n");
+		if (this->Frame->CanGoBack) this->Frame->GoBack();
+		return;
 	}
 
 	Platform::WeakReference weakThis(this);

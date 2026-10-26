@@ -6,6 +6,7 @@
 #include "State\StreamConfiguration.h"
 #include <atomic>
 #include <array>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -33,7 +34,7 @@ namespace moonlight_xbox_dx
 		int frameRate;
 	} DECODER_PARAMETERS, *PDECODER_PARAMETERS;
 
-	class VideoRenderer
+	class VideoRenderer : public std::enable_shared_from_this<VideoRenderer>
 	{
 	public:
 		bool IsLoadingComplete() const { return m_loadingComplete.load(std::memory_order_acquire); }

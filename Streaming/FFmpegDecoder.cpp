@@ -217,22 +217,30 @@ namespace moonlight_xbox_dx {
 		decoder_ctx->opaque = this;
 
 		AVBufferRef* hw_device_ctx = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_D3D11VA);
+		if (!hw_device_ctx) {
+			Cleanup();
+			return AVERROR(ENOMEM);
+		}
 		device_ctx = reinterpret_cast<AVHWDeviceContext*>(hw_device_ctx->data);
 		d3d11va_device_ctx = reinterpret_cast<AVD3D11VADeviceContext*>(device_ctx->hwctx);
 		d3d11va_device_ctx->device = m_deviceResources->GetD3DDevice();
 		d3d11va_device_ctx->device_context = m_deviceResources->GetD3DDeviceContext();
+		// FFmpeg releases both interfaces when its device context is freed,
+		// including user-supplied interfaces. Give it references of its own.
+		d3d11va_device_ctx->device->AddRef();
+		d3d11va_device_ctx->device_context->AddRef();
 		d3d11va_device_ctx->lock = lock_context;
 		d3d11va_device_ctx->unlock = unlock_context;
 		d3d11va_device_ctx->lock_ctx = this;
 		int err2;
 		if ((err2 = av_hwdevice_ctx_init(hw_device_ctx)) < 0) {
 			Utils::Logf("Failed to create specified DirectX Video device: %d\n", err2);
+			av_buffer_unref(&hw_device_ctx);
 			Cleanup();
 			return err2;
 		}
 
-		decoder_ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
-		av_buffer_unref(&hw_device_ctx);
+		decoder_ctx->hw_device_ctx = hw_device_ctx; // transfer ownership
 		decoder_ctx->pix_fmt = AV_PIX_FMT_D3D11;
 		// get_format lets us allocate a frame pool we can sample directly (no per-frame copy)
 		decoder_ctx->get_format = ff_get_format;
@@ -247,6 +255,7 @@ namespace moonlight_xbox_dx {
 			char msg[2048];
 			sprintf(msg, "Failed to create FFMpeg Codec: %d\n", err);
 			Utils::Log(msg);
+			Cleanup();
 			return err;
 		}
 

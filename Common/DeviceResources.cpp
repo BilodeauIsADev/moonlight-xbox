@@ -560,26 +560,15 @@ void DX::DeviceResources::Present()
 		}
 	}
 
-	// If the device was removed either by a disconnection or a driver upgrade, we
-	// must recreate all device resources.
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
-	{
-#ifdef _DEBUG
-		char buff[64] = {};
-		sprintf_s(buff, "Device Lost on Present: Reason code 0x%08X\n",
-			static_cast<unsigned int>((hr == DXGI_ERROR_DEVICE_REMOVED) ? m_d3dDevice->GetDeviceRemovedReason() : hr));
-		OutputDebugStringA(buff);
-#endif
-		HandleDeviceLost();
+	// Recreating a device here would leave the active decoder on the old
+	// device. Let the stream worker stop both paths first; the next connection
+	// validates and recreates the cached device on the UI thread.
+	if (FAILED(hr)) {
+		Utils::Logf("Present failed (HRESULT 0x%08X, device reason 0x%08X)\n",
+		            static_cast<unsigned>(hr),
+		            static_cast<unsigned>(m_d3dDevice->GetDeviceRemovedReason()));
 	}
-	else if (hr == DXGI_ERROR_INVALID_CALL) {
-		// Try to reset
-		Utils::Logf("Present() failed with DXGI_ERROR_INVALID_CALL\n");
-		HandleDeviceLost();
-	}
-	else {
-		DX::ThrowIfFailed(hr);
-	}
+	DX::ThrowIfFailed(hr);
 }
 
 int DX::DeviceResources::uwp_get_height()

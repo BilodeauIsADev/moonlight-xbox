@@ -34,6 +34,36 @@ A port of [Moonlight Stream](https://moonlight-stream.org/) for playing games us
 7. ???
 8. Profit!
 
+### PyroWave development preview
+
+This branch includes the PyroWave implementation from Andy Grundman's
+[1.19.0-pre1 prerelease](https://github.com/andygrundman/moonlight-xbox/releases/tag/1.19.0-pre1),
+commit `d81d5a4673d9a4f165efcfabfd437e541d93a4eb`.
+
+PyroWave requires an Xbox Series S or Series X, a wired gigabit network, and a
+host that advertises PyroWave support, such as a compatible Vibeshine build.
+The Xbox One family cannot run this compute decoder. For testing, sideload the
+prerelease package in Xbox Dev Mode or build this branch on Windows.
+
+After connecting to the host, open its settings and select **PyroWave 4:2:0** or
+**PyroWave 4:4:4**. These options appear only after the host advertises the
+corresponding codec. Use packet size **1392**. Start with the bitrate selected
+by the app when changing codecs, then check the streaming statistics for
+packet loss and dropped frames. HDR also requires a compatible host and display
+with HDR enabled in the Xbox video settings.
+
+Update submodules after switching to this branch:
+
+```sh
+git submodule update --init --recursive
+```
+
+The pinned PyroWave submodule includes the compiled D3D12 compute shaders; the
+application project builds the decoder directly. A separate Vulkan build is
+not required. See [the framing tests](tests/README.md) for checks that can run
+without Windows or an Xbox. GPU decoding, HDR, frame pacing, and reconnects
+still need testing on the console.
+
 ## What does work
 - Connection and Pairing
 - Application List fetching

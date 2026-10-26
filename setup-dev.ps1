@@ -252,6 +252,7 @@ Run-IfNeeded "Configuring moonlight-common-c" {
           -DCMAKE_SYSTEM_NAME="WindowsStore" `
           -DCMAKE_SYSTEM_VERSION="$WindowsSDK" `
           -DTARGET_UWP=ON `
+          -DBUILD_SHARED_LIBS=off `
           -DVCPKG_MANIFEST_MODE=$VcpkgManifestMode `
           -DVCPKG_MANIFEST_DIR="."
     if ($LASTEXITCODE -ne 0) { throw "moonlight-common-c CMake configuration failed" }

@@ -4,6 +4,7 @@
 #include <State/StreamConfiguration.h>
 #include "../Common/DeviceResources.h"
 #include "State\MoonlightApp.h"
+#include "StreamSession.h"
 
 extern "C" {
 #include <Limelight.h>
@@ -56,6 +57,8 @@ class MoonlightClient {
 	std::function<void(unsigned short, unsigned short, unsigned short)> OnTriggerRumble;
 
   private:
+	int StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res, StreamConfiguration^ config);
+	StreamSession m_streamSession;
 	SERVER_DATA serverData;
 	char *connectionPin = NULL;
 	char *hostname = NULL;

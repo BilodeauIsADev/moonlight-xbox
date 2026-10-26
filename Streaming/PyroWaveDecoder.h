@@ -41,6 +41,9 @@ class PyroWaveDecoder {
 	int SubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 
 	bool IsActive() const { return m_active; }
+	HRESULT GetDeviceRemovedReason() const {
+		return m_decoder ? m_decoder->GetDeviceRemovedReason() : S_OK;
+	}
 
 	int videoFormat = 0;
 	int width = 0, height = 0;

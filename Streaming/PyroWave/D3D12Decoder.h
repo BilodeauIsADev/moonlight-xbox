@@ -38,6 +38,9 @@ class Decoder {
 	// Decode() must be created shared.
 	bool Init(ID3D11Device *device11, ID3D11DeviceContext *context11, int width, int height, bool chroma444,
 	          int poolSize);
+	HRESULT GetDeviceRemovedReason() const {
+		return m_device ? m_device->GetDeviceRemovedReason() : S_OK;
+	}
 
 	// Feeds whole bitstream records (a span from PyroWaveFraming::parse).
 	bool PushPacket(const void *data, size_t size);

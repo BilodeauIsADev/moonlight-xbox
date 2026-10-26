@@ -425,6 +425,9 @@
     <ClInclude Include="State\StreamConfiguration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="State\StreamSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\DeviceResources.h">
       <Filter>Header Files</Filter>
     </ClInclude>

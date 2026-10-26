@@ -67,9 +67,6 @@ VideoRenderer::VideoRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_DecoderParams.width = configuration->width;
 	m_DecoderParams.height = configuration->height;
 	m_DecoderParams.frameRate = configuration->FPS;
-
-	CreateDeviceDependentResources();
-	CreateWindowSizeDependentResources();
 }
 
 // Initializes view parameters when the window size changes.
@@ -99,8 +96,8 @@ bool VideoRenderer::Render(AVFrame *frame) {
 	ZoneScopedN("VideoRender");
 	TracyD3D11Zone(g_tracyCtx11, "VideoRender");
 	// Loading is asynchronous. Only draw geometry after it's loaded.
-	if (!m_loadingComplete.load(std::memory_order_acquire) && !m_loadingSuccessful.load(std::memory_order_acquire)) {
-		return true;
+	if (!m_loadingComplete.load(std::memory_order_acquire) || !m_loadingSuccessful.load(std::memory_order_acquire)) {
+		return false;
 	}
 
 	auto *ctx = m_deviceResources->GetD3DDeviceContext();
@@ -318,20 +315,23 @@ void VideoRenderer::CreateDeviceDependentResources()
 		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_indexBuffer), "Index Buffer creation");
 	}
 
-    DISPATCH_THREADPOOL(([this, devRes = m_deviceResources, cfg = configuration] {
-        int status = this->client->StartStreaming(devRes, cfg);
+	// Retain the renderer before queueing work, including time spent waiting
+	// in the thread pool before the startup lambda begins executing.
+	auto self = shared_from_this();
+	DISPATCH_THREADPOOL(([self] {
+		int status = self->client->StartStreaming(self->m_deviceResources, self->configuration);
 
 		if (status != 0) {
 			Utils::Logf("StartStreaming failed with status %d\n", status);
-			m_loadingSuccessful.store(false, std::memory_order_release);
-			m_loadingComplete.store(true, std::memory_order_release);
+			self->m_loadingSuccessful.store(false, std::memory_order_release);
+			self->m_loadingComplete.store(true, std::memory_order_release);
 			return;
 		}
 
-        m_loadingSuccessful.store(true, std::memory_order_release);
-        m_loadingComplete.store(true, std::memory_order_release);
-        Utils::Log("Loading Complete!\n");
-    }));
+		self->m_loadingSuccessful.store(true, std::memory_order_release);
+		self->m_loadingComplete.store(true, std::memory_order_release);
+		Utils::Log("Loading Complete!\n");
+	}));
 }
 
 void VideoRenderer::ReleaseDeviceDependentResources()

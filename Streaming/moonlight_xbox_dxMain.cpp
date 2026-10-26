@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include "PyroWaveDecoder.h"
 
 using namespace moonlight_xbox_dx;
 using namespace Concurrency;
@@ -38,33 +39,32 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 		streamPage->m_stepText->Text = "Starting " + appName;
 	}));
 
-	client->OnFailed = ([this, appName](int status, int error, char *message) {
+	client->OnFailed = ([client, appName](int status, int error, char *message) {
 		std::string msgCopy = message ? message : std::string();
-		auto self = this;
 
-		DISPATCH_UI(([msgCopy, self, appName]() {
+		DISPATCH_UI(([msgCopy, client, appName]() {
+			if (client->IsConnectionTerminated()) return;
 			auto showErrorDialog = std::make_shared<std::function<void()>>();
 			auto showLogsDialog = std::make_shared<std::function<void()>>();
 
-			*showErrorDialog = [self, msgCopy, showLogsDialog, appName]() {
+			*showErrorDialog = [client, msgCopy, showLogsDialog, appName]() {
 				auto dialog1 = ref new Windows::UI::Xaml::Controls::ContentDialog();
 				dialog1->Title = L"Failed to start " + appName;
 				dialog1->Content = Utils::StringFromStdString(msgCopy);
 				dialog1->PrimaryButtonText = L"OK";
 				dialog1->SecondaryButtonText = L"Show Logs";
 
-				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog1)).then([self, showLogsDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
+				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog1)).then([client, showLogsDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
 					auto result = t.get();
 					if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Primary) {
-						self->StopRenderLoop();
-						self->ExitStreamPage();
+						client->SetConnectionTerminated();
 					} else if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Secondary) {
 						(*showLogsDialog)();
 					}
 				});
 			};
 
-			*showLogsDialog = [self, showErrorDialog]() {
+			*showLogsDialog = [client, showErrorDialog]() {
 				auto dialog2 = ref new Windows::UI::Xaml::Controls::ContentDialog();
 
 				std::wstring m_text = L"";
@@ -86,11 +86,10 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 				dialog2->PrimaryButtonText = L"OK";
 				dialog2->SecondaryButtonText = L"Show Error";
 
-				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog2)).then([self, showErrorDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
+				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog2)).then([client, showErrorDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
 					auto result = t.get();
 					if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Primary) {
-						self->StopRenderLoop();
-						self->ExitStreamPage();
+						client->SetConnectionTerminated();
 					} else if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Secondary) {
 						(*showErrorDialog)();
 					}
@@ -109,34 +108,40 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 		}));
 	});
 
-	// Register to be notified if the Device is lost or recreated
-	m_deviceResources->RegisterDeviceNotify(this);
-
 	m_sceneRenderer = std::make_shared<VideoRenderer>(m_deviceResources, moonlightClient, configuration);
 
-	client->OnCompleted = ([this, streamPage, configuration]() {
-		concurrency::create_task([this]() {
-			while (this->m_sceneRenderer && !this->m_sceneRenderer->IsLoadingComplete() && !this->moonlightClient->IsConnectionTerminated()) {
+	auto weakRenderer = std::weak_ptr<VideoRenderer>(m_sceneRenderer);
+	Platform::WeakReference weakPage(streamPage);
+	client->OnCompleted = ([weakRenderer, weakPage, client]() {
+		auto renderer = weakRenderer.lock();
+		if (!renderer) return;
+		concurrency::create_task([renderer, client]() {
+			while (!renderer->IsLoadingComplete() && !client->IsConnectionTerminated()) {
 				Sleep(50);
 			}
-		}).then([this, streamPage, configuration](concurrency::task<void> t) {
-			if (this->m_sceneRenderer && this->m_sceneRenderer->IsLoadingSuccessful()) {
-				DISPATCH_UI(([streamPage]() {
-					Sleep(500);
-					streamPage->m_progressRing->IsActive = false;
-					streamPage->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+		}).then([renderer, weakPage, client](concurrency::task<void> t) {
+			if (!client->IsConnectionTerminated() && renderer->IsLoadingSuccessful()) {
+				DISPATCH_UI(([weakPage, client]() {
+					auto page = weakPage.Resolve<StreamPage>();
+					if (page == nullptr || client->IsConnectionTerminated()) return;
+					page->m_progressRing->IsActive = false;
+					page->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 				}));
 			}
 		});
 	});
 
-	client->SetHDR = ([this](bool v) {
-		concurrency::create_task([this]() {
-			while (this->m_sceneRenderer && !this->m_sceneRenderer->IsLoadingComplete() && !this->moonlightClient->IsConnectionTerminated()) {
+	client->SetHDR = ([weakRenderer, client](bool v) {
+		auto renderer = weakRenderer.lock();
+		if (!renderer) return;
+		concurrency::create_task([renderer, client]() {
+			while (!renderer->IsLoadingComplete() && !client->IsConnectionTerminated()) {
 				Sleep(50);
 			}
-		}).then([this, v](concurrency::task<void> t) {
-			this->m_sceneRenderer->SetHDR(v);
+		}).then([renderer, client, v](concurrency::task<void> t) {
+			if (!client->IsConnectionTerminated() && renderer->IsLoadingSuccessful()) {
+				renderer->SetHDR(v);
+			}
 		});
 	});
 
@@ -199,6 +204,12 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 
 	// Force refresh of connected gamepads because OnGamepadAdded may not always be called if we reconnect
 	streamPage->RequestRefreshGamepads();
+
+	// Start only after the shared renderer and connection callbacks are ready.
+	m_sceneRenderer->CreateDeviceDependentResources();
+	m_sceneRenderer->CreateWindowSizeDependentResources();
+	// A failed constructor must not leave a notification pointer to this object.
+	m_deviceResources->RegisterDeviceNotify(this);
 }
 
 moonlight_xbox_dxMain::~moonlight_xbox_dxMain() {
@@ -224,127 +235,138 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 
 	// Create a task that will be run on a background thread.
 	auto workItemHandler = ref new WorkItemHandler([this](IAsyncAction ^ action) {
-		if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL)) {
-			Utils::Logf("Failed to set render thread priority: %d\n", GetLastError());
-		}
-
-		tracy::SetThreadName("Render");
-
-		int64_t t0 = 0, t1 = 0, t2 = 0, t3 = 0;
-		int64_t lastFramePts = 0, lastPresentTime = 0;
-		double frametimeMs = 0.0, hostFrametimeMs = 0.0;
-		const double bufferMs = 1.5;   // safety wait time to avoid missing deadline
-		const double alphaUp = 0.25;   // react faster when renderMs spikes upward
-		const double alphaDown = 0.05; // decay slowly when renderMs drops
-		double ewmaRenderMs = 3.0;     // Initial guess for render cost
-
-	#ifdef TRACY_ENABLE_D3D11
-		{
-			// Tracy's D3D11 context belongs to this thread: creating it drives the immediate
-			// context (it allocates queries and calibrates against the GPU clock), which the
-			// decoder thread also uses, so it takes the same lock as the rest of the loop.
-			// Creating it here rather than alongside the swapchain also means it is built
-			// exactly once, and only while the GPU is actually pumping frames.
-			auto guard = FFMpegDecoder::Lock();
-			g_tracyCtx11 = TracyD3D11Context(m_deviceResources->GetD3DDevice(),
-			                                 m_deviceResources->GetD3DDeviceContext());
-		}
-	#endif
-
-		// Calculate the updated frame and render once per vertical blanking interval.
-		while (action->Status == AsyncStatus::Started && !moonlightClient->IsConnectionTerminated()) {
-			// Get overall deadline we must hit by the Present for this frame
-			int64_t deadline = Pacer::instance().getNextVBlankQpc(&t0);
-
-			// wait for a frame + avg render time + safety buffer
-			double maxWaitMs = std::max(0.0, QpcToMs(deadline - t0) - ewmaRenderMs - bufferMs);
-			Pacer::instance().waitForFrame(maxWaitMs);
-			t1 = QpcNow();
-
-			{
-				critical_section::scoped_lock lock(m_criticalSection);
-				Update();
-
-				bool rendered = false;
-				{
-					// ffmpeg and Render both use the same D3D context
-					auto guard = FFMpegDecoder::Lock();
-					// Declared after the guard so its closing timestamp is still issued
-					// under the lock: a GPU zone writes to the immediate context at both
-					// ends of its scope.
-					ZoneScopedN("Render");
-					TracyD3D11Zone(g_tracyCtx11, "Render");
-					rendered = Render();
-					t2 = QpcNow();
-				}
-
-				// Whether we rendered a new frame or not, wait until vblank for pacing
-				// This is out of the lock and won't block the decoder
-				bool hitDeadline = Pacer::instance().waitBeforePresent(deadline);
-				t3 = QpcNow();
-
-				if (!rendered) {
-					// (Immediate pacing mode only) We're receiving a lower framerate
-					// and no frame was available, we don't call Present here and the
-					// previous frame will be re-displayed by DWM. On Xbox One this may cause
-					// corrupted frames or tearing.
-					continue;
-				}
-
-				{
-					ZoneScopedNC("Present", tracy::Color::Purple);
-
-					// lock is required around Present
-					auto guard = FFMpegDecoder::Lock();
-					m_deviceResources->Present();
-					FrameMark;
-				}
-
-				TracyD3D11Collect(g_tracyCtx11);
-
-				// Graph frametime only for new frames
-				bool isRepeatFrame = true;
-				int64_t currentFramePts = Pacer::instance().getCurrentFramePts();
-				if (currentFramePts != lastFramePts) {
-					if (lastPresentTime > 0) {
-						hostFrametimeMs = ((double)currentFramePts - lastFramePts) / 90.0;
-						frametimeMs = QpcToMs(t3 - lastPresentTime);
-						ImGuiPlots::instance().observeFloat(PLOT_FRAMETIME, static_cast<float>(frametimeMs));
-					}
-					lastPresentTime = t3;
-					lastFramePts = currentFramePts;
-					isRepeatFrame = false;
-				}
-
-				// Weighted avg of time spent in Render(), more weight given to a slower render time
-				// If we missed our present deadline this frame, aggressively weight this higher so maxWaitMs is smaller.
-				// This is clamped to the deadline to prevent outliers
-				double renderMs = QpcToMs(t2 - t1);
-				double clampedRenderMs = std::clamp(renderMs, 0.0, QpcToMs(deadline - t0));
-				double alpha = (clampedRenderMs > ewmaRenderMs) ? alphaUp : alphaDown;
-				if (!hitDeadline) alpha *= 2.0;
-				ewmaRenderMs = (clampedRenderMs * alpha) + (ewmaRenderMs * (1.0 - alpha));
-
-				// Track high-level render loop stats
-				double preWaitMs = QpcToMs(t1 - t0);
-				double beforePresentMs = QpcToMs(t3 - t2);
-				Stats::instance().SubmitRenderStats(preWaitMs, renderMs, beforePresentMs, hitDeadline);
-
-				FQLog("render loop %.3fms %s%s%s pts:%.3fs frametime(c:%02.3fms h:%02.3fms) (Deadline %.3fms PreWait %.3fms (max %.3fms) + Render %.3fms (avg %.3f) + Present %.3fms)\n",
-				      QpcToMs(t3 - t0),                             // loop time
-				      hitDeadline ? " " : "M",                      // missed deadline?
-				      isRepeatFrame ? "R" : " ",                    // repeated frame?
-				      preWaitMs > maxWaitMs + bufferMs ? "W" : " ", // we waited too long for a frame (including buffer)
-				      (double)currentFramePts / 90000.0,            // host's timestamp (in seconds)
-				      frametimeMs,                                  // effective client frametime not counting repeated frames
-				      hostFrametimeMs,                              // host frametime
-				      QpcToMs(deadline - t0),                       // deadline time window until next vblank
-				      preWaitMs,                                    // prewait (time spent waiting for new frame to arrive)
-				      maxWaitMs,                                    // max wait allowed this frame
-				      renderMs,                                     // render time this frame
-				      ewmaRenderMs,                                 // average of render time used to control prewait
-				      beforePresentMs);                             // wait time to align present to vblank
+		try {
+			if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL)) {
+				Utils::Logf("Failed to set render thread priority: %d\n", GetLastError());
 			}
+
+			tracy::SetThreadName("Render");
+
+			int64_t t0 = 0, t1 = 0, t2 = 0, t3 = 0;
+			int64_t lastFramePts = 0, lastPresentTime = 0;
+			double frametimeMs = 0.0, hostFrametimeMs = 0.0;
+			const double bufferMs = 1.5;   // safety wait time to avoid missing deadline
+			const double alphaUp = 0.25;   // react faster when renderMs spikes upward
+			const double alphaDown = 0.05; // decay slowly when renderMs drops
+			double ewmaRenderMs = 3.0;     // Initial guess for render cost
+
+			#ifdef TRACY_ENABLE_D3D11
+			{
+				// Tracy's D3D11 context belongs to this thread: creating it drives the immediate
+				// context (it allocates queries and calibrates against the GPU clock), which the
+				// decoder thread also uses, so it takes the same lock as the rest of the loop.
+				// Creating it here rather than alongside the swapchain also means it is built
+				// exactly once, and only while the GPU is actually pumping frames.
+				auto guard = FFMpegDecoder::Lock();
+				g_tracyCtx11 = TracyD3D11Context(m_deviceResources->GetD3DDevice(),
+				                                 m_deviceResources->GetD3DDeviceContext());
+			}
+		#endif
+
+			// Calculate the updated frame and render once per vertical blanking interval.
+			while (action->Status == AsyncStatus::Started && !moonlightClient->IsConnectionTerminated()) {
+				// Get overall deadline we must hit by the Present for this frame
+				int64_t deadline = Pacer::instance().getNextVBlankQpc(&t0);
+
+				// wait for a frame + avg render time + safety buffer
+				double maxWaitMs = std::max(0.0, QpcToMs(deadline - t0) - ewmaRenderMs - bufferMs);
+				Pacer::instance().waitForFrame(maxWaitMs);
+				t1 = QpcNow();
+
+				{
+					critical_section::scoped_lock lock(m_criticalSection);
+					Update();
+
+					bool rendered = false;
+					{
+						// ffmpeg and Render both use the same D3D context
+						auto guard = FFMpegDecoder::Lock();
+						// Declared after the guard so its closing timestamp is still issued
+						// under the lock: a GPU zone writes to the immediate context at both
+						// ends of its scope.
+						ZoneScopedN("Render");
+						TracyD3D11Zone(g_tracyCtx11, "Render");
+						rendered = Render();
+						t2 = QpcNow();
+					}
+
+					// Whether we rendered a new frame or not, wait until vblank for pacing
+					// This is out of the lock and won't block the decoder
+					bool hitDeadline = Pacer::instance().waitBeforePresent(deadline);
+					t3 = QpcNow();
+
+					if (!rendered) {
+						// (Immediate pacing mode only) We're receiving a lower framerate
+						// and no frame was available, we don't call Present here and the
+						// previous frame will be re-displayed by DWM. On Xbox One this may cause
+						// corrupted frames or tearing.
+						continue;
+					}
+
+					{
+						ZoneScopedNC("Present", tracy::Color::Purple);
+
+						// lock is required around Present
+						auto guard = FFMpegDecoder::Lock();
+						m_deviceResources->Present();
+						FrameMark;
+					}
+
+					TracyD3D11Collect(g_tracyCtx11);
+
+					// Graph frametime only for new frames
+					bool isRepeatFrame = true;
+					int64_t currentFramePts = Pacer::instance().getCurrentFramePts();
+					if (currentFramePts != lastFramePts) {
+						if (lastPresentTime > 0) {
+							hostFrametimeMs = ((double)currentFramePts - lastFramePts) / 90.0;
+							frametimeMs = QpcToMs(t3 - lastPresentTime);
+							ImGuiPlots::instance().observeFloat(PLOT_FRAMETIME, static_cast<float>(frametimeMs));
+						}
+						lastPresentTime = t3;
+						lastFramePts = currentFramePts;
+						isRepeatFrame = false;
+					}
+
+					// Weighted avg of time spent in Render(), more weight given to a slower render time
+					// If we missed our present deadline this frame, aggressively weight this higher so maxWaitMs is smaller.
+					// This is clamped to the deadline to prevent outliers
+					double renderMs = QpcToMs(t2 - t1);
+					double clampedRenderMs = std::clamp(renderMs, 0.0, QpcToMs(deadline - t0));
+					double alpha = (clampedRenderMs > ewmaRenderMs) ? alphaUp : alphaDown;
+					if (!hitDeadline) alpha *= 2.0;
+					ewmaRenderMs = (clampedRenderMs * alpha) + (ewmaRenderMs * (1.0 - alpha));
+
+					// Track high-level render loop stats
+					double preWaitMs = QpcToMs(t1 - t0);
+					double beforePresentMs = QpcToMs(t3 - t2);
+					Stats::instance().SubmitRenderStats(preWaitMs, renderMs, beforePresentMs, hitDeadline);
+
+					FQLog("render loop %.3fms %s%s%s pts:%.3fs frametime(c:%02.3fms h:%02.3fms) (Deadline %.3fms PreWait %.3fms (max %.3fms) + Render %.3fms (avg %.3f) + Present %.3fms)\n",
+					      QpcToMs(t3 - t0),                             // loop time
+					      hitDeadline ? " " : "M",                      // missed deadline?
+					      isRepeatFrame ? "R" : " ",                    // repeated frame?
+					      preWaitMs > maxWaitMs + bufferMs ? "W" : " ", // we waited too long for a frame (including buffer)
+					      (double)currentFramePts / 90000.0,            // host's timestamp (in seconds)
+					      frametimeMs,                                  // effective client frametime not counting repeated frames
+					      hostFrametimeMs,                              // host frametime
+					      QpcToMs(deadline - t0),                       // deadline time window until next vblank
+					      preWaitMs,                                    // prewait (time spent waiting for new frame to arrive)
+					      maxWaitMs,                                    // max wait allowed this frame
+					      renderMs,                                     // render time this frame
+					      ewmaRenderMs,                                 // average of render time used to control prewait
+					      beforePresentMs);                             // wait time to align present to vblank
+				}
+			}
+
+		} catch (Platform::Exception^ error) {
+			Utils::Logf("Render worker failed (HRESULT 0x%08X, device reason 0x%08X)\n",
+			            static_cast<unsigned>(error->HResult),
+			            static_cast<unsigned>(m_deviceResources->GetD3DDevice()->GetDeviceRemovedReason()));
+		} catch (const std::exception& error) {
+			Utils::Logf("Render worker failed: %s\n", error.what());
+		} catch (...) {
+			Utils::Log("Render worker failed with an unknown exception\n");
 		}
 
 	#ifdef TRACY_ENABLE_D3D11
@@ -359,6 +381,7 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 		}
 	#endif
 
+		moonlightClient->SetConnectionTerminated();
 		StopRenderLoop(); // also stops input
 		Disconnect();
 
@@ -375,7 +398,7 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 		const int64_t pollIntervalQpc = MsToQpc(1000.0 / pollingHz);
 		int64_t lastProcessInput = 0;
 
-		while (action->Status == AsyncStatus::Started) {
+		while (action->Status == AsyncStatus::Started && !moonlightClient->IsConnectionTerminated()) {
 			int64_t now = QpcNow();
 			if (now - lastProcessInput >= pollIntervalQpc) {
 				lastProcessInput = now;
@@ -399,8 +422,8 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 }
 
 void moonlight_xbox_dxMain::StopRenderLoop() {
-	m_renderLoopWorker->Cancel();
-	m_inputLoopWorker->Cancel();
+	if (m_renderLoopWorker != nullptr) m_renderLoopWorker->Cancel();
+	if (m_inputLoopWorker != nullptr) m_inputLoopWorker->Cancel();
 }
 
 // Updates the application state once per frame.
@@ -852,6 +875,16 @@ bool moonlight_xbox_dxMain::Render() {
 	if (m_timer.GetFrameCount() == 0) {
 		return false;
 	}
+	if (!m_sceneRenderer->IsLoadingComplete() || !m_sceneRenderer->IsLoadingSuccessful()) {
+		return false;
+	}
+
+	// A lost decoder device may stop producing frames before Present sees an
+	// error. End the stream instead of leaving the last image on screen forever.
+	DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->GetDeviceRemovedReason());
+	if (PyroWaveDecoder::instance().IsActive()) {
+		DX::ThrowIfFailed(PyroWaveDecoder::instance().GetDeviceRemovedReason());
+	}
 
 	// A display change event may have happened, and this can result in a colorspace mismatch.
 	// Reset the TRC value so that VideoRenderer will call SetColorSpace1() and ensure the correct display mode.
@@ -907,6 +940,7 @@ void moonlight_xbox_dxMain::RenderImGui() {
 
 // Notifies renderers that device resources need to be released.
 void moonlight_xbox_dxMain::OnDeviceLost() {
+	moonlightClient->SetConnectionTerminated();
 	m_sceneRenderer->ReleaseDeviceDependentResources();
 	m_LogRenderer->ReleaseDeviceDependentResources();
 	m_statsTextRenderer->ReleaseDeviceDependentResources();
@@ -914,12 +948,9 @@ void moonlight_xbox_dxMain::OnDeviceLost() {
 
 // Notifies renderers that device resources may now be recreated.
 void moonlight_xbox_dxMain::OnDeviceRestored() {
-	m_sceneRenderer->CreateDeviceDependentResources();
-	m_LogRenderer->CreateDeviceDependentResources();
-	m_statsTextRenderer->CreateDeviceDependentResources();
-
-	CreateDeviceDependentResources();
-	CreateWindowSizeDependentResources();
+	// Decoder resources still belong to the old device. Finish teardown and
+	// let the next stream build all rendering and decoding resources together.
+	Utils::Log("Graphics device restored; finishing the previous stream\n");
 }
 
 void moonlight_xbox_dxMain::SetFlyoutOpened(bool value) {
