@@ -36,7 +36,8 @@ jobs:
           if ($LASTEXITCODE) { throw 'Regression tests failed' }
 
       - name: Cache vcpkg binary packages
-        uses: actions/cache@v4
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/AppData/Local/vcpkg/archives
           key: xbox-uwp-v143-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'vcpkg-overlays/**') }}
@@ -51,6 +52,13 @@ jobs:
           if ($LASTEXITCODE) { throw 'vcpkg install failed' }
           .\vcpkg\vcpkg.exe integrate install
           if ($LASTEXITCODE) { throw 'vcpkg MSBuild integration failed' }
+
+      - name: Save completed dependency builds
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/AppData/Local/vcpkg/archives
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
 
       - name: Configure native libraries
         shell: pwsh
@@ -127,3 +135,14 @@ jobs:
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xbox-build-diagnostics-${{ github.run_number }}
+          path: |
+            vcpkg/buildtrees/**/*.log
+            vcpkg/buildtrees/**/*.out
+          if-no-files-found: ignore
+          retention-days: 3
