@@ -48,7 +48,7 @@ class FFMpegDecoder {
 	void Cleanup();
 	int SubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 	static FFMpegDecoder *getInstance();
-	static DECODER_RENDERER_CALLBACKS getDecoder();
+	static DECODER_RENDERER_CALLBACKS getDecoder(bool intraRefresh);
 	void ToggleCapture();
 	void SetCapture(bool wanted);
 	bool IsCaptureActive() const;

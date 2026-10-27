@@ -195,6 +195,21 @@
                                                 <ColumnDefinition Width="220"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Intra refresh" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Avoids large keyframes, but stream errors can linger in still scenes. Leave off unless you see stutter.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch IsOn="{x:Bind Host.EnableIntraRefresh,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Intra refresh"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
                                                 <TextBlock Text="Frame pacing" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
                                                 <TextBlock Name="FramePacingImmediateDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox Series. Lowest latency. Renders frames at the incoming frame rate.</TextBlock>
                                                 <TextBlock Name="FramePacingDisplayLockedDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox One. Locks rendering frame rate to refresh rate and evenly spaces frames.</TextBlock>

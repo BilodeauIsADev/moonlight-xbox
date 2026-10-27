@@ -38,6 +38,7 @@ namespace moonlight_xbox_dx {
 		int packetSize = 1392;
 		bool enableHDR = false;
 		bool enableSOPS = false;
+		bool enableIntraRefresh = false;
 		bool enableStats = false;
 		bool enableGraphs = true;
 		Windows::Foundation::Collections::IVector<MoonlightApp^>^ apps;
@@ -485,6 +486,16 @@ namespace moonlight_xbox_dx {
 			void set(bool value) {
 				this->enableSOPS = value;
 				OnPropertyChanged("EnableSOPS");
+			}
+		}
+
+		property bool EnableIntraRefresh {
+			bool get() {
+				return this->enableIntraRefresh;
+			}
+			void set(bool value) {
+				this->enableIntraRefresh = value;
+				OnPropertyChanged("EnableIntraRefresh");
 			}
 		}
 

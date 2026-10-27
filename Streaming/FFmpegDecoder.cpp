@@ -463,13 +463,19 @@ namespace moonlight_xbox_dx {
 		return FFMpegDecoder::instance().SubmitDecodeUnit(decodeUnit);
 	}
 
-	DECODER_RENDERER_CALLBACKS FFMpegDecoder::getDecoder() {
+	DECODER_RENDERER_CALLBACKS FFMpegDecoder::getDecoder(bool intraRefresh) {
 		DECODER_RENDERER_CALLBACKS decoder_callbacks_sdl;
 		LiInitializeVideoCallbacks(&decoder_callbacks_sdl);
 		decoder_callbacks_sdl.setup = initCallback;
 		decoder_callbacks_sdl.cleanup = cleanupCallback;
 		decoder_callbacks_sdl.submitDecodeUnit = submitDecodeUnit;
-		decoder_callbacks_sdl.capabilities = CAPABILITY_DIRECT_SUBMIT | CAPABILITY_INTRA_REFRESH;
+		decoder_callbacks_sdl.capabilities = CAPABILITY_DIRECT_SUBMIT;
+		// Intra refresh repairs the picture in a column that sweeps across the
+		// screen, so after a decode error the damage can stay visible for seconds
+		// in still scenes. Without it the host sends a full IDR frame instead.
+		if (intraRefresh) {
+			decoder_callbacks_sdl.capabilities |= CAPABILITY_INTRA_REFRESH;
+		}
 		return decoder_callbacks_sdl;
 	}
 }

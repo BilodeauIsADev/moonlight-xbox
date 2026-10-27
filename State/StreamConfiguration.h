@@ -22,6 +22,7 @@ namespace moonlight_xbox_dx
 		property bool playAudioOnPC;
 		property bool enableVsync;
 		property bool enableSOPS;
+		property bool enableIntraRefresh;
 		property bool enableStats;
 		property bool enableGraphs;
 	};

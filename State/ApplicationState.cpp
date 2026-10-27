@@ -54,6 +54,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 				if (a.contains("playaudioonpc")) h->PlayAudioOnPC = a["playaudioonpc"].get<bool>();
 				if (a.contains("enable_hdr")) h->EnableHDR = a["enable_hdr"].get<bool>();
 				if (a.contains("enable_sops")) h->EnableSOPS = a["enable_sops"].get<bool>();
+				if (a.contains("enable_intra_refresh")) h->EnableIntraRefresh = a["enable_intra_refresh"].get<bool>();
 				if (a.contains("enable_stats")) h->EnableStats = a["enable_stats"].get<bool>();
 				if (a.contains("enable_graphs")) h->EnableGraphs = a["enable_graphs"].get<bool>();
 				if (a.contains("serverAddress")) h->ServerAddress = Utils::StringFromStdString(a["serverAddress"].get<std::string>());
@@ -148,6 +149,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 			hostJson["playaudioonpc"] = host->PlayAudioOnPC;
 			hostJson["enable_hdr"] = host->EnableHDR;
 			hostJson["enable_sops"] = host->EnableSOPS;
+			hostJson["enable_intra_refresh"] = host->EnableIntraRefresh;
 			hostJson["enable_stats"] = host->EnableStats;
 			hostJson["enable_graphs"] = host->EnableGraphs;
 			hostJson["serverAddress"] = Utils::PlatformStringToStdString(host->ServerAddress);

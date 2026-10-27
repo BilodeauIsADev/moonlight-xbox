@@ -351,9 +351,14 @@ int MoonlightClient::StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res
 
 	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate");
 	PyroWaveDecoder::instance().CompleteInitialization(res, &config);
-	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder();
+	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder(sConfig->enableIntraRefresh);
 
 	AUDIO_RENDERER_CALLBACKS aCallbacks = AudioPlayer::getDecoder();
+	if (!sConfig->enableIntraRefresh && config.audioConfiguration == AUDIO_CONFIGURATION_STEREO) {
+		// moonlight-common-c only picks 10 ms stereo packets for Xbox when
+		// CAPABILITY_INTRA_REFRESH is set. Keep them when intra refresh is off.
+		aCallbacks.capabilities |= CAPABILITY_SLOW_OPUS_DECODER;
+	}
 
 	int k = LiStartConnection(&serverData.serverInfo, &config, &callbacks, &rCallbacks, &aCallbacks, NULL, 0, NULL, 0);
 	if (k != 0) {
