@@ -924,16 +924,16 @@ void HostSelectorPage::StartAmbient() {
 		move->InsertKeyFrame(0.0f, Windows::Foundation::Numerics::float3(0, 0, 0));
 		move->InsertKeyFrame(1.0f, to, ease);
 		move->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
-		move->IterationBehavior = AnimationIterationBehavior::Forever;
-		move->Direction = AnimationDirection::Alternate;
+		move->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+		move->Direction = Windows::UI::Composition::AnimationDirection::Alternate;
 		visual->StartAnimation(L"Translation", move);
 		if (opacityLow < 1.0f) {
 			auto breathe = compositor->CreateScalarKeyFrameAnimation();
 			breathe->InsertKeyFrame(0.0f, 1.0f);
 			breathe->InsertKeyFrame(1.0f, opacityLow, ease);
 			breathe->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 7000000LL };
-			breathe->IterationBehavior = AnimationIterationBehavior::Forever;
-			breathe->Direction = AnimationDirection::Alternate;
+			breathe->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+			breathe->Direction = Windows::UI::Composition::AnimationDirection::Alternate;
 			visual->StartAnimation(L"Opacity", breathe);
 		}
 	};
@@ -961,7 +961,7 @@ void HostSelectorPage::StartAmbient() {
 		}
 	}
 	unsigned int index = 0;
-	for (auto child : AmbientParticles->Children) {
+	for (UIElement^ child : AmbientParticles->Children) {
 		ElementCompositionPreview::SetIsTranslationEnabled(child, true);
 		auto visual = ElementCompositionPreview::GetElementVisual(child);
 		auto compositor = visual->Compositor;
@@ -971,7 +971,7 @@ void HostSelectorPage::StartAmbient() {
 		rise->InsertKeyFrame(1.0f, float3(static_cast<float>(static_cast<int>(index % 3) - 1) * 18.0f, -110.0f, 0), compositor->CreateLinearEasingFunction());
 		rise->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
 		rise->DelayTime = Windows::Foundation::TimeSpan{ static_cast<long long>(index) * 9000000LL };
-		rise->IterationBehavior = AnimationIterationBehavior::Forever;
+		rise->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
 		visual->StartAnimation(L"Translation", rise);
 		auto fade = compositor->CreateScalarKeyFrameAnimation();
 		fade->InsertKeyFrame(0.0f, 0.0f);
@@ -979,7 +979,7 @@ void HostSelectorPage::StartAmbient() {
 		fade->InsertKeyFrame(1.0f, 0.0f);
 		fade->Duration = rise->Duration;
 		fade->DelayTime = rise->DelayTime;
-		fade->IterationBehavior = AnimationIterationBehavior::Forever;
+		fade->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
 		// Element opacity stays 0 until composition takes over, so nothing pops in
 		safe_cast<UIElement^>(child)->Opacity = 1;
 		visual->Opacity = 0;
@@ -998,7 +998,7 @@ void HostSelectorPage::StopAmbient() {
 	};
 	UIElement^ layers[] = { AmbientGlowA, AmbientGlowB, AmbientGlowC, AmbientRibbonA, AmbientRibbonB };
 	for (auto layer : layers) stop(layer, 1.0f);
-	for (auto child : AmbientParticles->Children) stop(child, 0.0f);
+	for (UIElement^ child : AmbientParticles->Children) stop(child, 0.0f);
 }
 
 // Fade the two coloured glows to the focused PC's accent (0 = the default blue)

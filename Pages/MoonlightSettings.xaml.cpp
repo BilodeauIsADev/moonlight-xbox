@@ -150,7 +150,7 @@ void MoonlightSettings::HookCards() {
 	Platform::WeakReference weakThis(this);
 	StackPanel^ panels[] = { GeneralPanel, DisplayPanel, InputPanel };
 	for (auto panel : panels) {
-		for (auto child : panel->Children) {
+		for (UIElement^ child : panel->Children) {
 			auto card = dynamic_cast<Border^>(child);
 			if (card == nullptr) continue;
 			card->GotFocus += ref new RoutedEventHandler([weakThis](Platform::Object^ sender, RoutedEventArgs^) {
