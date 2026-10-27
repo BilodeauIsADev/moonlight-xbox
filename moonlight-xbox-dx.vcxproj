@@ -451,6 +451,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="Common\OrbitMotion.h" />
+    <ClInclude Include="tests\OrbitUiSmokeTests.h" />
     <ClInclude Include="Common\OrbitArtworkRequest.h" />
     <ClInclude Include="Common\OrbitNavigation.h" />
     <ClInclude Include="Common\OrbitInput.h" />
@@ -524,6 +525,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="Common\OrbitMotion.cpp" />
+    <ClCompile Include="tests\OrbitUiSmokeTests.cpp" />
     <ClCompile Include="Common\DeviceWatcherHelper.cpp" />
     <ClCompile Include="Common\DirectXHelper.cpp" />
     <ClCompile Include="Common\TextConsole.cpp" />
@@ -865,6 +867,11 @@
       <Project>{F4776924-619C-42C7-88B2-82C947CCC9E7}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(OrbitUiTests)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>ORBIT_UI_TESTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ImageContentTask.targets" />

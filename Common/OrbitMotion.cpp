@@ -131,9 +131,13 @@ void OrbitMotion::Stop(UIElement^ element) {
 	element->SetValue(s_revealGenerationProperty, safe_cast<int>(element->GetValue(s_revealGenerationProperty)) + 1);
 	auto visual = ElementCompositionPreview::GetElementVisual(element);
 	visual->StopAnimation("Opacity");
-	visual->StopAnimation("Translation");
 	visual->Opacity = 1;
-	visual->Properties->InsertVector3("Translation", float3(0, 0, 0));
+	// Template controls and artwork can have only XAML transforms or an opacity
+	// animation. Translation is an opt-in property, even when stopping an animation.
+	if (ElementCompositionPreview::GetIsTranslationEnabled(element)) {
+		visual->StopAnimation("Translation");
+		visual->Properties->InsertVector3("Translation", float3(0, 0, 0));
+	}
 }
 
 void OrbitMotion::Reveal(UIElement^ element, int milliseconds, float offsetY, float initialOpacity) {

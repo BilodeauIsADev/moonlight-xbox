@@ -7,6 +7,7 @@
 #include <Utils.hpp>
 #include "MoonlightWelcome.xaml.h"
 #include "Streaming/FFMpegDecoder.h"
+#include "tests/OrbitUiSmokeTests.h"
 
 using namespace moonlight_xbox_dx;
 
@@ -96,6 +97,9 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 		that->m_menuPage->OnStateLoaded();
 	});
 	displayRequest->RequestActive();
+#if defined(ORBIT_UI_TESTS)
+	RunOrbitUiSmokeTests(e->Arguments);
+#endif
 }
 /// <summary>
 /// Invoked when application execution is being suspended.  Application state is saved

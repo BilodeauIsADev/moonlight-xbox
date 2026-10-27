@@ -62,3 +62,15 @@ with a controller at the console's supported display sizes:
   and artwork change immediately, focus and button scaling are suppressed, and
   dialogs and dropdowns appear and dismiss without animation. Re-enable the
   setting and check again, including after resuming the app.
+
+The development-package workflow also accepts `ui_smoke_tests=true`. This defines
+`ORBIT_UI_TESTS` and includes the opt-in native test runner. Normal builds omit
+the runner. On an Xbox with a paired online host, upload an empty
+`LocalState/orbit-ui-smoke.request` file through Device Portal, then launch the app.
+The runner consumes that request and writes flushed UTF-16LE checkpoints to
+`LocalState/orbit-ui-smoke.log`. It uses the actual pages, button automation,
+dropdowns, Add host dialog, progress dialog, action menus, and rapid shelf focus,
+then repeats Library/Hosts/Settings navigation three times. It stops at the first
+failure and leaves the last checkpoint available if a later XAML event crashes.
+It does not change dropdown selections or start a game. Controller button routing,
+streaming, and the system reduced-motion setting still require console checks.

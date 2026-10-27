@@ -403,6 +403,9 @@
     <ClCompile Include="Common\OrbitMotion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tests\OrbitUiSmokeTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Common\DeviceWatcherHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -535,6 +538,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\OrbitMotion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tests\OrbitUiSmokeTests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\OrbitArtworkRequest.h">
