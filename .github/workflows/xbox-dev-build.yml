@@ -2,7 +2,7 @@ name: Xbox development package
 
 on:
   push:
-    branches: [feature/pyrowave-support]
+    branches: [master, feature/pyrowave-support]
   workflow_dispatch:
     inputs:
       ui_smoke_tests:
