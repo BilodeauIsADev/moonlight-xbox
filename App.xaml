@@ -628,6 +628,23 @@
                 <Setter Property="FontSize" Value="18" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
+            <!-- One style per button so every footer uses the same glyph and colour -->
+            <Style x:Key="OrbitHintAGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF093;" />
+                <Setter Property="Foreground" Value="#FF66CC33" />
+            </Style>
+            <Style x:Key="OrbitHintBGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF094;" />
+                <Setter Property="Foreground" Value="#FFFF5555" />
+            </Style>
+            <Style x:Key="OrbitHintXGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF096;" />
+                <Setter Property="Foreground" Value="#FF3399FF" />
+            </Style>
+            <Style x:Key="OrbitHintYGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF095;" />
+                <Setter Property="Foreground" Value="#FFFFCC33" />
+            </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->
             <Style x:Key="OrbitShelfItemStyle" TargetType="GridViewItem">
