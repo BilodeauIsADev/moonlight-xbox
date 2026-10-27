@@ -22,7 +22,13 @@ DependencyProperty^ s_kindProperty;
 DependencyProperty^ s_transformProperty;
 DependencyProperty^ s_revealActiveProperty;
 DependencyProperty^ s_revealGenerationProperty;
+DependencyProperty^ s_translationEnabledProperty;
 Windows::UI::ViewManagement::UISettings^ s_uiSettings;
+
+void EnableTranslation(UIElement^ element) {
+	ElementCompositionPreview::SetIsTranslationEnabled(element, true);
+	element->SetValue(s_translationEnabledProperty, true);
+}
 
 FrameworkElement^ TemplateRoot(FrameworkElement^ element) {
 	auto control = dynamic_cast<Control^>(element);
@@ -69,7 +75,7 @@ CompositionAnimationGroup^ PopupAnimation(UIElement^ element, bool show) {
 }
 
 void ConfigurePopup(UIElement^ element) {
-	ElementCompositionPreview::SetIsTranslationEnabled(element, true);
+	EnableTranslation(element);
 	ElementCompositionPreview::SetImplicitShowAnimation(element, OrbitMotion::Enabled() ? PopupAnimation(element, true) : nullptr);
 	ElementCompositionPreview::SetImplicitHideAnimation(element, OrbitMotion::Enabled() ? PopupAnimation(element, false) : nullptr);
 }
@@ -111,6 +117,8 @@ void OrbitMotion::RegisterDependencyProperties() {
 			"RevealActive", Windows::UI::Xaml::Interop::TypeName(bool::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid), ref new PropertyMetadata(false));
 		s_revealGenerationProperty = DependencyProperty::RegisterAttached(
 			"RevealGeneration", Windows::UI::Xaml::Interop::TypeName(int::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid), ref new PropertyMetadata(0));
+		s_translationEnabledProperty = DependencyProperty::RegisterAttached(
+			"TranslationEnabled", Windows::UI::Xaml::Interop::TypeName(bool::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid), ref new PropertyMetadata(false));
 		s_kindProperty = DependencyProperty::RegisterAttached("Kind", Windows::UI::Xaml::Interop::TypeName(OrbitMotionKind::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid),
 			ref new PropertyMetadata(OrbitMotionKind::None, ref new PropertyChangedCallback(&OrbitMotion::OnKindChanged)));
 	}
@@ -134,7 +142,7 @@ void OrbitMotion::Stop(UIElement^ element) {
 	visual->Opacity = 1;
 	// Template controls and artwork can have only XAML transforms or an opacity
 	// animation. Translation is an opt-in property, even when stopping an animation.
-	if (ElementCompositionPreview::GetIsTranslationEnabled(element)) {
+	if (safe_cast<bool>(element->GetValue(s_translationEnabledProperty))) {
 		visual->StopAnimation("Translation");
 		visual->Properties->InsertVector3("Translation", float3(0, 0, 0));
 	}
@@ -142,7 +150,7 @@ void OrbitMotion::Stop(UIElement^ element) {
 
 void OrbitMotion::Reveal(UIElement^ element, int milliseconds, float offsetY, float initialOpacity) {
 	if (!Enabled()) { Stop(element); return; }
-	ElementCompositionPreview::SetIsTranslationEnabled(element, true);
+	EnableTranslation(element);
 	auto visual = ElementCompositionPreview::GetElementVisual(element);
 	auto compositor = visual->Compositor;
 	const bool active = safe_cast<bool>(element->GetValue(s_revealActiveProperty));
