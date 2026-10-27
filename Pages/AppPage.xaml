@@ -65,7 +65,6 @@
                 <Grid Grid.Row="0" Margin="32,18,32,0">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
                         <ContentControl Style="{StaticResource OrbitKeyLBStyle}" Margin="0,0,6,0" />
-                        <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click" />
                         <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Background="{StaticResource OrbitTabSelectedBrush}" Foreground="{StaticResource OrbitTabSelectedTextBrush}" />
                         <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Click="settingsButton_Click" />
                         <ContentControl Style="{StaticResource OrbitKeyRBStyle}" Margin="6,0,0,0" />

@@ -316,6 +316,7 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 {
 	auto selected = dynamic_cast<Button^>(sender);
 	if (selected == nullptr) return;
+	m_activeSection = selected;
 	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton, GlobalSettingsOption };
 	FrameworkElement^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel, AppSettingsPanel };
 	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General", L"App settings" };
@@ -415,15 +416,7 @@ int HostSettingsPage::getDefaultBitrate(int width, int height, int fps, Platform
 	return std::lround(resolutionFactor * frameRateFactor) * 1000;
 }
 
-void HostSettingsPage::HostsNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	GetApplicationState()->UpdateFile();
-	if (Frame->CanGoBack) {
-		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
-		Frame->GoBack();
-	}
-}
-
 void HostSettingsPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
-	if (OrbitInput::HandleBumpers(e, 2, hostsNavButton, backButton, settingsNavButton)) return;
+	if (OrbitInput::HandleBumpers(e, 2, nullptr, backButton, settingsNavButton)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, m_activeSection)) return;
 }

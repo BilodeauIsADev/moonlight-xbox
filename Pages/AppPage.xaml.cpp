@@ -644,7 +644,8 @@ void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::I
 		default: break;
 		}
 	}
-	if (OrbitInput::HandleBumpers(e, 1, hostsNavButton, libraryNavButton, settingsNavButton)) return;
+	if (OrbitInput::HandleBumpers(e, 1, nullptr, libraryNavButton, settingsNavButton)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { libraryNavButton, settingsNavButton }, ShelfFocusTarget())) return;
 	OrbitInput::HandleShelfTriggers(e, HostsGrid, SelectedApp);
 }
 
@@ -743,8 +744,8 @@ void AppPage::UpdateEmptyShelfState() {
 	PageHint->Visibility = empty ? hidden : shown;
 	StreamHint->Visibility = empty ? hidden : shown;
 	JumpHint->Visibility = host != nullptr && host->Apps->Size > 20 ? shown : hidden;
-	// With nothing to focus on the shelf, land on the Hosts tab instead
-	if (empty) hostsNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+	// With nothing to focus on the shelf, land on the Library tab instead
+	if (empty) libraryNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 }
 
 void AppPage::ToggleLetterJump() {
@@ -820,7 +821,20 @@ void AppPage::CloseLetterJump() {
 		container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(SelectedApp));
 	}
 	if (container != nullptr) container->Focus(Windows::UI::Xaml::FocusState::Keyboard);
-	else hostsNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+	else libraryNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+}
+
+// The poster shown in the hero, so Down from the tabs returns to it
+Windows::UI::Xaml::Controls::Control^ AppPage::ShelfFocusTarget() {
+	if (host == nullptr || host->Apps->Size == 0) return nullptr;
+	auto item = SelectedApp != nullptr ? SelectedApp : host->Apps->GetAt(0);
+	auto container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(item));
+	if (container == nullptr) {
+		HostsGrid->ScrollIntoView(item);
+		HostsGrid->UpdateLayout();
+		container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(item));
+	}
+	return container;
 }
 
 void AppPage::JumpToLetter(wchar_t letter) {

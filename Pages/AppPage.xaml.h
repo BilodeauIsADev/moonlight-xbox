@@ -57,6 +57,7 @@ namespace moonlight_xbox_dx
 		MoonlightApp^ RunningApp();
 		void ShowClosingScreen(MoonlightApp^ app);
 		void HideClosingScreen();
+		Windows::UI::Xaml::Controls::Control^ ShelfFocusTarget();
 		void ShowShelfLoading(bool show);
 		void StartShelfPulse();
 		void StopShelfPulse();

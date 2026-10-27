@@ -71,6 +71,7 @@ void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows
 {
 	auto selected = dynamic_cast<Button^>(sender);
 	if (selected == nullptr) return;
+	m_activeSection = selected;
 	Button^ buttons[] = { GeneralSectionButton, DisplaySectionButton, InputSectionButton };
 	Platform::String^ titles[] = { L"General", L"Display", L"Input" };
 	for (int i = 0; i < 3; i++) {
@@ -99,4 +100,5 @@ void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::
 
 void MoonlightSettings::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	if (OrbitInput::HandleBumpers(e, 2, backButton, nullptr, settingsNavButton)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, m_activeSection)) return;
 }

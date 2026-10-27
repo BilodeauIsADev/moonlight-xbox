@@ -20,6 +20,8 @@ namespace moonlight_xbox_dx
 		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		ApplicationState^ state;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
+		// Section the tab bar's Down returns to
+		Windows::UI::Xaml::Controls::Button^ m_activeSection;
 	public:
 		MoonlightSettings();
 		property ApplicationState^ State {

@@ -249,12 +249,12 @@ void BuildSteps() {
 	});
 	Action(L"Return to Library", []() { Invoke("backButton"); });
 	Page<AppPage>(L"Library after host settings unload");
-	Action(L"Return to Hosts", []() { Invoke("hostsNavButton"); });
+	Action(L"Return to Hosts", []() { frame->GoBack(); });
 	Page<HostSelectorPage>(L"Hosts after Library unload");
 	for (int i = 0; i < 3; ++i) {
 		Action(L"Repeat Library from picker", BrowseLibrary);
 		Page<AppPage>(L"Repeated Library loaded");
-		Action(L"Repeat Hosts navigation", []() { Invoke("hostsNavButton"); });
+		Action(L"Repeat Hosts navigation", []() { frame->GoBack(); });
 		Page<HostSelectorPage>(L"Repeated Hosts loaded");
 		Action(L"Repeat settings navigation", []() { Invoke("settingsNavButton"); });
 		Page<MoonlightSettings>(L"Repeated settings loaded");
