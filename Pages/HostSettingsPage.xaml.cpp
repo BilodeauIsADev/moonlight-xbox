@@ -461,5 +461,5 @@ int HostSettingsPage::getDefaultBitrate(int width, int height, int fps, Platform
 
 void HostSettingsPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	if (OrbitInput::HandleBumpers(e, 2, nullptr, backButton, settingsNavButton)) return;
-	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, m_activeSection)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, [this]() -> Control^ { return m_activeSection; })) return;
 }

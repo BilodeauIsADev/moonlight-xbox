@@ -53,7 +53,6 @@ namespace moonlight_xbox_dx
 		Platform::String^ m_streamSummary;
 		bool m_letterJumpOpen = false;
 		bool m_closingApp = false;
-		Platform::String^ m_closingArtPath;
 		MoonlightApp^ RunningApp();
 		void ShowClosingScreen(MoonlightApp^ app);
 		void HideClosingScreen();
@@ -97,9 +96,6 @@ namespace moonlight_xbox_dx
 		// Full-page screen shown while the host closes a running game
 		property bool ClosingApp {
 			bool get() { return m_closingApp; }
-		}
-		property Platform::String^ ClosingArtPath {
-			Platform::String^ get() { return m_closingArtPath; }
 		}
 		void OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackRequestedEventArgs^ args);
 	private:

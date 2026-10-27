@@ -544,10 +544,17 @@ MoonlightApp^ AppPage::RunningApp() {
 
 void AppPage::ShowClosingScreen(MoonlightApp^ app) {
 	m_closingApp = true;
-	m_closingArtPath = app != nullptr ? app->ImagePath : nullptr;
+	// Cover art only; the placeholder gamepad SVG is not worth a full page
+	ClosingArt->Source = nullptr;
+	std::wstring imagePath = app != nullptr && app->ImagePath != nullptr ? app->ImagePath->Data() : L"";
+	if (imagePath.size() > 4 && _wcsicmp(imagePath.c_str() + imagePath.size() - 4, L".svg") != 0) {
+		try {
+			ClosingArt->Source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(app->ImagePath));
+		} catch (Platform::Exception^) {
+		}
+	}
 	ClosingTitleText->Text = app != nullptr ? app->Name : ref new Platform::String(L"Game");
 	ClosingStatusText->Text = L"Waiting for " + host->ComputerName + L" to close it...";
-	PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("ClosingArtPath"));
 	PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("ClosingApp"));
 	ClosingView->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
@@ -647,7 +654,7 @@ void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::I
 		}
 	}
 	if (OrbitInput::HandleBumpers(e, 1, nullptr, libraryNavButton, settingsNavButton)) return;
-	if (OrbitInput::HandleTabBarVertical(e, { libraryNavButton, settingsNavButton }, ShelfFocusTarget())) return;
+	if (OrbitInput::HandleTabBarVertical(e, { libraryNavButton, settingsNavButton }, [this]() { return ShelfFocusTarget(); })) return;
 	OrbitInput::HandleShelfTriggers(e, HostsGrid, SelectedApp);
 }
 
@@ -829,7 +836,8 @@ void AppPage::CloseLetterJump() {
 // The poster shown in the hero, so Down from the tabs returns to it
 Windows::UI::Xaml::Controls::Control^ AppPage::ShelfFocusTarget() {
 	if (host == nullptr || host->Apps->Size == 0) return nullptr;
-	auto item = SelectedApp != nullptr ? SelectedApp : host->Apps->GetAt(0);
+	unsigned int index;
+	auto item = SelectedApp != nullptr && host->Apps->IndexOf(SelectedApp, &index) ? SelectedApp : host->Apps->GetAt(0);
 	auto container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(item));
 	if (container == nullptr) {
 		HostsGrid->ScrollIntoView(item);

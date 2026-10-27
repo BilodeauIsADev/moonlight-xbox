@@ -184,7 +184,7 @@
             <!-- Closing screen: the game's artwork with progress, like the stream's
                  loading and end-of-session screens -->
             <Grid x:Name="ClosingView" Background="{StaticResource OrbitBackgroundBrush}" Visibility="Collapsed">
-                <Image Source="{x:Bind ClosingArtPath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.75" />
+                <Image x:Name="ClosingArt" Stretch="UniformToFill" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.75" />
                 <Rectangle Fill="{StaticResource OrbitHeroLeftFadeBrush}" />
                 <Rectangle Fill="{StaticResource OrbitHeroBottomFadeBrush}" />
                 <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="64,0,64,48" MaxWidth="620">

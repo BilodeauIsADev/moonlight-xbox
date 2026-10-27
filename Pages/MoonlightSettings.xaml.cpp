@@ -100,5 +100,5 @@ void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::
 
 void MoonlightSettings::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	if (OrbitInput::HandleBumpers(e, 2, backButton, nullptr, settingsNavButton)) return;
-	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, m_activeSection)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, [this]() -> Windows::UI::Xaml::Controls::Control^ { return m_activeSection; })) return;
 }

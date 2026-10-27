@@ -2,6 +2,7 @@
 
 #include "OrbitNavigation.h"
 
+#include <functional>
 #include <initializer_list>
 
 namespace moonlight_xbox_dx {
@@ -49,7 +50,7 @@ inline bool HandleBumpers(Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e, int a
 // neighbouring tab for Up and Down, so send Down into the page and keep Up here.
 inline bool HandleTabBarVertical(Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e,
 	std::initializer_list<Windows::UI::Xaml::Controls::Button^> tabs,
-	Windows::UI::Xaml::Controls::Control^ below) {
+	const std::function<Windows::UI::Xaml::Controls::Control^()>& below) {
 	using namespace Windows::System;
 	bool down = false;
 	switch (e->Key) {
@@ -69,7 +70,10 @@ inline bool HandleTabBarVertical(Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e
 	}
 	if (!onTab) return false;
 	e->Handled = true;
-	if (down && below != nullptr) below->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+	if (!down) return true;
+	// Resolved only now: finding the target can scroll and realize the shelf
+	auto target = below ? below() : nullptr;
+	if (target != nullptr) target->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 	return true;
 }
 
