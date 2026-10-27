@@ -9,6 +9,8 @@
 #include "../Streaming/AudioPlayer.h"
 #include "../Streaming/FrameQueue.h"
 #include "../Streaming/FFMpegDecoder.h"
+#include "../Common/OrbitStreamUi.h"
+#include "../State/Stats.h"
 #include <Utils.hpp>
 #include <KeyboardControl.xaml.h>
 #include "../Common/ModalDialog.xaml.h"
@@ -63,19 +65,19 @@ void StreamPage::OnBackRequested(Platform::Object^ e,Windows::UI::Core::BackRequ
 	// UWP on Xbox One triggers a back request whenever the B
 	// button is pressed which can result in the app being
 	// suspended if unhandled
-	if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) HideControlCenter();
+	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		DismissSessionSummary();
+	} else if (m_startFailureShown) {
+		LeaveFailedStream();
+	} else if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		HideControlCenter();
+	}
 	args->Handled = true;
 }
 
 void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
 
-	this->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Visible;
-	this->m_progressView->Opacity = 1;
-	this->m_progressRing->IsActive = true;
-	StatusText->Text = L"Connecting...";
-	StepText->Text = L"";
-	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
-	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Begin();
+	ResetLoadingVisuals();
 
 	if (Utils::ShowDevTools()) {
 		toggleCapture->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -116,6 +118,32 @@ void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::Route
 		return;
 	}
 
+	StartConnection();
+}
+
+// Restores the loading screen for a fresh attempt, first load or Retry alike.
+void StreamPage::ResetLoadingVisuals() {
+	this->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	this->m_progressView->Opacity = 1;
+	this->m_progressRing->IsActive = true;
+	LoadingEyebrow->Text = L"STARTING STREAM";
+	StatusText->Text = L"Connecting...";
+	StepText->Text = L"";
+	FailureActions->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	m_startFailureShown = false;
+	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	}
+	if (m_summaryTimer != nullptr) m_summaryTimer->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Begin();
+}
+
+// Creates the render loop and starts the connection, the same way the first
+// load does, so Retry and Page_Loaded share one path.
+void StreamPage::StartConnection() {
 	Platform::WeakReference weakThis(this);
 	DISPATCH_UI([weakThis] {
 		auto that = weakThis.Resolve<StreamPage>();
@@ -126,16 +154,20 @@ void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::Route
 			that->m_main->CreateWindowSizeDependentResources();
 			that->m_main->StartRenderLoop();
         } catch (const std::exception &ex) {
-			Utils::Logf("StreamPage::Page_Loaded: Exception when starting stream. Exception: %s", ex.what());
+			Utils::Logf("StreamPage: Exception when starting stream. Exception: %s", ex.what());
+			that->ShowStartFailure(0, nullptr);
         } catch (const std::string &string) {
-			Utils::Logf("StreamPage::Page_Loaded: Exception when starting stream. Exception: %s", string);
+			Utils::Logf("StreamPage: Exception when starting stream. Exception: %s", string);
+			that->ShowStartFailure(0, nullptr);
         } catch (Platform::Exception ^ e) {
             Platform::String ^ errorMsg = ref new Platform::String();
             errorMsg = errorMsg->Concat(L"Exception: ", e->Message);
             errorMsg = errorMsg->Concat(errorMsg, Utils::StringPrintf("%x", e->HResult));
-			Utils::Logf("StreamPage::Page_Loaded: Exception when starting stream. Exception: %s", Utils::PlatformStringToStdString(errorMsg));
+			Utils::Logf("StreamPage: Exception when starting stream. Exception: %s", Utils::PlatformStringToStdString(errorMsg));
+			that->ShowStartFailure(0, errorMsg);
         } catch (...) {
-            Utils::Log("StreamPage::Page_Loaded: Exception when starting stream. Exception: Generic Exception");
+            Utils::Log("StreamPage: Exception when starting stream. Exception: Generic Exception");
+			that->ShowStartFailure(0, nullptr);
         }
 	});
 }
@@ -144,6 +176,7 @@ void StreamPage::Page_Unloaded(Platform::Object ^ sender, Windows::UI::Xaml::Rou
 	HideControlCenter();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Stop();
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	navigation->BackRequested -= m_back_cookie;
 
@@ -270,6 +303,157 @@ void StreamPage::OnLoadingOutroCompleted(Platform::Object^ sender, Platform::Obj
 {
 	ProgressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
+}
+
+// Startup failed: stop the spinner, explain why, and offer Retry / Back to
+// library instead of a modal dialog chain.
+void StreamPage::ShowStartFailure(int error, Platform::String^ rawMessage) {
+	if (m_startFailureShown) return;
+	m_startFailureShown = true;
+
+	std::string raw = rawMessage != nullptr ? Utils::PlatformStringToStdString(rawMessage) : std::string();
+	std::string reason = OrbitStreamUi::DescribeStartFailure(error, raw);
+
+	// Stage failures normally happen before the first frame, but if the loading
+	// screen already faded out, bring it back so the message is visible.
+	if (m_progressView->Visibility != Windows::UI::Xaml::Visibility::Visible) {
+		m_progressView->Visibility = Windows::UI::Xaml::Visibility::Visible;
+		m_progressView->Opacity = 1;
+	}
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
+
+	m_progressRing->IsActive = false;
+	LoadingEyebrow->Text = L"COULDN'T START STREAM";
+	StatusText->Text = Utils::StringFromStdString(reason);
+	// Keep the raw log line (stage name, error code) as a smaller detail row
+	StepText->Text = (!raw.empty() && raw != reason) ? Utils::StringFromStdString(raw) : L"";
+	FailureActions->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	// Focus Retry once the buttons have been laid out.
+	Platform::WeakReference weakThis(this);
+	Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Low, ref new Windows::UI::Core::DispatchedHandler([weakThis]() {
+		auto that = weakThis.Resolve<StreamPage>();
+		if (that != nullptr && that->FailureActions->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+			that->FailureActions->UpdateLayout();
+			that->RetryButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+		}
+	}));
+}
+
+void StreamPage::RetryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	RestartConnection();
+}
+
+void StreamPage::BackToLibraryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	LeaveFailedStream();
+}
+
+// Restart the connection the same way the page does on first load, after the
+// previous attempt has fully unwound.
+void StreamPage::RestartConnection() {
+	ResetLoadingVisuals();
+
+	if (m_main == nullptr) {
+		StartConnection();
+		return;
+	}
+
+	// Tear the old attempt down silently and wait for its render loop (and the
+	// LiStopConnection inside) to finish before the new stream touches the
+	// shared decoder and device resources.
+	auto oldMain = m_main.get();
+	oldMain->SetSilentTeardown(true);
+	Platform::WeakReference weakThis(this);
+	concurrency::create_task([oldMain]() {
+		oldMain->moonlightClient->SetConnectionTerminated();
+		for (int i = 0; i < 100 && !oldMain->IsRenderLoopExited(); i++) {
+			Sleep(50);
+		}
+	}).then([weakThis](concurrency::task<void> t) {
+		try {
+			t.get();
+		} catch (...) {
+		}
+		DISPATCH_UI([weakThis]() {
+			auto that = weakThis.Resolve<StreamPage>();
+			if (that == nullptr) return;
+			that->m_main.reset();
+			that->StartConnection();
+		});
+	});
+}
+
+// From the failure screen: end the session and let the render loop's exit path
+// navigate back, the same way the disconnect button works.
+void StreamPage::LeaveFailedStream() {
+	FailureActions->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
+	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
+	if (m_main != nullptr) {
+		m_main->moonlightClient->SetConnectionTerminated();
+	} else if (this->Frame->CanGoBack) {
+		this->Frame->GoBack();
+	}
+}
+
+// Clean end of a real session: show the summary card, then return to the
+// library when the timer fires or A/B is pressed.
+void StreamPage::ShowSessionSummary(long long durationSeconds) {
+	if (m_main == nullptr) return;
+	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
+
+	auto summary = Stats::instance().GetSessionSummary();
+	SummaryDurationText->Text = Utils::StringFromStdString("Played " + OrbitStreamUi::FormatPlayedDuration(durationSeconds));
+
+	// Omit figures that were never measured instead of showing zeros
+	if (summary.hasLatency) {
+		char latency[32];
+		snprintf(latency, sizeof(latency), "Latency %.0f ms", summary.averageLatencyMs);
+		SummaryLatencyText->Text = Utils::StringFromStdString(latency);
+		SummaryLatencyText->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	} else {
+		SummaryLatencyText->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	}
+	if (summary.valid) {
+		char drops[32];
+		snprintf(drops, sizeof(drops), "Dropped frames %.1f%%", summary.droppedFramePercent);
+		SummaryDropsText->Text = Utils::StringFromStdString(drops);
+		SummaryDropsText->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	} else {
+		SummaryDropsText->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	}
+
+	SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Begin();
+	// The disconnect buttons unhook the key handler; listen again so A dismisses the card.
+	// Removing a token that is no longer registered does nothing.
+	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
+	keyDownHandler = (Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow ^, Windows::UI::Core::KeyEventArgs ^>(this, &StreamPage::OnKeyDown));
+
+	if (m_summaryTimer == nullptr) {
+		m_summaryTimer = ref new Windows::UI::Xaml::DispatcherTimer();
+		TimeSpan interval;
+		interval.Duration = 30000000; // 3 s
+		m_summaryTimer->Interval = interval;
+		m_summaryTimer->Tick += ref new EventHandler<Platform::Object^>(this, &StreamPage::OnSummaryTimerTick);
+	}
+	m_summaryTimer->Start();
+}
+
+void StreamPage::OnSummaryTimerTick(Platform::Object^ sender, Platform::Object^ e) {
+	DismissSessionSummary();
+}
+
+void StreamPage::DismissSessionSummary() {
+	if (SessionSummaryCard->Visibility != Windows::UI::Xaml::Visibility::Visible) return;
+	if (m_summaryTimer != nullptr) m_summaryTimer->Stop();
+	SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Stop();
+	// Return to the library using the same fallbacks the render loop's exit
+	// path uses.
+	if (m_main != nullptr) {
+		m_main->ExitStreamPage();
+	}
 }
 
 void StreamPage::Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -453,13 +637,27 @@ void StreamPage::disonnectButton_Click(Platform::Object^ sender, Windows::UI::Xa
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
 
-	// trigger the server disconnected flow
+	// trigger the server disconnected flow; the summary card shows afterwards
+	if (m_main) m_main->MarkSessionEndedByUser();
 	this->m_main->moonlightClient->SetConnectionTerminated();
 }
 
 void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ e)
 {
-	if (m_main == nullptr || ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
+	if (m_main == nullptr) return;
+	// On the end-of-session card any action press dismisses it; the input loop
+	// has already stopped, so gamepad keys arrive here now.
+	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		if (e->VirtualKey == Windows::System::VirtualKey::GamepadA ||
+			e->VirtualKey == Windows::System::VirtualKey::Enter ||
+			e->VirtualKey == Windows::System::VirtualKey::Space ||
+			e->VirtualKey == Windows::System::VirtualKey::Escape) {
+			DismissSessionSummary();
+		}
+		e->Handled = true;
+		return;
+	}
+	if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
 	//Ignore Gamepad input
 	if (e->VirtualKey >= Windows::System::VirtualKey::GamepadA && e->VirtualKey <= Windows::System::VirtualKey::GamepadRightThumbstickLeft) {
 		return;
@@ -476,6 +674,7 @@ void StreamPage::OnKeyUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Cor
 {
 	// Release keys held before opening the menu so they cannot stick on the PC.
 	if (m_main == nullptr) return;
+	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
 	//Ignore Gamepad input
 	if (e->VirtualKey >= Windows::System::VirtualKey::GamepadA && e->VirtualKey <= Windows::System::VirtualKey::GamepadRightThumbstickLeft) {
 		return;
@@ -494,6 +693,8 @@ void StreamPage::disconnectAndCloseButton_Click(Platform::Object ^ sender, Windo
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
 	if (this->m_main) {
 		// trigger the server disconnected flow which will cleanly exit the loop and call StopRenderLoop()
+		// the summary card shows afterwards
+		this->m_main->MarkSessionEndedByUser();
 		this->m_main->moonlightClient->SetConnectionTerminated();
 	}
 

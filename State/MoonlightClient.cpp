@@ -435,6 +435,7 @@ void connection_terminated(int status) {
 	Utils::Log(message);
 
 	if (connectedInstance) {
+		connectedInstance->ReportTerminationStatus(status);
 		connectedInstance->SetConnectionTerminated();
 	}
 }
@@ -490,6 +491,16 @@ bool MoonlightClient::IsConnectionTerminated() {
 
 void MoonlightClient::SetConnectionTerminated() {
 	m_streamSession.Terminate();
+}
+
+void MoonlightClient::ReportTerminationStatus(int status) {
+	// Stored before the terminated flag so readers that observed termination
+	// always see the matching status.
+	m_terminationStatus.store(status, std::memory_order_release);
+}
+
+int MoonlightClient::GetTerminationStatus() {
+	return m_terminationStatus.load(std::memory_order_acquire);
 }
 
 bool MoonlightClient::IsHDR() {

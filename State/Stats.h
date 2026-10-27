@@ -62,6 +62,16 @@ typedef struct _VIDEO_STATS {
 
 namespace moonlight_xbox_dx
 {
+	// Session-wide figures for the end-of-session card. Figures that were never
+	// measured stay invalid so callers can omit them instead of showing zeros.
+	struct SessionSummary
+	{
+		bool valid;
+		bool hasLatency;
+		double averageLatencyMs;
+		double droppedFramePercent;
+	};
+
 	// Published once per display update. Owns all data, so callers never retain
 	// decoder pointers or references into a window being accumulated.
 	struct StatsSnapshot
@@ -93,6 +103,9 @@ namespace moonlight_xbox_dx
 		bool ShouldUpdateDisplay(DX::StepTimer const& timer, bool isVisible, char* output, size_t length);
 
 		StatsSnapshot GetDisplaySnapshot();
+
+		// Figures for the end-of-session card, taken from the global stats
+		SessionSummary GetSessionSummary();
 
 		// submitters for various types of data
 		void SubmitVideoBytesAndReassemblyTime(uint32_t length, PDECODE_UNIT decodeUnit, uint32_t droppedFrames);
@@ -127,5 +140,7 @@ namespace moonlight_xbox_dx
 		double                               m_avgMbpsSmoothed;
 		SlidingWindowCounter                 m_lostPackets{60, 1000};
 		SlidingWindowCounter                 m_recoveredPackets{60, 1000};
+		uint64_t                             m_sumRttMs;
+		uint32_t                             m_rttSamples;
 	};
 }

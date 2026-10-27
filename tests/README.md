@@ -54,6 +54,16 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitRecentsTests.cpp -o /tmp/orbit-r
 /tmp/orbit-recents-tests
 ```
 
+The stream UI tests cover the failure-reason mapping for the loading screen
+(libgamestream, moonlight-common-c and socket codes, with the raw message as a
+fallback), the played-time formatting for the end-of-session card, and the
+"show summary?" decision that skips short sessions and error disconnects:
+
+```sh
+c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitStreamUiTests.cpp -o /tmp/orbit-stream-ui-tests
+/tmp/orbit-stream-ui-tests
+```
+
 The UWP event routing and visuals need a Windows or Xbox build. Check these paths
 with a controller at the console's supported display sizes:
 

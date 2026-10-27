@@ -12,6 +12,10 @@ add_executable(orbit_recents_tests OrbitRecentsTests.cpp)
 target_compile_features(orbit_recents_tests PRIVATE cxx_std_17)
 add_test(NAME orbit_recents COMMAND orbit_recents_tests)
 
+add_executable(orbit_stream_ui_tests OrbitStreamUiTests.cpp)
+target_compile_features(orbit_stream_ui_tests PRIVATE cxx_std_17)
+add_test(NAME orbit_stream_ui COMMAND orbit_stream_ui_tests)
+
 add_executable(orbit_artwork_tests OrbitArtworkTests.cpp)
 target_compile_features(orbit_artwork_tests PRIVATE cxx_std_17)
 add_test(NAME orbit_artwork COMMAND orbit_artwork_tests)

@@ -6,6 +6,7 @@
 #include <Streaming\FFMpegDecoder.h>
 #include "../Plot/ImGuiPlots.h"
 #include "Common\DirectXHelper.h"
+#include "Common\OrbitStreamUi.h"
 #include "State\GamepadState.h"
 #include "Utils.hpp"
 
@@ -33,71 +34,25 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
       m_pointerLocationX(0.0f),
       m_streamPage(streamPage),
       moonlightClient(client) {
+	m_sessionStart = std::chrono::steady_clock::now();
 
 	Platform::String ^ appName = configuration->appName ? "'" + configuration->appName + "'" : "App";
 	DISPATCH_UI(([streamPage, appName]() {
 		streamPage->m_stepText->Text = "Starting " + appName;
 	}));
 
-	client->OnFailed = ([client, appName](int status, int error, char *message) {
+	// A failed start no longer opens a dialog chain: the loading screen itself
+	// explains the failure and offers Retry / Back to library.
+	Platform::WeakReference weakPage(streamPage);
+	client->OnFailed = ([client, weakPage](int status, int error, char *message) {
 		std::string msgCopy = message ? message : std::string();
 
-		DISPATCH_UI(([msgCopy, client, appName]() {
+		DISPATCH_UI(([msgCopy, client, weakPage, error]() {
 			if (client->IsConnectionTerminated()) return;
-			auto showErrorDialog = std::make_shared<std::function<void()>>();
-			auto showLogsDialog = std::make_shared<std::function<void()>>();
-
-			*showErrorDialog = [client, msgCopy, showLogsDialog, appName]() {
-				auto dialog1 = ref new Windows::UI::Xaml::Controls::ContentDialog();
-				dialog1->Title = L"Failed to start " + appName;
-				dialog1->Content = Utils::StringFromStdString(msgCopy);
-				dialog1->PrimaryButtonText = L"OK";
-				dialog1->SecondaryButtonText = L"Show Logs";
-
-				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog1)).then([client, showLogsDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
-					auto result = t.get();
-					if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Primary) {
-						client->SetConnectionTerminated();
-					} else if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Secondary) {
-						(*showLogsDialog)();
-					}
-				});
-			};
-
-			*showLogsDialog = [client, showErrorDialog]() {
-				auto dialog2 = ref new Windows::UI::Xaml::Controls::ContentDialog();
-
-				std::wstring m_text = L"";
-				std::vector<std::wstring> lines = Utils::GetLogLines();
-
-				for (int i = 0; i < (int)lines.size(); i++) {
-					// Get only the last 8 lines
-					// More than that cannot be fully viewed on the screen at the current scaling
-					if ((int)lines.size() - i <= 8) {
-						m_text += lines[i];
-					}
-				}
-
-				Utils::showLogs = true;
-
-				dialog2->MaxWidth = 600;
-				dialog2->Title = "Logs";
-				dialog2->Content = ref new Platform::String(m_text.c_str());
-				dialog2->PrimaryButtonText = L"OK";
-				dialog2->SecondaryButtonText = L"Show Error";
-
-				concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog2)).then([client, showErrorDialog](concurrency::task<Windows::UI::Xaml::Controls::ContentDialogResult> t) {
-					auto result = t.get();
-					if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Primary) {
-						client->SetConnectionTerminated();
-					} else if (result == Windows::UI::Xaml::Controls::ContentDialogResult::Secondary) {
-						(*showErrorDialog)();
-					}
-				});
-			};
-
-			// Start by showing the error dialog
-			(*showErrorDialog)();
+			auto page = weakPage.Resolve<StreamPage>();
+			if (page != nullptr) {
+				page->ShowStartFailure(error, Utils::StringFromStdString(msgCopy));
+			}
 		}));
 	});
 
@@ -312,6 +267,8 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 					}
 					if (!m_loadingScreenHidden) {
 						m_loadingScreenHidden = true;
+						// Played time on the session card counts from the first frame, not the connect
+						m_sessionStart = std::chrono::steady_clock::now();
 						Platform::WeakReference weakPage(m_streamPage);
 						auto client = moonlightClient;
 						DISPATCH_UI(([weakPage, client]() {
@@ -368,12 +325,15 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 			}
 
 		} catch (Platform::Exception^ error) {
+			m_streamAborted.store(true, std::memory_order_release);
 			Utils::Logf("Render worker failed (HRESULT 0x%08X, device reason 0x%08X)\n",
 			            static_cast<unsigned>(error->HResult),
 			            static_cast<unsigned>(m_deviceResources->GetD3DDevice()->GetDeviceRemovedReason()));
 		} catch (const std::exception& error) {
+			m_streamAborted.store(true, std::memory_order_release);
 			Utils::Logf("Render worker failed: %s\n", error.what());
 		} catch (...) {
+			m_streamAborted.store(true, std::memory_order_release);
 			Utils::Log("Render worker failed with an unknown exception\n");
 		}
 
@@ -393,9 +353,29 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 		StopRenderLoop(); // also stops input
 		Disconnect();
 
-		DISPATCH_UI([this]() {
-			ExitStreamPage();
-		});
+		// The end-of-session card only shows for clean endings that actually
+		// played: a user quit or the host closing the app. Unexpected drops
+		// keep the plain navigate-back.
+		const long long sessionSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+			std::chrono::steady_clock::now() - m_sessionStart).count();
+		const bool cleanEnd = m_loadingScreenHidden
+			&& !m_streamAborted.load(std::memory_order_acquire)
+			&& (m_sessionEndedByUser.load(std::memory_order_acquire)
+				|| moonlightClient->GetTerminationStatus() == 0);
+		const bool showSummary = OrbitStreamUi::ShouldShowSessionSummary(sessionSeconds, cleanEnd);
+
+		DISPATCH_UI(([this, showSummary, sessionSeconds]() {
+			// A retry on the loading screen already took over; don't navigate.
+			if (m_silentTeardown.load(std::memory_order_acquire)) return;
+			if (showSummary && m_streamPage != nullptr) {
+				m_streamPage->ShowSessionSummary(sessionSeconds);
+			} else {
+				ExitStreamPage();
+			}
+		}));
+		// Flagged after the dispatch so a silent teardown can wait for the
+		// queued UI work (and the LiStopConnection above) to be done.
+		m_renderLoopExited.store(true, std::memory_order_release);
 	});
 	m_renderLoopWorker = ThreadPool::RunAsync(workItemHandler, WorkItemPriority::High, WorkItemOptions::TimeSliced);
 	if (m_inputLoopWorker != nullptr && m_inputLoopWorker->Status == AsyncStatus::Started) {
@@ -954,6 +934,8 @@ void moonlight_xbox_dxMain::RenderImGui() {
 
 // Notifies renderers that device resources need to be released.
 void moonlight_xbox_dxMain::OnDeviceLost() {
+	// A lost device is an error ending, not a clean session end
+	m_streamAborted.store(true, std::memory_order_release);
 	moonlightClient->SetConnectionTerminated();
 	m_sceneRenderer->ReleaseDeviceDependentResources();
 	m_LogRenderer->ReleaseDeviceDependentResources();
@@ -974,6 +956,18 @@ void moonlight_xbox_dxMain::SetFlyoutOpened(bool value) {
 void moonlight_xbox_dxMain::Disconnect() {
 	moonlightClient->StopStreaming();
 	m_sceneRenderer->Stop();
+}
+
+void moonlight_xbox_dxMain::MarkSessionEndedByUser() {
+	m_sessionEndedByUser.store(true, std::memory_order_release);
+}
+
+void moonlight_xbox_dxMain::SetSilentTeardown(bool silent) {
+	m_silentTeardown.store(silent, std::memory_order_release);
+}
+
+bool moonlight_xbox_dxMain::IsRenderLoopExited() {
+	return m_renderLoopExited.load(std::memory_order_acquire);
 }
 
 void moonlight_xbox_dxMain::CloseApp() {

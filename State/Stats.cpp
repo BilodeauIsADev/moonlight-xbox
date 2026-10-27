@@ -29,6 +29,8 @@ void Stats::Reset()
 	m_bwTracker.Reset();
 	m_avgQueueSize = 1.0f;
 	m_avgMbpsSmoothed = 0.0;
+	m_sumRttMs = 0;
+	m_rttSamples = 0;
 	m_lostPackets.Reset();
 	m_recoveredPackets.Reset();
 
@@ -42,6 +44,24 @@ StatsSnapshot Stats::GetDisplaySnapshot()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_displaySnapshot;
+}
+
+SessionSummary Stats::GetSessionSummary()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	SessionSummary summary = {};
+	summary.valid = m_GlobalVideoStats.receivedFrames != 0;
+	summary.hasLatency = m_rttSamples != 0;
+	summary.averageLatencyMs = m_rttSamples ? (double)m_sumRttMs / m_rttSamples : 0.0;
+
+	// Dropped frames covers the network and the pacer: both are frames that
+	// never made it to the display. totalFrames already includes network drops.
+	if (summary.valid && m_GlobalVideoStats.totalFrames != 0) {
+		summary.droppedFramePercent =
+			(double)(m_GlobalVideoStats.networkDroppedFrames + m_GlobalVideoStats.pacerDroppedFrames)
+			/ m_GlobalVideoStats.totalFrames * 100.0;
+	}
+	return summary;
 }
 
 void Stats::sampleRtpStats()
@@ -91,6 +111,12 @@ bool Stats::ShouldUpdateDisplay(DX::StepTimer const& timer, bool isVisible, char
 
 		// Accumulate these values into the global stats
 		addVideoStats(timer, m_ActiveWndVideoStats, m_GlobalVideoStats);
+
+		// Track a session-wide RTT average for the end-of-session card
+		if (m_GlobalVideoStats.lastRtt != 0) {
+			m_sumRttMs += m_GlobalVideoStats.lastRtt;
+			m_rttSamples++;
+		}
 
 		// Move this window into the last window slot and clear it for next window
 		memcpy(&m_LastWndVideoStats, &m_ActiveWndVideoStats, sizeof(VIDEO_STATS));

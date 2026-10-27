@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include <atomic>
 #include <State/StreamConfiguration.h>
 #include "../Common/DeviceResources.h"
 #include "State\MoonlightApp.h"
@@ -24,6 +25,11 @@ class MoonlightClient {
 	int Connect(const char *hostname);
 	bool IsConnectionTerminated();
 	void SetConnectionTerminated();
+	// Status from the host's connectionTerminated callback: 0 when the host
+	// ended the session gracefully (it closed the app), non-zero for unexpected
+	// drops, and -1 when the callback never ran (a local disconnect).
+	void ReportTerminationStatus(int status);
+	int GetTerminationStatus();
 	bool IsHDR();
 	bool IsPaired();
 	bool IsRGBFull();
@@ -60,6 +66,7 @@ class MoonlightClient {
 	int StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res, StreamConfiguration^ config);
 	StreamSession m_streamSession;
 	SERVER_DATA serverData;
+	std::atomic<int> m_terminationStatus{-1};
 	char *connectionPin = NULL;
 	char *hostname = NULL;
 	int port = 0;
