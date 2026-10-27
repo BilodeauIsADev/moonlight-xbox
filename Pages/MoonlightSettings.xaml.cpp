@@ -30,6 +30,7 @@ MoonlightSettings::MoonlightSettings()
 {
 	InitializeComponent();
 	state = GetApplicationState();
+	HookCards();
 	auto item = ref new ComboBoxItem();
 	item->Content = "Don't autoconnect";
 	item->DataContext = "";
@@ -126,7 +127,7 @@ void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows
 			for (int j = 0; j < 3; j++) {
 				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 				if (i == j) {
-					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
+					buttons[j]->Background = safe_cast<Brush^>(Resources->Lookup("SettingsSectionSelectedBrush"));
 					buttons[j]->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitTextBrush"));
 				} else {
 					buttons[j]->ClearValue(Control::BackgroundProperty);
@@ -134,10 +135,42 @@ void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows
 				}
 			}
 			SectionTitle->Text = titles[i];
+			HighlightCard(nullptr);
 			CalibrationFrame->Visibility = panels[i] == DisplayPanel ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 			break;
 		}
+	}
+}
+
+// Option cards light up while focus is on their control, like the selected
+// entry in the console's own settings lists.
+void MoonlightSettings::HookCards() {
+	// Weak page reference: the cards live in this page's tree
+	Platform::WeakReference weakThis(this);
+	StackPanel^ panels[] = { GeneralPanel, DisplayPanel, InputPanel };
+	for (auto panel : panels) {
+		for (auto child : panel->Children) {
+			auto card = dynamic_cast<Border^>(child);
+			if (card == nullptr) continue;
+			card->GotFocus += ref new RoutedEventHandler([weakThis](Platform::Object^ sender, RoutedEventArgs^) {
+				auto page = weakThis.Resolve<MoonlightSettings>();
+				if (page != nullptr) page->HighlightCard(dynamic_cast<Border^>(sender));
+			});
+		}
+	}
+}
+
+void MoonlightSettings::HighlightCard(Border^ card) {
+	if (card == m_focusedCard) return;
+	if (m_focusedCard != nullptr) {
+		m_focusedCard->ClearValue(Border::BackgroundProperty);
+		m_focusedCard->ClearValue(Border::BorderBrushProperty);
+	}
+	m_focusedCard = card;
+	if (card != nullptr) {
+		card->Background = safe_cast<Brush^>(Resources->Lookup("SettingsCardFocusedBrush"));
+		card->BorderBrush = safe_cast<Brush^>(Resources->Lookup("SettingsCardFocusedBorderBrush"));
 	}
 }
 
