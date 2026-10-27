@@ -138,6 +138,7 @@ namespace moonlight_xbox_dx {
 				// What it was playing only counts while it's reachable
 				OnPropertyChanged("PlayingText");
 				OnPropertyChanged("PlayingVisibility");
+				OnPropertyChanged("StatusVisibility");
 				OnPropertyChanged("PlayingImage");
 				OnPropertyChanged("PlayingArtworkVisibility");
 			}
@@ -294,6 +295,7 @@ namespace moonlight_xbox_dx {
 				this->playingText = value;
 				OnPropertyChanged("PlayingText");
 				OnPropertyChanged("PlayingVisibility");
+				OnPropertyChanged("StatusVisibility");
 			}
 		}
 
@@ -304,6 +306,13 @@ namespace moonlight_xbox_dx {
 		}
 
 		// Resolved app-data URI for the running game's cached artwork, or null.
+		property Windows::UI::Xaml::Visibility StatusVisibility {
+			Windows::UI::Xaml::Visibility get() {
+				return PlayingVisibility == Windows::UI::Xaml::Visibility::Visible
+					? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
+			}
+		}
+
 		property Platform::String^ PlayingImageUri {
 			Platform::String^ get() {
 				return this->playingImageUri;
