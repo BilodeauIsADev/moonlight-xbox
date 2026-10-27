@@ -91,6 +91,8 @@ namespace moonlight_xbox_dx
 		// Failure and end-of-session screens, driven from the render thread via DISPATCH_UI.
 		void ShowStartFailure(int error, Platform::String^ rawMessage);
 		void ShowSessionSummary(long long durationSeconds);
+		// True while Quit game waits for the host to close the app
+		bool IsClosingApp() { return m_closingApp; }
 
 		// Loading screen
 		property Platform::String^ LoadingArtPath {
@@ -178,7 +180,12 @@ namespace moonlight_xbox_dx
 		// End-of-session card
 		void DismissSessionSummary();
 		void OnSummaryTimerTick(Platform::Object^ sender, Platform::Object^ e);
+		void StartSummaryCountdown();
+		void ShowClosingCard();
+		void FinishClosingApp();
 		Windows::UI::Xaml::DispatcherTimer^ m_summaryTimer;
+		bool m_sessionEnded = false;
+		bool m_closingApp = false;
 
 		// Control center (the in-stream menu)
 		void Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

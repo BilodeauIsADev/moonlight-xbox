@@ -366,7 +366,8 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 		DISPATCH_UI(([this, showSummary, sessionSeconds]() {
 			// A retry on the loading screen already took over; don't navigate.
 			if (m_silentTeardown.load(std::memory_order_acquire)) return;
-			if (showSummary && m_streamPage != nullptr) {
+			// Quit game keeps the card up until the host has closed the app
+			if (m_streamPage != nullptr && (showSummary || m_streamPage->IsClosingApp())) {
 				m_streamPage->ShowSessionSummary(sessionSeconds);
 			} else {
 				ExitStreamPage();

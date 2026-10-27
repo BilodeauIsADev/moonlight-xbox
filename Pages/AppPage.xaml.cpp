@@ -465,11 +465,11 @@ void AppPage::closeAndStartButton_Click(Platform::Object ^ sender, Windows::UI::
 }
 
 void AppPage::ExecuteCloseAndStart() {
+	if (m_closingApp) return;
 	auto that = this;
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
-	moonlight_xbox_dx::Utils::Logf("AppPage::ExecuteCloseAndStart: progressToken=%llu\n", (unsigned long long)progressToken);
+	ShowClosingScreen(RunningApp());
 
-	concurrency::create_task(concurrency::create_async([that, progressToken]() {
+	concurrency::create_task(concurrency::create_async([that]() {
 		try {
 			MoonlightClient client;
 			auto ipAddr = Utils::PlatformStringToStdString(that->host->LastHostname);
@@ -481,12 +481,12 @@ void AppPage::ExecuteCloseAndStart() {
 		} catch (...) {
 		}
 
-		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([that, progressToken]() {
+		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([that]() {
 				try {
 					if (that->currentApp != nullptr) {
 						that->Connect(that->currentApp->Id);
 					}
-					::moonlight_xbox_dx::ModalDialog::HideDialogByToken(progressToken);
+					that->HideClosingScreen();
 				} catch (const std::exception &e) {
 					Utils::Logf("ExecuteCloseAndStart UI exception: %s\n", e.what());
 				} catch (...) {
@@ -505,12 +505,11 @@ void AppPage::ExecuteCloseAndStart() {
 }
 
 void AppPage::closeAppButton_Click(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
+	if (m_closingApp) return;
 	auto that = this;
+	ShowClosingScreen(RunningApp());
 
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
-	moonlight_xbox_dx::Utils::Logf("AppPage::closeAppButton_Click: progressToken=%llu\n", (unsigned long long)progressToken);
-
-	concurrency::create_task(concurrency::create_async([that, progressToken]() {
+	concurrency::create_task(concurrency::create_async([that]() {
 		try {
 			MoonlightClient client;
 			auto ipAddr = Utils::PlatformStringToStdString(that->host->LastHostname);
@@ -522,15 +521,39 @@ void AppPage::closeAppButton_Click(Platform::Object ^ sender, Windows::UI::Xaml:
 		} catch (...) {
 		}
 
-		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([that, progressToken]() {
+		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([that]() {
 			try {
 				that->host->UpdateHostInfo(true);
 				that->host->UpdateAppRunningStates();
 			} catch (...) {
 			}
-			::moonlight_xbox_dx::ModalDialog::HideDialogByToken(progressToken);
+			that->HideClosingScreen();
 		}));
 	}));
+}
+
+// The app a close request ends: the host runs one at a time
+MoonlightApp^ AppPage::RunningApp() {
+	for (auto app : host->Apps) {
+		if (app->CurrentlyRunning) return app;
+	}
+	return SelectedApp;
+}
+
+void AppPage::ShowClosingScreen(MoonlightApp^ app) {
+	m_closingApp = true;
+	m_closingArtPath = app != nullptr ? app->ImagePath : nullptr;
+	ClosingTitleText->Text = app != nullptr ? app->Name : ref new Platform::String(L"Game");
+	ClosingStatusText->Text = L"Waiting for " + host->ComputerName + L" to close it...";
+	PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("ClosingArtPath"));
+	PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("ClosingApp"));
+	ClosingView->Visibility = Windows::UI::Xaml::Visibility::Visible;
+}
+
+void AppPage::HideClosingScreen() {
+	m_closingApp = false;
+	ClosingView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("ClosingApp"));
 }
 
 void AppPage::backButton_Click(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
@@ -546,6 +569,11 @@ void AppPage::OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackReques
 	// UWP on Xbox One triggers a back request whenever the B
 	// button is pressed which can result in the app being
 	// suspended if unhandled
+	if (m_closingApp) {
+		// Stay on the closing screen until the host answers
+		args->Handled = true;
+		return;
+	}
 	if (m_letterJumpOpen) {
 		CloseLetterJump();
 		args->Handled = true;
@@ -578,6 +606,11 @@ void AppPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEven
 }
 
 void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	// The closing screen covers the shelf; keep input from reaching it
+	if (m_closingApp) {
+		e->Handled = true;
+		return;
+	}
 	// The View button opens the jump-to-letter picker on long shelves; Y keeps
 	// opening settings (see the footer hints).
 	if (!OrbitInput::HasOpenPopup() && e->Key == Windows::System::VirtualKey::GamepadView) {

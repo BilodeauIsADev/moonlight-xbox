@@ -416,7 +416,8 @@ void StreamPage::LeaveFailedStream() {
 // library when the timer fires or A/B is pressed.
 void StreamPage::ShowSessionSummary(long long durationSeconds) {
 	if (m_main == nullptr) return;
-	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
+	if (m_sessionEnded) return;
+	m_sessionEnded = true;
 
 	auto summary = Stats::instance().GetSessionSummary();
 	SummaryDurationText->Text = Utils::StringFromStdString("Played " + OrbitStreamUi::FormatPlayedDuration(durationSeconds));
@@ -439,13 +440,22 @@ void StreamPage::ShowSessionSummary(long long durationSeconds) {
 		SummaryDropsText->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	}
 
-	SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Visible;
-	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Begin();
+	// Quit game already shows the card in its closing state
+	if (SessionSummaryCard->Visibility != Windows::UI::Xaml::Visibility::Visible) {
+		SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Visible;
+		dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Begin();
+	}
 	// The disconnect buttons unhook the key handler; listen again so A dismisses the card.
 	// Removing a token that is no longer registered does nothing.
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	keyDownHandler = (Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow ^, Windows::UI::Core::KeyEventArgs ^>(this, &StreamPage::OnKeyDown));
 
+	// FinishClosingApp starts the countdown once the host has closed the game
+	if (m_closingApp) return;
+	StartSummaryCountdown();
+}
+
+void StreamPage::StartSummaryCountdown() {
 	if (m_summaryTimer == nullptr) {
 		m_summaryTimer = ref new Windows::UI::Xaml::DispatcherTimer();
 		TimeSpan interval;
@@ -454,6 +464,29 @@ void StreamPage::ShowSessionSummary(long long durationSeconds) {
 		m_summaryTimer->Tick += ref new EventHandler<Platform::Object^>(this, &StreamPage::OnSummaryTimerTick);
 	}
 	m_summaryTimer->Start();
+}
+
+// Quit game: show the end-of-session card at once, in a closing state,
+// instead of a progress dialog over the stream
+void StreamPage::ShowClosingCard() {
+	m_closingApp = true;
+	SummaryEyebrow->Text = L"CLOSING GAME";
+	SummaryStatsPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	SummaryClosingPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	SummaryClosingRing->IsActive = true;
+	SessionSummaryCard->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Begin();
+}
+
+void StreamPage::FinishClosingApp() {
+	if (!m_closingApp) return;
+	m_closingApp = false;
+	SummaryClosingRing->IsActive = false;
+	SummaryClosingPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	SummaryEyebrow->Text = L"GAME CLOSED";
+	SummaryStatsPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	// If the stream has not finished tearing down yet, ShowSessionSummary starts it
+	if (m_sessionEnded) StartSummaryCountdown();
 }
 
 void StreamPage::OnSummaryTimerTick(Platform::Object^ sender, Platform::Object^ e) {
@@ -664,6 +697,11 @@ void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::C
 	// On the end-of-session card any action press dismisses it; the input loop
 	// has already stopped, so gamepad keys arrive here now.
 	if (SessionSummaryCard->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		if (m_closingApp) {
+			// Wait for the host to finish closing the game
+			e->Handled = true;
+			return;
+		}
 		if (e->VirtualKey == Windows::System::VirtualKey::GamepadA ||
 			e->VirtualKey == Windows::System::VirtualKey::Enter ||
 			e->VirtualKey == Windows::System::VirtualKey::Space ||
@@ -707,36 +745,31 @@ void StreamPage::disconnectAndCloseButton_Click(Platform::Object ^ sender, Windo
 	HideControlCenter();
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
+	ShowClosingCard();
 	if (this->m_main) {
 		// trigger the server disconnected flow which will cleanly exit the loop and call StopRenderLoop()
-		// the summary card shows afterwards
 		this->m_main->MarkSessionEndedByUser();
 		this->m_main->moonlightClient->SetConnectionTerminated();
 	}
 
 	auto that = this;
 
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
-
-	concurrency::create_task(concurrency::create_async([that, progressToken]() {
+	concurrency::create_task(concurrency::create_async([that]() {
 		try {
 			if (that->m_main) {
 				that->m_main->CloseApp();
 			}
 		} catch (...) {
 		}
-	})).then([that, progressToken](concurrency::task<void> t) {
+	})).then([that](concurrency::task<void> t) {
 		try {
 			t.get();
-
-			// UI is sent back to HostSelectorPage in StartRenderLoop(), after the loop exits
-			// All we need to do is close the progress dialog
-
-			DISPATCH_UI([progressToken] {
-				::moonlight_xbox_dx::ModalDialog::HideDialogByToken(progressToken);
-			});
 		} catch (...) {
 		}
+		// Swap the progress for the session stats; the card then returns to the library
+		DISPATCH_UI([that] {
+			that->FinishClosingApp();
+		});
 	});
 }
 

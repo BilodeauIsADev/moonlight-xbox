@@ -52,6 +52,11 @@ namespace moonlight_xbox_dx
 		// The stream summary (resolution/fps/codec) shown next to "Last played"
 		Platform::String^ m_streamSummary;
 		bool m_letterJumpOpen = false;
+		bool m_closingApp = false;
+		Platform::String^ m_closingArtPath;
+		MoonlightApp^ RunningApp();
+		void ShowClosingScreen(MoonlightApp^ app);
+		void HideClosingScreen();
 		void ShowShelfLoading(bool show);
 		void StartShelfPulse();
 		void StopShelfPulse();
@@ -87,6 +92,13 @@ namespace moonlight_xbox_dx
 					OnSelectedAppChanged(previous);
 				}
 			}
+		}
+		// Full-page screen shown while the host closes a running game
+		property bool ClosingApp {
+			bool get() { return m_closingApp; }
+		}
+		property Platform::String^ ClosingArtPath {
+			Platform::String^ get() { return m_closingArtPath; }
 		}
 		void OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackRequestedEventArgs^ args);
 	private:

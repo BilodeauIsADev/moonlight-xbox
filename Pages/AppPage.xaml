@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:moonlight_xbox_dx"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -55,8 +56,8 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
@@ -72,8 +73,8 @@
                     <TextBlock x:Name="ClockText" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource OrbitTextBrush}" />
                 </Grid>
 
-                <!-- Hero: whatever app is focused in the shelf -->
-                <StackPanel Grid.Row="1" Margin="32,12,0,0" MaxWidth="470" HorizontalAlignment="Left">
+                <!-- Hero: whatever app is focused in the shelf, centred in the space above it -->
+                <StackPanel Grid.Row="1" Margin="32,0,0,0" MaxWidth="470" HorizontalAlignment="Left" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="7" Height="7" Margin="0,0,7,0" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" />
                         <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}">
@@ -88,7 +89,7 @@
                 </StackPanel>
 
                 <!-- App shelf -->
-                <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                <StackPanel Grid.Row="2" Margin="0,0,0,4">
                     <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Margin="32,0,0,0">
                         <Run Text="On " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
                     </TextBlock>
@@ -179,6 +180,22 @@
                         </StackPanel>
                     </StackPanel>
                 </Grid>
+            </Grid>
+
+            <!-- Closing screen: the game's artwork with progress, like the stream's
+                 loading and end-of-session screens -->
+            <Grid x:Name="ClosingView" Background="{StaticResource OrbitBackgroundBrush}" Visibility="Collapsed">
+                <Image Source="{x:Bind ClosingArtPath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.75" />
+                <Rectangle Fill="{StaticResource OrbitHeroLeftFadeBrush}" />
+                <Rectangle Fill="{StaticResource OrbitHeroBottomFadeBrush}" />
+                <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="64,0,64,48" MaxWidth="620">
+                    <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="CLOSING GAME" />
+                    <TextBlock x:Name="ClosingTitleText" Style="{StaticResource OrbitTitleTextStyle}" FontSize="44" LineHeight="48" Margin="0,6,0,0" />
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,18,0,0">
+                        <muxc:ProgressRing Width="22" Height="22" IsActive="{x:Bind ClosingApp, Mode=OneWay}" Foreground="{StaticResource OrbitTextBrush}" />
+                        <TextBlock x:Name="ClosingStatusText" FontSize="16" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
             </Grid>
         </Grid>
     </Viewbox>
