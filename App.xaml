@@ -637,37 +637,48 @@
                 <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
             </Style>
 
-            <!-- Controller button glyphs (A, B, X, Y, View, Menu) for footer hints -->
-            <FontFamily x:Key="OrbitGlyphFont">Segoe MDL2 Assets</FontFamily>
-            <Style x:Key="OrbitHintGlyphStyle" TargetType="FontIcon">
-                <Setter Property="FontFamily" Value="{StaticResource OrbitGlyphFont}" />
-                <Setter Property="FontSize" Value="18" />
+            <!-- Controller button caps for footer hints: monochrome outlines, so the
+                 footer reads as one quiet line. Face buttons and View/Menu are circles,
+                 bumpers and triggers are rounded boxes. -->
+            <SolidColorBrush x:Key="OrbitHintKeyBrush" Color="#E6FFFFFF" />
+            <Style x:Key="OrbitKeyCapStyle" TargetType="ContentControl">
+                <Setter Property="Width" Value="18" />
+                <Setter Property="Height" Value="18" />
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource OrbitHintKeyBrush}" />
+                <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <Border CornerRadius="9" BorderThickness="1.25" BorderBrush="{TemplateBinding BorderBrush}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
-            <!-- One style per button so every footer uses the same glyph and colour -->
-            <Style x:Key="OrbitHintAGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xF093;" />
-                <Setter Property="Foreground" Value="#FF66CC33" />
+            <!-- View and Menu: same circle, symbol instead of a letter -->
+            <Style x:Key="OrbitKeyGlyphCapStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyCapStyle}">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="8" />
+                <Setter Property="FontWeight" Value="Normal" />
             </Style>
-            <Style x:Key="OrbitHintBGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xF094;" />
-                <Setter Property="Foreground" Value="#FFFF5555" />
-            </Style>
-            <Style x:Key="OrbitHintXGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xF096;" />
-                <Setter Property="Foreground" Value="#FF3399FF" />
-            </Style>
-            <Style x:Key="OrbitHintYGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xF095;" />
-                <Setter Property="Foreground" Value="#FFFFCC33" />
-            </Style>
-            <Style x:Key="OrbitHintViewGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xEECA;" />
-                <Setter Property="Foreground" Value="#FFFFFFFF" />
-            </Style>
-            <Style x:Key="OrbitHintMenuGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
-                <Setter Property="Glyph" Value="&#xEDE3;" />
-                <Setter Property="Foreground" Value="#FFFFFFFF" />
+            <Style x:Key="OrbitKeyPillStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyCapStyle}">
+                <Setter Property="Width" Value="NaN" />
+                <Setter Property="MinWidth" Value="24" />
+                <Setter Property="FontSize" Value="9" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <Border CornerRadius="4" BorderThickness="1.25" Padding="4,0" BorderBrush="{TemplateBinding BorderBrush}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->
@@ -703,18 +714,9 @@
                 <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
             </Style>
             <Style x:Key="OrbitHintTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="12" />
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
-            </Style>
-            <!-- Controller button badge in the footer hints -->
-            <Style x:Key="OrbitHintBadgeStyle" TargetType="Border">
-                <Setter Property="MinWidth" Value="20" />
-                <Setter Property="Height" Value="20" />
-                <Setter Property="CornerRadius" Value="10" />
-                <Setter Property="BorderThickness" Value="1.5" />
-                <Setter Property="Padding" Value="4,0" />
-                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
             </Style>
 
             <!-- Shared dialog chrome keeps progress, forms, confirmations and errors in Orbit. -->

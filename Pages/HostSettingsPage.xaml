@@ -319,15 +319,18 @@
             </Grid>
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,18,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="3">
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LB" />
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RB" />
+                    </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintAGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintBGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="B" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back"/>
                 </StackPanel>
             </StackPanel>

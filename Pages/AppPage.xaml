@@ -162,34 +162,34 @@
             <!-- Controller hints -->
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="3">
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LB" />
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RB" />
+                    </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
                 </StackPanel>
                 <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="6">
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LT / RT" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="3">
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LT" />
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RT" />
+                    </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Games" />
                 </StackPanel>
                 <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintAGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
                 </StackPanel>
                 <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
-                    <FontIcon Style="{StaticResource OrbitHintViewGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyGlyphCapStyle}" Content="&#xEECA;" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Jump to letter" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
-                    <FontIcon Style="{StaticResource OrbitHintXGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="X" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintYGlyphStyle}" />
+                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="Y" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <FontIcon Style="{StaticResource OrbitHintViewGlyphStyle}" />
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="+" />
-                    <FontIcon Style="{StaticResource OrbitHintMenuGlyphStyle}" />
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream menu, in game" Margin="2,0,0,0" />
                 </StackPanel>
             </StackPanel>
         </Grid>
