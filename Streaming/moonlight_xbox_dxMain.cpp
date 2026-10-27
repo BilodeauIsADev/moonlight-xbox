@@ -66,7 +66,6 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 	m_sceneRenderer = std::make_shared<VideoRenderer>(m_deviceResources, moonlightClient, configuration);
 
 	auto weakRenderer = std::weak_ptr<VideoRenderer>(m_sceneRenderer);
-	Platform::WeakReference weakPage(streamPage);
 	client->OnCompleted = ([weakRenderer, weakPage, client]() {
 		auto renderer = weakRenderer.lock();
 		if (!renderer) return;

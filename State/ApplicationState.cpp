@@ -177,10 +177,10 @@ void moonlight_xbox_dx::ApplicationState::RemoveHost(MoonlightHost^ host) {
 }
 
 // Identity used for recently played stamps, mirroring AddHost's host matching.
-static std::string LastPlayedHostKey(MoonlightHost^ host) {
+static std::string LastPlayedHostKey(moonlight_xbox_dx::MoonlightHost^ host) {
 	auto instanceId = host->InstanceId;
-	if (instanceId != nullptr && !instanceId->IsEmpty()) return Utils::PlatformStringToStdString(instanceId);
-	return Utils::PlatformStringToStdString(host->LastHostname);
+	if (instanceId != nullptr && !instanceId->IsEmpty()) return moonlight_xbox_dx::Utils::PlatformStringToStdString(instanceId);
+	return moonlight_xbox_dx::Utils::PlatformStringToStdString(host->LastHostname);
 }
 
 void moonlight_xbox_dx::ApplicationState::RecordAppPlayed(MoonlightHost^ host, int appId) {
