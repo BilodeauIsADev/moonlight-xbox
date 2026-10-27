@@ -13,6 +13,7 @@
 using namespace moonlight_xbox_dx;
 using namespace Platform;
 using namespace Windows::Foundation;
+using namespace Windows::Foundation::Collections;
 using namespace Windows::UI::Core;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
@@ -55,6 +56,27 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 	MoonlightHost^ mhost = dynamic_cast<MoonlightHost^>(e->Parameter);
 	if (mhost == nullptr) return;
 	host = mhost;
+
+	// Keep the hero pointed at a real app while the list is (re)filled
+	auto observableApps = dynamic_cast<IObservableVector<MoonlightApp^>^>(host->Apps);
+	if (observableApps != nullptr) {
+		m_appsChangedToken = observableApps->VectorChanged += ref new VectorChangedEventHandler<MoonlightApp^>(this, &AppPage::OnAppsChanged);
+	}
+	for (unsigned int i = 0; i < host->Apps->Size; ++i) {
+		auto app = host->Apps->GetAt(i);
+		if (SelectedApp == nullptr || app->CurrentlyRunning) SelectedApp = app;
+	}
+
+	if (host->Resolution != nullptr) {
+		Platform::String^ sep = ref new Platform::String(L" \u00B7 ");
+		Platform::String^ summary = L"Streams at " + Utils::StringFromStdString(std::to_string(host->Resolution->Width)) + L"\u00D7" +
+			Utils::StringFromStdString(std::to_string(host->Resolution->Height)) + sep +
+			Utils::StringFromStdString(std::to_string(host->FPS)) + L" FPS";
+		if (host->VideoCodec != nullptr) summary = summary + sep + host->VideoCodec;
+		if (host->EnableHDR) summary = summary + sep + L"HDR";
+		StreamSummaryText->Text = summary;
+	}
+
 	host->UpdateHostInfo(true);
 	host->UpdateApps();
 
@@ -131,10 +153,61 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 
 void AppPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {
 	continueAppFetch.store(false);
+
+	auto observableApps = host != nullptr ? dynamic_cast<IObservableVector<MoonlightApp^>^>(host->Apps) : nullptr;
+	if (observableApps != nullptr) {
+		observableApps->VectorChanged -= m_appsChangedToken;
+	}
+}
+
+void AppPage::OnAppsChanged(IObservableVector<MoonlightApp^>^ sender, IVectorChangedEventArgs^ e) {
+	if (e->CollectionChange == CollectionChange::Reset) {
+		SelectedApp = nullptr;
+		return;
+	}
+	if (e->CollectionChange != CollectionChange::ItemInserted) return;
+
+	// Prefer the running app so "Resume" is the first thing on screen
+	auto inserted = sender->GetAt(e->Index);
+	if (SelectedApp == nullptr || (inserted->CurrentlyRunning && !SelectedApp->CurrentlyRunning)) {
+		SelectedApp = inserted;
+	}
+}
+
+void AppPage::AppsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	auto item = dynamic_cast<GridViewItem^>(e->OriginalSource);
+	if (item == nullptr) return;
+	auto app = dynamic_cast<MoonlightApp^>(item->Content);
+	if (app != nullptr) SelectedApp = app;
+}
+
+void AppPage::primaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StartOrResume(SelectedApp);
+}
+
+void AppPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	switch (e->Key) {
+	case Windows::System::VirtualKey::GamepadX:
+		if (SelectedApp != nullptr && SelectedApp->CurrentlyRunning) {
+			closeAppButton_Click(nullptr, nullptr);
+			e->Handled = true;
+		}
+		break;
+	case Windows::System::VirtualKey::GamepadY:
+		settingsButton_Click(nullptr, nullptr);
+		e->Handled = true;
+		break;
+	default:
+		break;
+	}
 }
 
 void AppPage::AppsGrid_ItemClick(Platform::Object ^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs ^ e) {
-	MoonlightApp ^ app = (MoonlightApp ^) e->ClickedItem;
+	StartOrResume((MoonlightApp ^) e->ClickedItem);
+}
+
+void AppPage::StartOrResume(MoonlightApp^ app) {
+	if (app == nullptr) return;
 	this->currentApp = app;
 
 	if (this->host != nullptr) {

@@ -13,6 +13,7 @@
 #include <KeyboardControl.xaml.h>
 #include "../Common/ModalDialog.xaml.h"
 #include "../Utils/TracyBootstrap.h"
+#include <algorithm>
 
 using namespace moonlight_xbox_dx;
 
@@ -178,22 +179,165 @@ void StreamPage::OnSwapChainPanelSizeChanged(Object^ sender, Windows::UI::Xaml::
 
 void StreamPage::flyoutButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	// Capture stops itself when it hits the size limit, so resync the menu text.
-	this->CaptureMode = FFMpegDecoder::instance().IsCaptureActive();
-
 	Windows::UI::Xaml::Controls::Flyout::ShowAttachedFlyout((FrameworkElement^)sender);
 	m_main->SetFlyoutOpened(true);
 }
 
+// Runs for both the hidden button and the View + Menu combo in moonlight_xbox_dxMain
+void StreamPage::ActionsFlyout_Opening(Platform::Object^ sender, Platform::Object^ e)
+{
+	// Capture stops itself when it hits the size limit, so resync the button text.
+	this->CaptureMode = FFMpegDecoder::instance().IsCaptureActive();
+
+	// Placement="Full" centers the presenter; size the content to cover the whole window
+	auto bounds = Window::Current->Bounds;
+	ControlCenter->Width = bounds.Width;
+	ControlCenter->Height = bounds.Height;
+
+	RefreshControlCenter();
+	ShowCard(m_activeTile != nullptr ? m_activeTile : StatsTile);
+
+	if (m_controlCenterTimer == nullptr) {
+		m_controlCenterTimer = ref new DispatcherTimer();
+		TimeSpan interval;
+		interval.Duration = 10000000; // 1 s
+		m_controlCenterTimer->Interval = interval;
+		m_controlCenterTimer->Tick += ref new EventHandler<Platform::Object^>(this, &StreamPage::OnControlCenterTick);
+	}
+	m_controlCenterTimer->Start();
+}
+
+void StreamPage::ActionsFlyout_Opened(Platform::Object^ sender, Platform::Object^ e)
+{
+	// Land on the tile used last time. Deferred so the flyout's own initial focus doesn't override it.
+	Platform::WeakReference weakThis(this);
+	Dispatcher->RunAsync(CoreDispatcherPriority::Low, ref new DispatchedHandler([weakThis]() {
+		auto that = weakThis.Resolve<StreamPage>();
+		if (that != nullptr && that->m_activeTile != nullptr) {
+			that->m_activeTile->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+		}
+	}));
+}
 
 void StreamPage::ActionsFlyout_Closed(Platform::Object^ sender, Platform::Object^ e)
 {
+	if (m_controlCenterTimer != nullptr) m_controlCenterTimer->Stop();
 	if (m_main != nullptr) m_main->SetFlyoutOpened(false);
+}
+
+void StreamPage::HideControlCenter()
+{
+	ActionsFlyout->Hide();
+}
+
+void StreamPage::Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	auto tile = dynamic_cast<Button^>(sender);
+	if (tile != nullptr) ShowCard(tile);
+}
+
+void StreamPage::Tile_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	// A on a tile moves into its card
+	if (m_activeCard == nullptr) return;
+	auto first = dynamic_cast<Control^>(FocusManager::FindFirstFocusableElement(m_activeCard));
+	if (first != nullptr) first->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+}
+
+void StreamPage::ShowCard(Button^ tile)
+{
+	auto card = dynamic_cast<Border^>(tile->Tag);
+	if (card == nullptr) return;
+
+	if (m_activeCard != nullptr && m_activeCard != card) {
+		m_activeCard->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	}
+	m_activeTile = tile;
+	m_activeCard = card;
+	card->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	// Center the card over its tile without letting it run off either edge
+	try {
+		auto offset = tile->TransformToVisual(CardHost)->TransformPoint(Point(0, 0));
+		double left = offset.X + tile->ActualWidth / 2 - card->Width / 2;
+		left = std::max(0.0, std::min(left, CardHost->ActualWidth - card->Width));
+		card->Margin = ThicknessHelper::FromLengths(left, 0, 0, 0);
+	} catch (...) {
+		// Not laid out yet (first open); GotFocus repositions it once the tile is focused
+	}
+}
+
+void StreamPage::RefreshControlCenter()
+{
+	if (configuration != nullptr) {
+		Platform::String^ video = Utils::StringFromStdString(std::to_string(configuration->width)) + L"\u00D7" +
+			Utils::StringFromStdString(std::to_string(configuration->height)) + L" \u00B7 " +
+			Utils::StringFromStdString(std::to_string(configuration->FPS)) + L" FPS";
+		Platform::String^ codec = configuration->videoCodec != nullptr ? configuration->videoCodec : ref new Platform::String();
+		if (configuration->enableHDR) codec = codec + L" \u00B7 HDR";
+
+		SessionTitleText->Text = configuration->appName;
+		QuitTitleText->Text = L"Quit " + configuration->appName;
+		VideoChipText->Text = video;
+		StatVideoText->Text = video;
+		CodecChipText->Text = codec;
+		StatCodecText->Text = codec;
+		StatBitrateText->Text = Utils::StringFromStdString(std::to_string(configuration->bitrate / 1000) + " Mbps");
+	}
+
+	// The slider only exists once the card has been shown, so it may not be seeded yet
+	if (m_audioBufferSlider != nullptr) {
+		m_audioBufferSliderReady = false;
+		m_audioBufferSlider->Value = AudioPlayer::instance().GetAudioBufferMs();
+		m_audioBufferSliderReady = true;
+	}
+
+	UpdateFramePacingText();
+	OnControlCenterTick(nullptr, nullptr);
+}
+
+void StreamPage::UpdateFramePacingText()
+{
+	auto mode = ref new Platform::String(Pacer::instance().getPacingImmediate() ? L"Immediate" : L"Display-locked");
+	FramePacingModeText->Text = mode;
+	StatPacingText->Text = mode;
+}
+
+// Once a second while the control center is open: clock, session length, battery, audio counters
+void StreamPage::OnControlCenterTick(Platform::Object^ sender, Platform::Object^ e)
+{
+	long long elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_streamStart).count();
+	char elapsedText[32];
+	snprintf(elapsedText, sizeof(elapsedText), "Streaming for %lld:%02lld:%02lld", elapsed / 3600, (elapsed / 60) % 60, elapsed % 60);
+	SessionInfoText->Text = Utils::StringFromStdString(elapsedText);
+
+	auto formatter = ref new Windows::Globalization::DateTimeFormatting::DateTimeFormatter(L"shorttime");
+	auto calendar = ref new Windows::Globalization::Calendar();
+	ClockText->Text = formatter->Format(calendar->GetDateTime());
+
+	BatteryPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	auto gamepads = Gamepad::Gamepads;
+	if (gamepads->Size > 0) {
+		auto report = gamepads->GetAt(0)->TryGetBatteryReport();
+		if (report != nullptr && report->Status != Windows::System::Power::BatteryStatus::NotPresent &&
+			report->RemainingCapacityInMilliwattHours != nullptr && report->FullChargeCapacityInMilliwattHours != nullptr) {
+			int full = report->FullChargeCapacityInMilliwattHours->Value;
+			int remaining = report->RemainingCapacityInMilliwattHours->Value;
+			if (full > 0) {
+				int percent = std::max(0, std::min(100, remaining * 100 / full));
+				BatteryText->Text = Utils::StringFromStdString(std::to_string(percent) + "%");
+				BatteryPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+			}
+		}
+	}
+
+	UpdateAudioGlitchText();
 }
 
 void StreamPage::toggleMouseButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	SetMouseMode(!this->m_mouseMode);
+	HideControlCenter();
 }
 
 void StreamPage::SetMouseMode(bool enabled)
@@ -204,6 +348,7 @@ void StreamPage::SetMouseMode(bool enabled)
 
 void StreamPage::showKeyboardButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	HideControlCenter();
 	if (!m_main) return;
 	if (GetApplicationState()->EnableKeyboard) {
 		m_main->keyboardMode = true;
@@ -222,6 +367,7 @@ void StreamPage::toggleLogsButton_Click(Platform::Object^ sender, Windows::UI::X
 {
 	bool isVisible = m_main->ToggleLogs();
 	SetShowLogs(isVisible);
+	HideControlCenter();
 }
 
 void StreamPage::SetShowLogs(bool enabled) {
@@ -231,6 +377,7 @@ void StreamPage::SetShowLogs(bool enabled) {
 void StreamPage::toggleStatsButton_Click(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
 	bool isVisible = m_main->ToggleStats();
 	SetShowStats(isVisible);
+	HideControlCenter();
 }
 
 void StreamPage::SetShowStats(bool enabled) {
@@ -244,6 +391,7 @@ void StreamPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArg
 
 	if (configuration == nullptr)return;
 
+	m_streamStart = std::chrono::steady_clock::now();
 	SetCaptureMode(false);
 	SetMouseMode(false);
 	SetShowLogs(false);
@@ -253,6 +401,7 @@ void StreamPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArg
 
 void StreamPage::disonnectButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	HideControlCenter();
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
 
@@ -289,6 +438,7 @@ void StreamPage::OnKeyUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Cor
 }
 
 void StreamPage::disconnectAndCloseButton_Click(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
+	HideControlCenter();
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
 	if (this->m_main) {
@@ -336,18 +486,21 @@ void StreamPage::Keyboard_OnKeyUp(KeyboardControl^ sender, KeyEvent^ e)
 
 void StreamPage::guideButtonShort_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	HideControlCenter();
 	this->m_main->SendGuideButton(500);
 }
 
 
 void StreamPage::guideButtonLong_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	HideControlCenter();
 	this->m_main->SendGuideButton(3000);
 }
 
 
 void StreamPage::toggleHDR_WinAltB_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	HideControlCenter();
 	this->m_main->SendWinAltB();
 }
 
@@ -359,6 +512,7 @@ void StreamPage::resetDecoder_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	// This also is a handy place to flush the queue
 	FrameQueue::instance().clear();
 	ImGuiPlots::instance().clearData(PLOT_QUEUED_FRAMES);
+	HideControlCenter();
 }
 
 void StreamPage::toggleFramePacing_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -366,6 +520,7 @@ void StreamPage::toggleFramePacing_Click(Platform::Object^ sender, Windows::UI::
 	// thread safe atomic bool
 	bool isImmediate = Pacer::instance().getPacingImmediate();
 	Pacer::instance().setPacingImmediate(isImmediate ? false : true);
+	UpdateFramePacingText();
 }
 
 void StreamPage::toggleCapture_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)

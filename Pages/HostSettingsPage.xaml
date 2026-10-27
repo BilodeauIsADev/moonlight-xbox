@@ -6,21 +6,20 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{StaticResource OrbitBackgroundBrush}">
     <ScrollViewer>
-        <StackPanel Padding="8,16,8,8">
-        <StackPanel Orientation="Horizontal">
-            <Button Margin="0 0 0 16" Name="backButton" Click="backButton_Click">
-                <Button.Content>
-                    <SymbolIcon Symbol="Back" />
-                </Button.Content>
+        <StackPanel Padding="40,16,40,24">
+        <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,0,0,20">
+            <Button Name="backButton" Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" VerticalAlignment="Top" Click="backButton_Click">
+                <FontIcon Glyph="&#xE72B;" FontSize="16" />
             </Button>
-            <StackPanel Margin="16 0 0 0">
-                <TextBlock Text="{x:Bind Host.ComputerName}"></TextBlock>
-                <TextBlock Text="{x:Bind Host.LastHostname}"></TextBlock>
+            <StackPanel>
+                <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="STREAM SETTINGS" />
+                <TextBlock Style="{StaticResource OrbitTitleTextStyle}" FontSize="32" LineHeight="36" Text="{x:Bind Host.ComputerName}"></TextBlock>
+                <TextBlock Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="{x:Bind Host.LastHostname}"></TextBlock>
             </StackPanel>
         </StackPanel>
-        <Grid RowSpacing="8">
+        <Grid RowSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"></ColumnDefinition>
                 <ColumnDefinition Width="150"></ColumnDefinition>

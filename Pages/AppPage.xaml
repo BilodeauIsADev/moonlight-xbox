@@ -6,9 +6,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{StaticResource OrbitBackgroundBrush}"
     XYFocusKeyboardNavigation="Disabled"
+    KeyDown="Page_KeyDown"
     >
+    <Page.Resources>
+        <local:BoolToTextConverter x:Key="BoolToTextConverter" TrueText="On" FalseText="Off" />
+    </Page.Resources>
     <FlyoutBase.AttachedFlyout>
         <MenuFlyout x:Name="ActionsFlyout" AllowFocusOnInteraction="false" Placement="TopEdgeAlignedRight">
             <MenuFlyoutItem x:Name="resumeAppButton" Click="resumeAppButton_Click" Text="Resume App" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
@@ -29,54 +33,115 @@
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="64" />
-        </Grid.RowDefinitions>
-        <Grid Grid.Row="0" VerticalAlignment="Center" Padding="0,0,0,8" >
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Padding="8">
-                <Button TabIndex="3" x:Name="backButton" Click="backButton_Click">
-                    <Button.Content>
-                        <SymbolIcon Symbol="Back" />
-                    </Button.Content>
+        <!-- Hero artwork: the focused app's cover, faded into black on the left and bottom -->
+        <Grid HorizontalAlignment="Right" Width="640" IsHitTestVisible="False">
+            <Image x:Name="HeroArt" Source="{x:Bind SelectedApp.ImagePath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0.85" />
+        </Grid>
+        <Rectangle Fill="{StaticResource OrbitHeroLeftFadeBrush}" IsHitTestVisible="False" />
+        <Rectangle Fill="{StaticResource OrbitHeroBottomFadeBrush}" IsHitTestVisible="False" />
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Top bar -->
+            <Grid Grid.Row="0" Margin="32,16,32,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <FontIcon Glyph="&#xE708;" FontSize="18" />
+                    <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
+                    <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}" Content="Library" />
+                    <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click" />
+                    <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Click="settingsButton_Click" />
+                </StackPanel>
+                <Button Grid.Column="3" x:Name="settingsButton" Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" Click="settingsButton_Click">
+                    <FontIcon Glyph="&#xE713;" FontSize="16" />
                 </Button>
-                <TextBlock VerticalAlignment="Center" Padding="8" FontSize="20" Text="{x:Bind Host.ComputerName}"></TextBlock>
+            </Grid>
+
+            <!-- Hero: whatever app is focused in the shelf -->
+            <StackPanel Grid.Row="1" Margin="40,12,0,0" MaxWidth="470" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" />
+                    <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}">
+                        <Run Text="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='RUNNING ON|ON'}" /><Run Text=" " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+                <TextBlock Style="{StaticResource OrbitTitleTextStyle}" MaxLines="1" Margin="0,6,0,0" Text="{x:Bind SelectedApp.Name, Mode=OneWay}" />
+                <TextBlock x:Name="StreamSummaryText" Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,18,0,0">
+                    <Button x:Name="primaryButton" Style="{StaticResource OrbitPillButtonStyle}" Click="primaryButton_Click"
+                            Content="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Resume|Start streaming'}" />
+                    <Button x:Name="heroCloseAppButton" Style="{StaticResource OrbitCircleButtonStyle}" Click="closeAppButton_Click"
+                            Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" ToolTipService.ToolTip="Close app">
+                        <FontIcon Glyph="&#xE71A;" FontSize="14" />
+                    </Button>
+                </StackPanel>
             </StackPanel>
-            <StackPanel  Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8" Orientation="Horizontal" Spacing="16">
-                <Button TabIndex="2" x:Name="settingsButton" Click="settingsButton_Click">
-                    <Button.Content>
-                        <SymbolIcon Symbol="Setting" />
-                    </Button.Content>
-                </Button>
+
+            <!-- App shelf -->
+            <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Margin="40,0,0,4">
+                    <Run Text="On " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
+                </TextBlock>
+                <GridView x:Name="HostsGrid" ItemsSource="{x:Bind Host.Apps}" IsRightTapEnabled="True" IsItemClickEnabled="True" SelectionMode="None"
+                          ItemClick="AppsGrid_ItemClick" RightTapped="AppsGrid_RightTapped" GotFocus="AppsGrid_GotFocus" TabIndex="1"
+                          Padding="40,6,40,6"
+                          ItemContainerStyle="{StaticResource OrbitShelfItemStyle}"
+                          ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                          ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <GridView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </GridView.ItemsPanel>
+                    <GridView.ItemTemplate>
+                        <DataTemplate x:DataType="local:MoonlightApp" x:DefaultBindMode="OneWay">
+                            <StackPanel Width="96">
+                                <Grid Width="96" Height="128" CornerRadius="6" Background="{StaticResource OrbitSurfaceBrush}">
+                                    <Image Source="{x:Bind ImagePath}" Stretch="UniformToFill" />
+                                    <Border Visibility="{x:Bind CurrentlyRunning}" Background="{StaticResource OrbitRunningBrush}" CornerRadius="4" Padding="5,1" Margin="6" HorizontalAlignment="Left" VerticalAlignment="Top">
+                                        <TextBlock Text="RUNNING" FontSize="10" FontWeight="SemiBold" Foreground="#FF04220F" />
+                                    </Border>
+                                </Grid>
+                                <TextBlock Text="{x:Bind Name}" FontSize="13" Margin="0,6,0,0" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+            </StackPanel>
+
+            <!-- Controller hints -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,4,40,14">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF66CC33"><TextBlock Text="A" FontSize="11" FontWeight="Bold" Foreground="#FF66CC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
+                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF3399FF"><TextBlock Text="X" FontSize="11" FontWeight="Bold" Foreground="#FF3399FF" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FFFFCC33"><TextBlock Text="Y" FontSize="11" FontWeight="Bold" Foreground="#FFFFCC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#D9FFFFFF" CornerRadius="4"><TextBlock Text="View" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#D9FFFFFF" CornerRadius="4"><TextBlock Text="Menu" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream menu, in game" Margin="2,0,0,0" />
+                </StackPanel>
             </StackPanel>
         </Grid>
-        <GridView Grid.Row="1" x:Name="HostsGrid"  ItemsSource="{x:Bind Host.Apps}" IsRightTapEnabled="True" IsItemClickEnabled="True" ItemClick="AppsGrid_ItemClick" RightTapped="AppsGrid_RightTapped" TabIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <GridView.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <ItemsWrapGrid Orientation="Horizontal"
-                            ScrollViewer.VerticalScrollBarVisibility="Visible"
-                            ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                </ItemsPanelTemplate>
-            </GridView.ItemsPanel>
-            <GridView.ItemTemplate>
-                <DataTemplate x:DataType="local:MoonlightApp" x:DefaultBindMode="OneWay">
-                    <StackPanel>
-                        <StackPanel Padding="16" VerticalAlignment="Center">
-                            <Image Source="{x:Bind ImagePath}" Stretch="Fill" Height="300" Width="225"/>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                                <Image Source="ms-appx:///Assets/play.svg" Visibility="{x:Bind CurrentlyRunning}" Width="24" Height="24" />
-                                <TextBlock Text="{x:Bind Name}"></TextBlock>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </DataTemplate>
-            </GridView.ItemTemplate>
-        </GridView>
-        <TextBlock Grid.Row="2" TextAlignment="Center">
-            <Bold>Useful Shortcuts:</Bold> <Run FontFamily="Segoe Fluent Icons">&#xEDE3;</Run>+<Run FontFamily="Segoe Fluent Icons">&#xEECA;</Run> for toggling Menu and enabling mouse mode.<LineBreak></LineBreak>
-            <Bold>In Mouse mode:</Bold> <Run FontFamily="Segoe Fluent Icons">&#xF093;</Run> Left click <Run FontFamily="Segoe Fluent Icons">&#xF096;</Run> Right click <Run FontFamily="Segoe Fluent Icons">&#xF095;</Run> Show Keyboard <Run FontFamily="Segoe Fluent Icons">&#xF094;</Run> Guide/Xbox button<LineBreak></LineBreak>
-            <Bold>In Keyboard mode:</Bold> <Run FontFamily="Segoe Fluent Icons">&#xF094;</Run> Close <Run FontFamily="Segoe Fluent Icons">&#xF10A;</Run> Left Click <Run FontFamily="Segoe Fluent Icons">&#xF10B;</Run> Right Click <Run FontFamily="Segoe Fluent Icons">&#xF109;</Run> Move <Run FontFamily="Segoe Fluent Icons">&#xF108;</Run> Press to Scroll
-        </TextBlock>
     </Grid>
 </Page>

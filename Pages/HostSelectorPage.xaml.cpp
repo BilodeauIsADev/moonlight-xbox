@@ -36,6 +36,9 @@ using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::UI::ViewManagement::Core;
 
+// Host whose library was opened last; the Library tab returns to it
+static MoonlightHost^ s_lastLibraryHost = nullptr;
+
 HostSelectorPage::HostSelectorPage() {
 	state = GetApplicationState();
 	InitializeComponent();
@@ -217,6 +220,7 @@ void HostSelectorPage::StartPairing(MoonlightHost^ host) {
 }
 
 void HostSelectorPage::removeHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	if (currentHost == s_lastLibraryHost) s_lastLibraryHost = nullptr;
 	State->RemoveHost(currentHost);
 }
 
@@ -315,7 +319,59 @@ void HostSelectorPage::Connect(MoonlightHost^ host) {
 	}
 	state->shouldAutoConnect = true;
 	deviceWatcherHelper->StopWatcher();
+	s_lastLibraryHost = host;
 	bool result = this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host);
+}
+
+void HostSelectorPage::libraryNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	MoonlightHost^ target = nullptr;
+	if (s_lastLibraryHost != nullptr && s_lastLibraryHost->Connected && s_lastLibraryHost->Paired) {
+		target = s_lastLibraryHost;
+	} else {
+		for (auto host : state->SavedHosts) {
+			if (host->Connected && host->Paired) {
+				target = host;
+				break;
+			}
+		}
+	}
+	if (target == nullptr) return;
+
+	// Unlike Connect(), browsing the library must not trigger the host's autostart app
+	deviceWatcherHelper->StopWatcher();
+	s_lastLibraryHost = target;
+	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), target);
+}
+
+void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	auto item = dynamic_cast<GridViewItem^>(e->OriginalSource);
+	if (item == nullptr) return;
+	auto host = dynamic_cast<MoonlightHost^>(item->Content);
+	if (host == nullptr) return;
+	focusedHost = host;
+	focusedHostItem = item;
+}
+
+void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	// Only act when a host card is what's focused
+	auto focused = dynamic_cast<GridViewItem^>(FocusManager::GetFocusedElement());
+	if (focused == nullptr || focused != focusedHostItem || focusedHost == nullptr) return;
+
+	switch (e->Key) {
+	case Windows::System::VirtualKey::GamepadX:
+		if (!focusedHost->Connected && !focusedHost->WolPolling) {
+			currentHost = focusedHost;
+			wakeHostButton_Click(nullptr, nullptr);
+			e->Handled = true;
+		}
+		break;
+	case Windows::System::VirtualKey::GamepadY:
+		ShowHostActions(focusedHostItem, focusedHost);
+		e->Handled = true;
+		break;
+	default:
+		break;
+	}
 }
 
 void HostSelectorPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {

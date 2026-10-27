@@ -13,6 +13,32 @@
 
     <Page.Resources>
         <local:BoolToTextConverter x:Key="BoolToTextConverter" TrueText="On" FalseText="Off" />
+        <Style x:Key="ControlCenterCardStyle" TargetType="Border">
+            <Setter Property="Width" Value="300" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Background" Value="{StaticResource OrbitPanelBrush}" />
+            <Setter Property="BorderBrush" Value="#14FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+        <Style x:Key="ControlCenterCardTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="ControlCenterCardTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="WrapWholeWords" />
+            <Setter Property="Foreground" Value="{StaticResource OrbitTextTertiaryBrush}" />
+        </Style>
+        <Style x:Key="ControlCenterStatStyle" TargetType="Border">
+            <Setter Property="Background" Value="#0FFFFFFF" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -25,119 +51,333 @@
             </StackPanel>
             <Button Click="flyoutButton_Click" IsTabStop="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" x:Name="flyoutButton" AllowFocusOnInteraction="false" Grid.Column="1" Opacity="0">
                 <FlyoutBase.AttachedFlyout>
-                    <MenuFlyout x:Name="ActionsFlyout" Closed="ActionsFlyout_Closed" AllowFocusOnInteraction="false" Placement="TopEdgeAlignedRight">
-                        <MenuFlyoutItem x:Name="toggleMouseButton" Text="{x:Bind MouseMode, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Exit Mouse Mode|Enter Mouse Mode'}" Click="toggleMouseButton_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE962;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem x:Name="showKeyboardButton" Text="Show Keyboard" Click="showKeyboardButton_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE92E;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutSubItem Text="Other Actions">
-                            <MenuFlyoutItem x:Name="guideButtonShort" Text="Guide Button (short)" Click="guideButtonShort_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xe80f;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="guideButtonLong" Text="Guide Button (long)" Click="guideButtonLong_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xe80f;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="toggleHDR_WinAltB" Text="Toggle HDR (Win-Alt-B)" Click="toggleHDR_WinAltB_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xe706;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="resetDecoder" Text="Reset Decoder" Click="resetDecoder_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE72C;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem x:Name="toggleFramePacing" Text="Switch frame pacing mode" Click="toggleFramePacing_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE8B9;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyoutSubItem>
-                        <MenuFlyoutSeparator></MenuFlyoutSeparator>
-                        <MenuFlyoutItem x:Name="toggleStatsButton" Text="{x:Bind ShowStats, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Hide Stats|Show Stats'}" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" Click="toggleStatsButton_Click">
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xEC48;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem x:Name="toggleLogsButton" Text="{x:Bind ShowLogs, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Hide Logs|Show Logs'}" AllowFocusOnInteraction="false" Click="toggleLogsButton_Click"  FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xF0B5;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutSeparator></MenuFlyoutSeparator>
+                    <!-- Control center: a full-screen overlay in the style of the PS5 control center -->
+                    <Flyout x:Name="ActionsFlyout" Placement="Full" LightDismissOverlayMode="Off" Opening="ActionsFlyout_Opening" Opened="ActionsFlyout_Opened" Closed="ActionsFlyout_Closed">
+                        <Flyout.FlyoutPresenterStyle>
+                            <Style TargetType="FlyoutPresenter">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="CornerRadius" Value="0" />
+                                <Setter Property="MaxWidth" Value="10000" />
+                                <Setter Property="MaxHeight" Value="10000" />
+                                <Setter Property="IsDefaultShadowEnabled" Value="False" />
+                                <Setter Property="ScrollViewer.HorizontalScrollMode" Value="Disabled" />
+                                <Setter Property="ScrollViewer.VerticalScrollMode" Value="Disabled" />
+                                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+                                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+                            </Style>
+                        </Flyout.FlyoutPresenterStyle>
+                        <Grid x:Name="ControlCenter" XYFocusKeyboardNavigation="Enabled">
+                            <Grid.Background>
+                                <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                    <GradientStop Color="#EB000000" Offset="0" />
+                                    <GradientStop Color="#8C000000" Offset="0.45" />
+                                    <GradientStop Color="#40000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </Grid.Background>
+                            <Grid Padding="48,30,48,22">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                        <MenuFlyoutSubItem Text="Audio">
-                            <MenuFlyoutSubItem.Icon>
-                                <FontIcon Glyph="&#xF61F;" />
-                            </MenuFlyoutSubItem.Icon>
-                            <MenuFlyoutItem x:Name="audioBufferSliderItem" AllowFocusOnInteraction="True" IsTabStop="True" UseSystemFocusVisuals="False" PreviewKeyDown="audioBufferSliderItem_PreviewKeyDown">
-                                <MenuFlyoutItem.Template>
-                                    <ControlTemplate TargetType="MenuFlyoutItem">
-                                        <StackPanel Width="340" Padding="12,8" Spacing="4">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Audio buffer" VerticalAlignment="Center" />
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Value, ElementName=audioBufferSlider}" />
-                                                    <TextBlock Text=" ms" />
-                                                </StackPanel>
-                                            </Grid>
-                                            <Slider x:Name="audioBufferSlider" Minimum="10" Maximum="50" StepFrequency="10"
-                                                TickFrequency="10" TickPlacement="BottomRight" SnapsTo="StepValues" SmallChange="10" LargeChange="10"
-                                                IsTabStop="False" Loaded="audioBufferSlider_Loaded" ValueChanged="audioBufferSlider_ValueChanged" />
-                                            <Grid Margin="5,-2,5,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition />
-                                                    <ColumnDefinition />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="10ms" HorizontalAlignment="Left" />
-                                                <TextBlock Grid.Column="1" Text="20ms" HorizontalAlignment="Center" />
-                                                <TextBlock Grid.Column="2" Text="30ms" HorizontalAlignment="Center" />
-                                                <TextBlock Grid.Column="3" Text="40ms" HorizontalAlignment="Center" />
-                                                <TextBlock Grid.Column="4" Text="50ms" HorizontalAlignment="Right" />
-                                            </Grid>
-                                            <TextBlock FontSize="12px" Text="Small buffer sizes are more likely to have audio glitches." VerticalAlignment="Center" />
-                                            <TextBlock x:Name="audioGlitchText" FontSize="12px" VerticalAlignment="Center" Loaded="audioGlitchText_Loaded" Text="Glitches: 0 / Drops to reduce latency: 0" />
+                                <!-- Status strip -->
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock x:Name="SessionTitleText" FontSize="17" FontWeight="SemiBold" MaxWidth="300" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="SessionInfoText" FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0" VerticalAlignment="Center">
+                                        <Border Background="{StaticResource OrbitSurfaceStrongBrush}" CornerRadius="11" Padding="10,3">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" />
+                                                <TextBlock x:Name="VideoChipText" FontSize="12" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Background="{StaticResource OrbitSurfaceStrongBrush}" CornerRadius="11" Padding="10,3">
+                                            <TextBlock x:Name="CodecChipText" FontSize="12" />
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                                        <StackPanel x:Name="BatteryPanel" Orientation="Horizontal" Spacing="5" Visibility="Collapsed">
+                                            <FontIcon Glyph="&#xE7FC;" FontSize="14" Foreground="{StaticResource OrbitTextSecondaryBrush}" />
+                                            <TextBlock x:Name="BatteryText" FontSize="12" Foreground="{StaticResource OrbitTextSecondaryBrush}" VerticalAlignment="Center" />
                                         </StackPanel>
-                                    </ControlTemplate>
-                                </MenuFlyoutItem.Template>
-                            </MenuFlyoutItem>
-                        </MenuFlyoutSubItem>
+                                        <TextBlock x:Name="ClockText" FontSize="15" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
 
-                        <MenuFlyoutItem x:Name="toggleCapture" Text="{x:Bind CaptureMode, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Stop Frame Capture|Start Frame Capture'}" Click="toggleCapture_Click" Visibility="Collapsed" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xF7EE;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
+                                <!-- Tiles -->
+                                <StackPanel Grid.Row="3" x:Name="TileRow" Orientation="Horizontal" Spacing="8" Margin="0,14,0,0">
+                                    <Button x:Name="StatsTile" Tag="{x:Bind StatsCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <Grid>
+                                            <StackPanel Spacing="6" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xEC48;" FontSize="22" />
+                                                <TextBlock Text="Stats" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                            <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Visibility="{x:Bind ShowStats, Mode=OneWay}" />
+                                        </Grid>
+                                    </Button>
+                                    <Button Tag="{x:Bind MouseCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <Grid>
+                                            <StackPanel Spacing="6" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE962;" FontSize="22" />
+                                                <TextBlock Text="Mouse" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                            <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Visibility="{x:Bind MouseMode, Mode=OneWay}" />
+                                        </Grid>
+                                    </Button>
+                                    <Button Tag="{x:Bind KeyboardCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE92E;" FontSize="22" />
+                                            <TextBlock Text="Keyboard" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Tag="{x:Bind GuideCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE80F;" FontSize="22" />
+                                            <TextBlock Text="Xbox button" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Tag="{x:Bind AudioCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE767;" FontSize="22" />
+                                            <TextBlock Text="Audio" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Tag="{x:Bind DisplayCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE7F4;" FontSize="22" />
+                                            <TextBlock Text="Display" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Tag="{x:Bind LogsCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <Grid>
+                                            <StackPanel Spacing="6" VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xF0B5;" FontSize="22" />
+                                                <TextBlock Text="Logs" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                            <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Visibility="{x:Bind ShowLogs, Mode=OneWay}" />
+                                        </Grid>
+                                    </Button>
+                                    <Rectangle Width="1" Height="48" Fill="#2EFFFFFF" Margin="8,0" VerticalAlignment="Center" />
+                                    <Button Tag="{x:Bind DisconnectCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE72D;" FontSize="22" />
+                                            <TextBlock Text="Disconnect" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Tag="{x:Bind QuitCard}" Style="{StaticResource OrbitTileButtonStyle}" GotFocus="Tile_GotFocus" Click="Tile_Click">
+                                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE7E8;" FontSize="22" Foreground="#FFFF6B6D" />
+                                            <TextBlock Text="Quit game" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
 
-                        <MenuFlyoutSeparator></MenuFlyoutSeparator>
-                        <MenuFlyoutItem x:Name="disonnectButton" Text="Disconnect" Click="disonnectButton_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE72D;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem x:Name="disconnectAndCloseButton" Text="Disconnect and Close" Click="disconnectAndCloseButton_Click" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
-                            <MenuFlyoutItem.Icon>
-                                <FontIcon Glyph="&#xE71A;" />
-                            </MenuFlyoutItem.Icon>
-                        </MenuFlyoutItem>
-                    </MenuFlyout>
+                                <!-- Cards: one per tile, shown above whichever tile has focus -->
+                                <Grid Grid.Row="2" x:Name="CardHost">
+                                    <Border x:Name="StatsCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Performance" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="The overlay shows live frame rate, latency and bitrate while you play." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Grid ColumnSpacing="6" RowSpacing="6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition />
+                                                    <RowDefinition />
+                                                </Grid.RowDefinitions>
+                                                <Border Style="{StaticResource ControlCenterStatStyle}">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Video" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                                                        <TextBlock x:Name="StatVideoText" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Grid.Column="1" Style="{StaticResource ControlCenterStatStyle}">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Codec" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                                                        <TextBlock x:Name="StatCodecText" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Grid.Row="1" Style="{StaticResource ControlCenterStatStyle}">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Bitrate" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                                                        <TextBlock x:Name="StatBitrateText" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource ControlCenterStatStyle}">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Frame pacing" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                                                        <TextBlock x:Name="StatPacingText" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+                                            <Button x:Name="toggleStatsButton" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleStatsButton_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Show stats overlay" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextSecondaryBrush}" Text="{x:Bind ShowStats, Mode=OneWay, Converter={StaticResource BoolToTextConverter}}" />
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="MouseCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Mouse mode" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="The left stick moves the pointer. A is left click, X is right click, Y opens the keyboard and B sends the Xbox button." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="toggleMouseButton" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleMouseButton_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Mouse mode" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextSecondaryBrush}" Text="{x:Bind MouseMode, Mode=OneWay, Converter={StaticResource BoolToTextConverter}}" />
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="KeyboardCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Keyboard" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Opens a keyboard over the stream. B closes it, X is backspace, Y is space and Menu is Enter." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="showKeyboardButton" Style="{StaticResource OrbitRowButtonStyle}" Click="showKeyboardButton_Click" Content="Show keyboard" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="GuideCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Xbox button" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Pressing the Xbox button here opens the Xbox guide. Use these to send it to the PC instead." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="guideButtonShort" Style="{StaticResource OrbitRowButtonStyle}" Click="guideButtonShort_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Press" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Steam, Game Bar" />
+                                                </Grid>
+                                            </Button>
+                                            <Button x:Name="guideButtonLong" Style="{StaticResource OrbitRowButtonStyle}" Click="guideButtonLong_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Hold" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Long press" />
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="AudioCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Audio buffer" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Smaller buffers cut latency but are more likely to glitch." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <!-- Left/right on this row moves the slider -->
+                                            <Button x:Name="audioBufferSliderItem" Style="{StaticResource OrbitRowButtonStyle}" PreviewKeyDown="audioBufferSliderItem_PreviewKeyDown">
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock FontSize="22" FontWeight="SemiBold" Text="{Binding Value, ElementName=audioBufferSlider}" />
+                                                        <TextBlock FontSize="13" Text="ms" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                                                    </StackPanel>
+                                                    <Slider x:Name="audioBufferSlider" Minimum="10" Maximum="50" StepFrequency="10"
+                                                        TickFrequency="10" TickPlacement="BottomRight" SnapsTo="StepValues" SmallChange="10" LargeChange="10"
+                                                        IsTabStop="False" Loaded="audioBufferSlider_Loaded" ValueChanged="audioBufferSlider_ValueChanged" />
+                                                    <Grid Margin="2,-4,2,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition />
+                                                            <ColumnDefinition />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="10" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" HorizontalAlignment="Left" />
+                                                        <TextBlock Grid.Column="1" Text="20" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" HorizontalAlignment="Center" />
+                                                        <TextBlock Grid.Column="2" Text="30" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" HorizontalAlignment="Center" />
+                                                        <TextBlock Grid.Column="3" Text="40" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" HorizontalAlignment="Center" />
+                                                        <TextBlock Grid.Column="4" Text="50" FontSize="11" Foreground="{StaticResource OrbitTextTertiaryBrush}" HorizontalAlignment="Right" />
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Button>
+                                            <TextBlock x:Name="audioGlitchText" FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Loaded="audioGlitchText_Loaded" Text="Glitches: 0 / Drops to reduce latency: 0" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="DisplayCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Display" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <Button x:Name="toggleHDR_WinAltB" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleHDR_WinAltB_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Toggle HDR on PC" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Win+Alt+B" />
+                                                </Grid>
+                                            </Button>
+                                            <Button x:Name="toggleFramePacing" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleFramePacing_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Frame pacing" />
+                                                    <TextBlock x:Name="FramePacingModeText" HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextSecondaryBrush}" />
+                                                </Grid>
+                                            </Button>
+                                            <Button x:Name="resetDecoder" Style="{StaticResource OrbitRowButtonStyle}" Click="resetDecoder_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Reset decoder" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="If video freezes" />
+                                                </Grid>
+                                            </Button>
+                                            <Button x:Name="toggleCapture" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleCapture_Click" Visibility="Collapsed"
+                                                    Content="{x:Bind CaptureMode, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Stop frame capture|Start frame capture'}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="LogsCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Logs" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Shows the connection log over the stream. Useful when reporting a bug." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="toggleLogsButton" Style="{StaticResource OrbitRowButtonStyle}" Click="toggleLogsButton_Click">
+                                                <Grid>
+                                                    <TextBlock Text="Show logs" />
+                                                    <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource OrbitTextSecondaryBrush}" Text="{x:Bind ShowLogs, Mode=OneWay, Converter={StaticResource BoolToTextConverter}}" />
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="DisconnectCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Disconnect" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Leaves the game running on the PC so you can resume later." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="disonnectButton" Style="{StaticResource OrbitRowButtonStyle}" Click="disonnectButton_Click" Content="Disconnect" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="QuitCard" Style="{StaticResource ControlCenterCardStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock x:Name="QuitTitleText" Text="Quit game" Style="{StaticResource ControlCenterCardTitleStyle}" />
+                                            <TextBlock Text="Disconnects and closes the game on the PC. Unsaved progress is lost." Style="{StaticResource ControlCenterCardTextStyle}" />
+                                            <Button x:Name="disconnectAndCloseButton" Style="{StaticResource OrbitRowButtonStyle}" Background="#40FF4D4F" Click="disconnectAndCloseButton_Click" Content="Quit game" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Controller hints -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Spacing="20" Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF66CC33"><TextBlock Text="A" FontSize="11" FontWeight="Bold" Foreground="#FF66CC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FFFF5555"><TextBlock Text="B" FontSize="11" FontWeight="Bold" Foreground="#FFFF5555" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back to game" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Flyout>
                 </FlyoutBase.AttachedFlyout>
             </Button>
         </SwapChainPanel>

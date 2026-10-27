@@ -12,6 +12,8 @@
 #include "KeyboardControl.xaml.h"
 #include "Converters\BoolToTextConverter.h"
 
+#include <chrono>
+
 using namespace Microsoft::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Controls;
 namespace moonlight_xbox_dx
@@ -82,8 +84,8 @@ namespace moonlight_xbox_dx
 				return GetApplicationState();
 			}
 		}
-		property MenuFlyout^ m_flyout {
-			MenuFlyout^ get() {
+		property Windows::UI::Xaml::Controls::Flyout^ m_flyout {
+			Windows::UI::Xaml::Controls::Flyout^ get() {
 				return this->ActionsFlyout;
 			}
 		}
@@ -148,6 +150,21 @@ namespace moonlight_xbox_dx
 		void OnSwapChainPanelSizeChanged(Object^ sender, Windows::UI::Xaml::SizeChangedEventArgs^ e);
 		void flyoutButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void ActionsFlyout_Closed(Platform::Object^ sender, Platform::Object^ e);
+		void ActionsFlyout_Opening(Platform::Object^ sender, Platform::Object^ e);
+		void ActionsFlyout_Opened(Platform::Object^ sender, Platform::Object^ e);
+
+		// Control center (the in-stream menu)
+		void Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void Tile_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ShowCard(Windows::UI::Xaml::Controls::Button^ tile);
+		void HideControlCenter();
+		void RefreshControlCenter();
+		void UpdateFramePacingText();
+		void OnControlCenterTick(Platform::Object^ sender, Platform::Object^ e);
+		Windows::UI::Xaml::Controls::Button^ m_activeTile;
+		Windows::UI::Xaml::Controls::Border^ m_activeCard;
+		Windows::UI::Xaml::DispatcherTimer^ m_controlCenterTimer;
+		std::chrono::steady_clock::time_point m_streamStart;
 		void toggleMouseButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 	    void SetMouseMode(bool enabled);
 		void showKeyboardButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

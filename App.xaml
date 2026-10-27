@@ -2,8 +2,404 @@
     x:Class="moonlight_xbox_dx.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:moonlight_xbox_dx">
+    xmlns:local="using:moonlight_xbox_dx"
+    RequestedTheme="Dark">
     <Application.Resources>
-        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Orbit-style palette: black canvas, translucent white surfaces, white focus ring -->
+            <SolidColorBrush x:Key="OrbitBackgroundBrush" Color="#FF000000" />
+            <SolidColorBrush x:Key="OrbitSurfaceBrush" Color="#1AFFFFFF" />
+            <SolidColorBrush x:Key="OrbitSurfaceStrongBrush" Color="#29FFFFFF" />
+            <SolidColorBrush x:Key="OrbitPanelBrush" Color="#EB1C1C1E" />
+            <SolidColorBrush x:Key="OrbitTextBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="OrbitTextSecondaryBrush" Color="#D9FFFFFF" />
+            <SolidColorBrush x:Key="OrbitTextTertiaryBrush" Color="#8CFFFFFF" />
+            <SolidColorBrush x:Key="OrbitRunningBrush" Color="#FF3DDC84" />
+            <SolidColorBrush x:Key="OrbitWarningBrush" Color="#FFFFB020" />
+            <SolidColorBrush x:Key="OrbitDangerBrush" Color="#FFFF4D4F" />
+            <SolidColorBrush x:Key="OrbitFocusBrush" Color="#FFFFFFFF" />
+
+            <!-- Fades artwork into the black page from the left and bottom, like Orbit's hero -->
+            <LinearGradientBrush x:Key="OrbitHeroLeftFadeBrush" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#EB000000" Offset="0" />
+                <GradientStop Color="#99000000" Offset="0.38" />
+                <GradientStop Color="#00000000" Offset="0.7" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="OrbitHeroBottomFadeBrush" StartPoint="0,1" EndPoint="0,0">
+                <GradientStop Color="#FF000000" Offset="0" />
+                <GradientStop Color="#D9000000" Offset="0.3" />
+                <GradientStop Color="#00000000" Offset="0.58" />
+            </LinearGradientBrush>
+
+            <!-- Large white pill: the primary action on every screen -->
+            <Style x:Key="OrbitPillButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#FFFFFFFF" />
+                <Setter Property="Foreground" Value="#FF111111" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Padding" Value="32,10" />
+                <Setter Property="MinHeight" Value="42" />
+                <Setter Property="CornerRadius" Value="21" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.9" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.75" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.4" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="FocusRing.Opacity" Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="FocusRing" Margin="-4" CornerRadius="25" BorderThickness="3" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" />
+                                <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                    <ContentPresenter
+                                        Content="{TemplateBinding Content}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        ContentTransitions="{TemplateBinding ContentTransitions}"
+                                        Padding="{TemplateBinding Padding}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Round secondary action (close app, more, back, settings) -->
+            <Style x:Key="OrbitCircleButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#40000000" />
+                <Setter Property="BorderBrush" Value="#66FFFFFF" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Width" Value="42" />
+                <Setter Property="Height" Value="42" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="CornerRadius" Value="21" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="0.6" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.4" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="FocusRing.Opacity" Value="1" />
+                                                <Setter Target="Surface.Background" Value="#33FFFFFF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="FocusRing" Margin="-4" CornerRadius="64" BorderThickness="3" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" />
+                                <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                                    <Grid>
+                                        <Border x:Name="Hover" Background="#1FFFFFFF" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
+                                        <ContentPresenter
+                                            Content="{TemplateBinding Content}"
+                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                            Padding="{TemplateBinding Padding}"
+                                            Foreground="{TemplateBinding Foreground}"
+                                            HorizontalContentAlignment="Center"
+                                            VerticalContentAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Top bar tab; the current tab sets Background to OrbitSurfaceStrongBrush -->
+            <Style x:Key="OrbitNavButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Padding" Value="16,6" />
+                <Setter Property="CornerRadius" Value="17" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="0.6" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.4" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="FocusRing.Opacity" Value="1" />
+                                                <Setter Target="Label.Foreground" Value="#FFFFFFFF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="FocusRing" Margin="-4" CornerRadius="21" BorderThickness="3" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" />
+                                <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                    <Grid>
+                                        <Border x:Name="Hover" Background="#1FFFFFFF" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
+                                        <ContentPresenter x:Name="Label"
+                                            Content="{TemplateBinding Content}"
+                                            Padding="{TemplateBinding Padding}"
+                                            Foreground="{TemplateBinding Foreground}"
+                                            HorizontalContentAlignment="Center"
+                                            VerticalContentAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Wide row inside a panel or settings list -->
+            <Style x:Key="OrbitRowButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#0FFFFFFF" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="Padding" Value="14,10" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="0.6" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.4" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="FocusRing.Opacity" Value="1" />
+                                                <Setter Target="Surface.Background" Value="#29FFFFFF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                    <Grid>
+                                        <Border x:Name="Hover" Background="#1FFFFFFF" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
+                                        <ContentPresenter
+                                            Content="{TemplateBinding Content}"
+                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                            Padding="{TemplateBinding Padding}"
+                                            Foreground="{TemplateBinding Foreground}"
+                                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="FocusRing" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="2" BorderBrush="#B3FFFFFF" Opacity="0" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Square control-center tile; turns solid white when focused, like the PS5 control center -->
+            <Style x:Key="OrbitTileButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#1AFFFFFF" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Width" Value="84" />
+                <Setter Property="Height" Value="84" />
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <CompositeTransform x:Name="RootTransform" />
+                                </Grid.RenderTransform>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="0.6" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Hover.Opacity" Value="1" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Opacity" Value="0.4" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="Surface.Background" Value="#F2FFFFFF" />
+                                                <Setter Target="TileContent.Foreground" Value="#FF111111" />
+                                                <Setter Target="RootTransform.ScaleX" Value="1.06" />
+                                                <Setter Target="RootTransform.ScaleY" Value="1.06" />
+                                                <Setter Target="RootTransform.TranslateY" Value="-5" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                                    <Grid>
+                                        <Border x:Name="Hover" Background="#1FFFFFFF" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
+                                        <ContentPresenter x:Name="TileContent"
+                                            Content="{TemplateBinding Content}"
+                                            Padding="{TemplateBinding Padding}"
+                                            Foreground="{TemplateBinding Foreground}"
+                                            HorizontalContentAlignment="Stretch"
+                                            VerticalContentAlignment="Stretch" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->
+            <Style x:Key="OrbitShelfItemStyle" TargetType="GridViewItem">
+                <Setter Property="Margin" Value="0,0,14,0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource OrbitFocusBrush}" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+                <Setter Property="FocusVisualMargin" Value="-4" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+            </Style>
+
+            <Style x:Key="OrbitEyebrowTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="CharacterSpacing" Value="60" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
+            </Style>
+            <Style x:Key="OrbitTitleTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="34" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="LineHeight" Value="38" />
+                <Setter Property="TextWrapping" Value="WrapWholeWords" />
+                <Setter Property="MaxLines" Value="2" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+            </Style>
+            <Style x:Key="OrbitShelfTitleTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="19" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+            </Style>
+            <Style x:Key="OrbitHintTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
+            </Style>
+            <!-- Controller button badge in the footer hints -->
+            <Style x:Key="OrbitHintBadgeStyle" TargetType="Border">
+                <Setter Property="MinWidth" Value="20" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="BorderThickness" Value="1.5" />
+                <Setter Property="Padding" Value="4,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

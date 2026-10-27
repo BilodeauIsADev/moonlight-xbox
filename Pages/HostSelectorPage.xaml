@@ -7,8 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{StaticResource OrbitBackgroundBrush}"
     XYFocusKeyboardNavigation="Disabled"
+    KeyDown="Page_KeyDown"
     >
     <FlyoutBase.AttachedFlyout>
         <MenuFlyout x:Name="ActionsFlyout" AllowFocusOnInteraction="false" Placement="TopEdgeAlignedRight">
@@ -40,59 +41,135 @@
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="1,0" EndPoint="0,1">
+                <GradientStop Color="#FF1B3B8A" Offset="0" />
+                <GradientStop Color="#FF0B1530" Offset="0.35" />
+                <GradientStop Color="#FF000000" Offset="0.75" />
+            </LinearGradientBrush>
+        </Grid.Background>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" VerticalAlignment="Center" Padding="0,0,0,8" >
+
+        <!-- Top bar -->
+        <Grid Grid.Row="0" Margin="32,16,32,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Padding="8">
-                <Image Source="ms-appx:///Assets/StoreLogo.scale-200.png" Width="48" Height="48"></Image>
-                <TextBlock VerticalAlignment="Center" Padding="8" FontSize="20">Moonlight</TextBlock>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                <FontIcon Glyph="&#xE708;" FontSize="18" />
+                <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" />
             </StackPanel>
-            <StackPanel  Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8" Orientation="Horizontal" Spacing="16">
-                <Button Click="NewHostButton_Click" TabIndex="2">
-                    <Button.Content>
-                        <SymbolIcon Symbol="Add" />
-                    </Button.Content>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
+                <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="libraryNavButton_Click" />
+                <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}" Content="Hosts" />
+                <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Click="SettingsButton_Click" />
+            </StackPanel>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10">
+                <Button Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" Click="NewHostButton_Click" TabIndex="2" ToolTipService.ToolTip="Add host">
+                    <FontIcon Glyph="&#xE710;" FontSize="16" />
                 </Button>
-                <Button Name="SettingsButton" TabIndex="3" Click="SettingsButton_Click">
-                    <Button.Content>
-                        <SymbolIcon Symbol="Setting" />
-                    </Button.Content>
+                <Button Name="SettingsButton" Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" TabIndex="3" Click="SettingsButton_Click" ToolTipService.ToolTip="Settings">
+                    <FontIcon Glyph="&#xE713;" FontSize="16" />
                 </Button>
             </StackPanel>
         </Grid>
-        <GridView IsRightTapEnabled="True" RightTapped="HostsGrid_RightTapped" Grid.Row="1" x:Name="HostsGrid"  ItemsSource="{x:Bind State.SavedHosts}" IsItemClickEnabled="True" ItemClick="GridView_ItemClick" TabIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center" SelectionMode="None">
-            <GridView.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <ItemsWrapGrid Orientation="Horizontal"
-                            ScrollViewer.VerticalScrollBarVisibility="Visible"
-                            ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                </ItemsPanelTemplate>
-            </GridView.ItemsPanel>
-            <GridView.ItemTemplate>
-                <DataTemplate x:DataType="local:MoonlightHost" x:DefaultBindMode="OneWay">
-                    <StackPanel>
-                        <StackPanel Padding="16" VerticalAlignment="Center">
-                            <Canvas Width="216" Height="216">
-                                <Image Source="ms-appx:///Assets/desktop.svg" Width="200" Height="200" Canvas.Left="16" Canvas.Top="16" />
-                                <Image Source="ms-appx:///Assets/lock.svg" Visibility="{x:Bind NotPaired}" Width="96" Height="96" Canvas.Left="70" Canvas.Top="50" />
-                                <Image Source="ms-appx:///Assets/disconnected.svg" Visibility="{x:Bind NotConnected}" Width="96" Height="96" Canvas.Left="70" Canvas.Top="50" />
-                                <Grid Width="216" Height="216" Canvas.Left="0" Canvas.Top="0" Visibility="{x:Bind WolPollingVisibility}">
-                                    <Rectangle Fill="#80000000" Width="216" Height="216" />
-                                    <muxc:ProgressRing IsActive="True" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+        <!-- Hero -->
+        <StackPanel Grid.Row="1" Margin="40,28,0,0" MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="HOSTS" />
+            <TextBlock Style="{StaticResource OrbitTitleTextStyle}" Margin="0,6,0,0" Text="Your PCs" />
+            <TextBlock Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextWrapping="WrapWholeWords"
+                       Text="Pick a PC to see its games. PCs running Sunshine on your network show up here on their own." />
+        </StackPanel>
+
+        <!-- Host shelf -->
+        <Grid Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40,32,40,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!-- Capped so a long host list scrolls instead of pushing "Add host" off the TV-safe area -->
+            <GridView IsRightTapEnabled="True" RightTapped="HostsGrid_RightTapped" x:Name="HostsGrid" ItemsSource="{x:Bind State.SavedHosts}"
+                      IsItemClickEnabled="True" ItemClick="GridView_ItemClick" GotFocus="HostsGrid_GotFocus" TabIndex="1" SelectionMode="None"
+                      MaxWidth="600"
+                      Padding="0,6,0,6"
+                      ItemContainerStyle="{StaticResource OrbitShelfItemStyle}"
+                      ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                      ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="local:MoonlightHost" x:DefaultBindMode="OneWay">
+                        <StackPanel Width="160">
+                            <Grid Width="160" Height="100" CornerRadius="8">
+                                <Grid.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#FF1D2533" Offset="0" />
+                                        <GradientStop Color="#FF0B0F16" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Grid.Background>
+                                <FontIcon Glyph="&#xE7F4;" FontSize="38" Foreground="#E6FFFFFF" />
+                                <FontIcon Glyph="&#xE72E;" FontSize="16" Foreground="{StaticResource OrbitWarningBrush}" Visibility="{x:Bind NotPaired}"
+                                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0" />
+                                <Grid Visibility="{x:Bind WolPollingVisibility}" Background="#80000000">
+                                    <muxc:ProgressRing IsActive="True" Width="28" Height="28" />
                                 </Grid>
-                            </Canvas>
-                            <TextBlock Text="{x:Bind ComputerName}"></TextBlock>
+                                <Grid Visibility="{x:Bind LoadingVisibility}" Background="#80000000">
+                                    <muxc:ProgressRing IsActive="True" Width="28" Height="28" />
+                                </Grid>
+                            </Grid>
+                            <TextBlock Text="{x:Bind ComputerName}" FontSize="14" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,2,0,0">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind Connected}" />
+                                <Ellipse Width="6" Height="6" Fill="#FF888888" VerticalAlignment="Center" Visibility="{x:Bind NotConnected}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Online" Visibility="{x:Bind Connected}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitWarningBrush}" Text="· Not paired" Visibility="{x:Bind NotPaired}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Offline · X to wake" Visibility="{x:Bind NotConnected}" />
+                            </StackPanel>
                         </StackPanel>
-                        <muxc:ProgressBar IsIndeterminate="True" Visibility="{x:Bind WolPollingVisibility}"></muxc:ProgressBar>
-                    </StackPanel>
-                </DataTemplate>
-            </GridView.ItemTemplate>
-        </GridView>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+
+            <!-- Add host, as the last card in the row -->
+            <Button Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,6,0,0"
+                    HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" Click="NewHostButton_Click">
+                <StackPanel Width="160">
+                    <Grid Width="160" Height="100">
+                        <Rectangle RadiusX="8" RadiusY="8" Fill="#0FFFFFFF" Stroke="#4DFFFFFF" StrokeThickness="1" StrokeDashArray="4,3" />
+                        <FontIcon Glyph="&#xE710;" FontSize="26" />
+                    </Grid>
+                    <TextBlock Text="Add host" FontSize="14" Margin="0,8,0,0" />
+                    <TextBlock Text="Enter an IP or hostname" FontSize="12" Margin="0,2,0,0" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Controller hints -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,4,40,14">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF66CC33"><TextBlock Text="A" FontSize="11" FontWeight="Bold" Foreground="#FF66CC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Open" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF3399FF"><TextBlock Text="X" FontSize="11" FontWeight="Bold" Foreground="#FF3399FF" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Wake" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FFFFCC33"><TextBlock Text="Y" FontSize="11" FontWeight="Bold" Foreground="#FFFFCC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Host options" />
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Page>

@@ -15,11 +15,13 @@ namespace moonlight_xbox_dx
 	/// An empty page that can be used on its own or navigated to within a Frame.
 	/// </summary>
 	[Windows::Foundation::Metadata::WebHostHidden]
-	public ref class AppPage sealed
+	public ref class AppPage sealed : Windows::UI::Xaml::Data::INotifyPropertyChanged
 	{
 	private:
 		MoonlightHost^ host;
 		MoonlightApp^ currentApp;
+		MoonlightApp^ selectedApp;
+		Windows::Foundation::EventRegistrationToken m_appsChangedToken;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
 		std::atomic<bool> continueAppFetch{ false };
 		std::atomic<bool> wasConnected{ false };
@@ -29,14 +31,32 @@ namespace moonlight_xbox_dx
  		void Connect(int app);
 	public:
 		AppPage();
+		virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;
 		property MoonlightHost^ Host {
 			MoonlightHost^ get() {
 				return this->host;
 			}
 		}
+		// The app shown in the hero area: whichever shelf item has focus
+		property MoonlightApp^ SelectedApp {
+			MoonlightApp^ get() {
+				return this->selectedApp;
+			}
+			void set(MoonlightApp^ value) {
+				if (this->selectedApp != value) {
+					this->selectedApp = value;
+					PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("SelectedApp"));
+				}
+			}
+		}
 		void OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackRequestedEventArgs^ args);
 	private:
 		void AppsGrid_ItemClick(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
+		void AppsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void OnAppsChanged(Windows::Foundation::Collections::IObservableVector<MoonlightApp^>^ sender, Windows::Foundation::Collections::IVectorChangedEventArgs^ e);
+		void primaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void StartOrResume(MoonlightApp^ app);
+		void Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		void AppsGrid_RightTapped(Platform::Object^ sender, Windows::UI::Xaml::Input::RightTappedRoutedEventArgs^ e);
 		void resumeAppButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void closeAppButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

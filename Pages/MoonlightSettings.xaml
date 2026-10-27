@@ -6,17 +6,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{StaticResource OrbitBackgroundBrush}">
     <StackPanel Padding="32,64,32,32" Margin="{x:Bind State.ScreenMargin,Mode=OneWay}" BorderBrush="Green" BorderThickness="2">
-        <Button Margin="0 0 0 16" Name="backButton" Click="backButton_Click">
-            <Button.Content>
-                <SymbolIcon Symbol="Back" />
-            </Button.Content>
-        </Button>
-        <Border Margin="0,8,0,8">
-            <Border.Background>
-                <SolidColorBrush Color="{ThemeResource SystemListAccentMediumColor}"/>
-            </Border.Background>
+        <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,0,0,16">
+            <Button Name="backButton" Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" VerticalAlignment="Center" Click="backButton_Click">
+                <FontIcon Glyph="&#xE72B;" FontSize="16" />
+            </Button>
+            <TextBlock Style="{StaticResource OrbitTitleTextStyle}" FontSize="32" LineHeight="36" VerticalAlignment="Center" Text="Settings" />
+        </StackPanel>
+        <Border Margin="0,8,0,16" CornerRadius="10" Background="{StaticResource OrbitSurfaceBrush}">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Margin="8,8,4,8" VerticalAlignment="Center">
                     <Run FontFamily="Segoe Fluent Icons" FontSize="32">&#xe946;</Run>
@@ -27,7 +25,7 @@
             </StackPanel>
 
         </Border>
-        <Grid RowSpacing="8">
+        <Grid RowSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition  Width="200"></ColumnDefinition>
                 <ColumnDefinition  Width="*"></ColumnDefinition>
