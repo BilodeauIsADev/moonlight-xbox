@@ -93,7 +93,7 @@ void AppSettingsControl::HookCards() {
 			for (auto node = dynamic_cast<DependencyObject^>(e->OriginalSource); node != nullptr; node = VisualTreeHelper::GetParent(node)) {
 				if (node == page->DisplayPanel) { display = true; break; }
 			}
-			calibration->Visibility = display ? Visibility::Visible : Visibility::Collapsed;
+			calibration->Visibility = display ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 		}
 		StackPanel^ panels[] = { page->GeneralPanel, page->DisplayPanel, page->InputPanel };
 		for (auto node = dynamic_cast<DependencyObject^>(e->OriginalSource); node != nullptr; node = VisualTreeHelper::GetParent(node)) {
@@ -149,14 +149,14 @@ void AppSettingsControl::ShowSection(int section, Control^ returnTarget, Framewo
 	StackPanel^ panels[] = { GeneralPanel, DisplayPanel, InputPanel };
 	TextBlock^ headings[] = { GeneralHeading, DisplayHeading, InputHeading };
 	for (int i = 0; i < 3; ++i) {
-		panels[i]->Visibility = section == -1 || section == i ? Visibility::Visible : Visibility::Collapsed;
-		headings[i]->Visibility = section == -1 ? Visibility::Visible : Visibility::Collapsed;
+		panels[i]->Visibility = section == -1 || section == i ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+		headings[i]->Visibility = section == -1 ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 	}
 	Control^ controls[] = { HostSelector, WelcomeButton, NavigationSoundsToggle, UiScaleSelector,
 		ScreenMarginHeightSlider, ScreenMarginWidthSlider, MenuSafeAreaToggle,
 		MouseSensitivitySlider, KeyboardEnable, KeyboardLayoutSelector };
 	for (auto control : controls) control->XYFocusLeft = returnTarget;
-	calibrationFrame->Visibility = section == 1 ? Visibility::Visible : Visibility::Collapsed;
+	calibrationFrame->Visibility = section == 1 ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 	HighlightCard(nullptr);
 	if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 }

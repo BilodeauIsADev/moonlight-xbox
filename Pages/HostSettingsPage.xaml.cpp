@@ -333,8 +333,8 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 				}
 			}
 			SectionTitle->Text = titles[i];
-			ContentScroll->Visibility = selected == GlobalSettingsOption ? Visibility::Collapsed : Visibility::Visible;
-			CalibrationFrame->Visibility = Visibility::Collapsed;
+			ContentScroll->Visibility = selected == GlobalSettingsOption ? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
+			CalibrationFrame->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 			if (selected == GlobalSettingsOption) AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
 			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 			break;
