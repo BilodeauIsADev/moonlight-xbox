@@ -380,8 +380,15 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 	if (host == nullptr) return;
 	focusedHost = host;
 	focusedHostItem = item;
-	WakeHint->Visibility = !host->Connected && !host->WolPolling
+	UpdateWakeHint();
+}
+
+// The focused host can come online (or go to sleep) without focus moving, so
+// this also runs on every layout pass.
+void HostSelectorPage::UpdateWakeHint() {
+	auto visible = focusedHost != nullptr && !focusedHost->Connected && !focusedHost->WolPolling
 		? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+	if (WakeHint->Visibility != visible) WakeHint->Visibility = visible;
 }
 
 void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
@@ -775,6 +782,7 @@ void HostSelectorPage::TryFocusInitialHost() {
 
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
 	UpdateFirstRunGuide();
+	UpdateWakeHint();
 	TryFocusInitialHost();
 }
 
