@@ -245,6 +245,10 @@ OrbitVisualStateManager::OrbitVisualStateManager() {}
 
 bool OrbitVisualStateManager::GoToStateCore(Control^ control, FrameworkElement^ root, String^ stateName,
 	VisualStateGroup^ group, VisualState^ state, bool useTransitions) {
+	// Native controls also request states absent from a particular template. A
+	// custom manager receives null group/state for those requests, just as the
+	// default manager does; there is no transition to animate in that case.
+	if (root == nullptr || group == nullptr || state == nullptr) return false;
 	const bool enabled = OrbitMotion::Enabled();
 	auto kind = OrbitMotion::GetKind(root);
 	if (kind == OrbitMotionKind::None && control != nullptr) kind = OrbitMotion::GetKind(control);

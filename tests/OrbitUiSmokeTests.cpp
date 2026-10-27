@@ -120,6 +120,10 @@ void BuildSteps() {
 		return false;
 	} });
 	Action(L"Cleanup unanimated control", []() { OrbitMotion::Stop(ref new Grid()); });
+	Action(L"Missing visual state request", []() {
+		if (VisualStateManager::GoToState(Named<Button>("hostsNavButton"), "OrbitMissingState", true))
+			throw ref new FailureException("Missing visual state unexpectedly succeeded");
+	});
 	Action(L"Open app settings", []() { Invoke("settingsNavButton"); });
 	Page<MoonlightSettings>(L"App settings loaded");
 	Dropdown(L"HostSelector");
