@@ -12,6 +12,7 @@
 #include <gamingdeviceinformation.h>
 #include <Limelight.h> // SCM_* server codec support bits
 #include <cmath> // sqrtf, lround
+#include <vector>
 
 using namespace Windows::UI::Core;
 
@@ -312,6 +313,34 @@ void HostSettingsPage::CodecComboBox_SelectionChanged(Platform::Object^ sender, 
 	host->VideoCodec = selectedCodec;
 }
 
+// Visible controls under root, top to bottom
+static void CollectFocusableControls(DependencyObject^ root, std::vector<Control^>& out) {
+	const int count = VisualTreeHelper::GetChildrenCount(root);
+	for (int i = 0; i < count; i++) {
+		auto child = VisualTreeHelper::GetChild(root, i);
+		auto element = dynamic_cast<FrameworkElement^>(child);
+		if (element != nullptr && element->Visibility != Windows::UI::Xaml::Visibility::Visible) continue;
+		auto control = dynamic_cast<Control^>(child);
+		if (control != nullptr && control->IsTabStop) {
+			out.push_back(control);
+			continue;
+		}
+		CollectFocusableControls(child, out);
+	}
+}
+
+// XY focus passes over the right-aligned toggles in these rows, so give each
+// panel an explicit Up/Down order. Rebuilt on each show since rows such as HDR
+// can be hidden.
+static void ChainPanelFocus(FrameworkElement^ panel) {
+	std::vector<Control^> controls;
+	CollectFocusableControls(panel, controls);
+	for (size_t i = 0; i + 1 < controls.size(); i++) {
+		controls[i]->XYFocusDown = controls[i + 1];
+		controls[i + 1]->XYFocusUp = controls[i];
+	}
+}
+
 void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	auto selected = dynamic_cast<Button^>(sender);
@@ -334,6 +363,7 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 				}
 			}
 			SectionTitle->Text = titles[i];
+			if (selected != GlobalSettingsOption) ChainPanelFocus(panels[i]);
 			ContentScroll->Visibility = selected == GlobalSettingsOption ? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
 			CalibrationFrame->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 			if (selected == GlobalSettingsOption) AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
