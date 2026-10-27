@@ -7,6 +7,7 @@
 #include "Common/OrbitInput.h"
 #include "MoonlightSettings.xaml.h"
 #include "Common/OrbitUiScale.h"
+#include "Common/OrbitClock.h"
 #include "MoonlightWelcome.xaml.h"
 #include "Utils.hpp"
 #include "Keyboard/KeyboardCommon.h"
@@ -31,6 +32,7 @@ MoonlightSettings::MoonlightSettings()
 {
 	InitializeComponent();
 	AttachUiScale(this, ScaledRoot);
+	AttachClock(ClockText);
 	state = GetApplicationState();
 	// Interface size: 100, 90, 80 in list order
 	UiScaleSelector->SelectedIndex = state->UiScale == 100 ? 0 : state->UiScale == 80 ? 2 : 1;

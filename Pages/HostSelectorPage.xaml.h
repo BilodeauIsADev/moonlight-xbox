@@ -83,20 +83,12 @@ namespace moonlight_xbox_dx {
 		void wakeHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void testConnectionButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void ShowHostActions(Windows::UI::Xaml::FrameworkElement^ anchor, MoonlightHost^ host);
-		void libraryNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		MoonlightHost^ focusedHost;
 		Windows::UI::Xaml::Controls::GridViewItem^ focusedHostItem;
 		void UpdateFirstRunGuide();
-		void UpdateWakeHint();
-
-		// Hero for the focused PC
-		void UpdateHero();
-		void SetTextIfChanged(Windows::UI::Xaml::Controls::TextBlock^ block, Platform::String^ text);
-		void HeroPrimaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void HeroOptionsButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		MoonlightHost^ heroHost;
+		void UpdateHints();
 
 		// Ambient background loop
 		void Page_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -104,8 +96,6 @@ namespace moonlight_xbox_dx {
 		void Page_Unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void StartAmbient();
 		void StopAmbient();
-		void TintAmbient(unsigned int argb);
-		unsigned int ambientArgb = 0;
 
 		void OnDeviceAdded(Windows::Devices::Enumeration::DeviceWatcher^ sender, Windows::Devices::Enumeration::DeviceInformation^ info);
 		void OnDeviceUpdated(Windows::Devices::Enumeration::DeviceWatcher^ sender, Windows::Devices::Enumeration::DeviceInformationUpdate^ info);

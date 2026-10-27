@@ -45,20 +45,16 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Grid Margin="0,0,0,26">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                        <Image Source="ms-appx:///Assets/LunalightMark.png" Width="22" Height="22" />
-                        <TextBlock Text="Lunalight" FontSize="17" VerticalAlignment="Center" Foreground="{StaticResource OrbitTextBrush}"/>
+                <!-- Top bar: tabs centred between the bumpers, clock on the right -->
+                <Grid Margin="0,-2,0,22">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                        <ContentControl Style="{StaticResource OrbitKeyLBStyle}" Margin="0,0,6,0" />
+                        <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="HostsNavButton_Click" />
+                        <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="backButton_Click" />
+                        <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitTabSelectedBrush}" Foreground="{StaticResource OrbitTabSelectedTextBrush}" />
+                        <ContentControl Style="{StaticResource OrbitKeyRBStyle}" Margin="6,0,0,0" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
-                        <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="HostsNavButton_Click"/>
-                        <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="backButton_Click"/>
-                        <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
-                    </StackPanel>
+                    <TextBlock x:Name="ClockText" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource OrbitTextBrush}" />
                 </Grid>
                 <Grid Grid.Row="1" ColumnSpacing="28">
                     <Grid.ColumnDefinitions>
@@ -319,20 +315,13 @@
                         </ScrollViewer>
                     </Grid>
                 </Grid>
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,18,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <FontIcon Style="{StaticResource OrbitKeyLBStyle}" />
-                            <FontIcon Style="{StaticResource OrbitKeyRBStyle}" />
-                        </StackPanel>
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon Style="{StaticResource OrbitKeyAStyle}" />
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="18" Margin="0,18,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ContentControl Style="{StaticResource OrbitKeyAStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon Style="{StaticResource OrbitKeyBStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ContentControl Style="{StaticResource OrbitKeyBStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back"/>
                     </StackPanel>
                 </StackPanel>

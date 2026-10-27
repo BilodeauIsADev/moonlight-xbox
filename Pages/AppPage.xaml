@@ -60,26 +60,16 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Top bar -->
-                <Grid Grid.Row="0" Margin="32,20,32,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                        <Image Source="ms-appx:///Assets/LunalightMark.png" Width="22" Height="22" />
-                        <TextBlock Text="Lunalight" FontSize="17" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
+                <!-- Top bar: tabs centred between the bumpers, clock on the right -->
+                <Grid Grid.Row="0" Margin="32,18,32,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                        <ContentControl Style="{StaticResource OrbitKeyLBStyle}" Margin="0,0,6,0" />
                         <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click" />
-                        <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}" Content="Library" />
+                        <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Background="{StaticResource OrbitTabSelectedBrush}" Foreground="{StaticResource OrbitTabSelectedTextBrush}" />
                         <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Click="settingsButton_Click" />
+                        <ContentControl Style="{StaticResource OrbitKeyRBStyle}" Margin="6,0,0,0" />
                     </StackPanel>
-                    <Button Grid.Column="3" x:Name="settingsButton" Style="{StaticResource OrbitCircleButtonStyle}" BorderThickness="0" Background="{StaticResource OrbitSurfaceBrush}" Click="settingsButton_Click">
-                        <FontIcon Glyph="&#xE713;" FontSize="16" />
-                    </Button>
+                    <TextBlock x:Name="ClockText" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource OrbitTextBrush}" />
                 </Grid>
 
                 <!-- Hero: whatever app is focused in the shelf -->
@@ -95,14 +85,6 @@
                         <Grid x:Name="HeroLogoLayers" IsHitTestVisible="False" AutomationProperties.Name="{x:Bind SelectedApp.Name, Mode=OneWay}" />
                     </Grid>
                     <TextBlock x:Name="StreamSummaryText" Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
-                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,18,0,0">
-                        <Button x:Name="primaryButton" Style="{StaticResource OrbitPillButtonStyle}" Click="primaryButton_Click"
-                                Content="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Resume|Start streaming'}" />
-                        <Button x:Name="heroCloseAppButton" Style="{StaticResource OrbitCircleButtonStyle}" Click="closeAppButton_Click"
-                                Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" ToolTipService.ToolTip="Close app">
-                            <FontIcon Glyph="&#xE71A;" FontSize="14" />
-                        </Button>
-                    </StackPanel>
                 </StackPanel>
 
                 <!-- App shelf -->
@@ -154,7 +136,7 @@
                 </StackPanel>
 
                 <!-- Jump-to-letter picker (View button): centred over the dimmed page so it
-                     never covers the hero buttons or the shelf it scrolls -->
+                     keeps the game identity and shelf position clear -->
                 <Grid x:Name="LetterJumpPanel" Grid.RowSpan="4" Visibility="Collapsed" Background="#B3000000">
                     <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="16,12" CornerRadius="12"
                             Background="{StaticResource OrbitPanelBrush}" BorderBrush="{StaticResource OrbitOverlayBorderBrush}" BorderThickness="1">
@@ -166,39 +148,37 @@
                     </Border>
                 </Grid>
 
-                <!-- Controller hints -->
-                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,32,18">
-                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <FontIcon Style="{StaticResource OrbitKeyLBStyle}" />
-                            <FontIcon Style="{StaticResource OrbitKeyRBStyle}" />
+                <!-- Controller hints: page-wide moves on the left, actions on the right.
+                     Margins rather than Spacing so hidden hints leave no gap. -->
+                <Grid Grid.Row="3" Margin="32,0,32,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="5" Margin="0,0,18,0">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <ContentControl Style="{StaticResource OrbitKeyLTStyle}" />
+                                <ContentControl Style="{StaticResource OrbitKeyRTStyle}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Page" />
                         </StackPanel>
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
-                    </StackPanel>
-                    <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <FontIcon Style="{StaticResource OrbitKeyLTStyle}" />
-                            <FontIcon Style="{StaticResource OrbitKeyRTStyle}" />
+                        <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="5" Margin="0,0,18,0" Visibility="Collapsed">
+                            <ContentControl Style="{StaticResource OrbitKeyViewStyle}" />
+                            <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Jump to letter" />
                         </StackPanel>
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Games" />
                     </StackPanel>
-                    <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
-                        <FontIcon Style="{StaticResource OrbitKeyAStyle}" />
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="5" Margin="18,0,0,0">
+                            <ContentControl Style="{StaticResource OrbitKeyAStyle}" />
+                            <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Resume|Play'}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="5" Margin="18,0,0,0" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
+                            <ContentControl Style="{StaticResource OrbitKeyXStyle}" />
+                            <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="5" Margin="18,0,0,0">
+                            <ContentControl Style="{StaticResource OrbitKeyYStyle}" />
+                            <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream settings" />
+                        </StackPanel>
                     </StackPanel>
-                    <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0" Visibility="Collapsed">
-                        <FontIcon Style="{StaticResource OrbitKeyViewStyle}" />
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Jump to letter" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
-                        <FontIcon Style="{StaticResource OrbitKeyXStyle}" />
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
-                        <FontIcon Style="{StaticResource OrbitKeyYStyle}" />
-                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
-                    </StackPanel>
-                </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
     </Viewbox>

@@ -16,13 +16,10 @@
 #include "MoonlightWelcome.xaml.h"
 #include "State/MoonlightClient.h"
 #include "Utils.hpp"
-#include "Common/OrbitRecents.h"
-#include <chrono>
 
 #include <Ws2tcpip.h>
 #include <chrono>
 #include <cstdlib>
-#include <cwctype>
 #include <string>
 #include <winsock2.h>
 
@@ -41,8 +38,6 @@ using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::UI::ViewManagement::Core;
 
-// Host whose library was opened last; the Library tab returns to it
-static MoonlightHost^ s_lastLibraryHost = nullptr;
 static bool s_stateLoaded = false;
 
 HostSelectorPage::HostSelectorPage() {
@@ -254,7 +249,6 @@ void HostSelectorPage::StartPairing(MoonlightHost^ host) {
 }
 
 void HostSelectorPage::removeHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	if (currentHost == s_lastLibraryHost) s_lastLibraryHost = nullptr;
 	State->RemoveHost(currentHost);
 }
 
@@ -353,28 +347,7 @@ void HostSelectorPage::Connect(MoonlightHost^ host) {
 	}
 	state->shouldAutoConnect = true;
 	deviceWatcherHelper->StopWatcher();
-	s_lastLibraryHost = host;
 	bool result = this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host);
-}
-
-void HostSelectorPage::libraryNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	MoonlightHost^ target = nullptr;
-	if (s_lastLibraryHost != nullptr && s_lastLibraryHost->Connected && s_lastLibraryHost->Paired) {
-		target = s_lastLibraryHost;
-	} else {
-		for (auto host : state->SavedHosts) {
-			if (host->Connected && host->Paired) {
-				target = host;
-				break;
-			}
-		}
-	}
-	if (target == nullptr) return;
-
-	// Unlike Connect(), browsing the library must not trigger the host's autostart app
-	deviceWatcherHelper->StopWatcher();
-	s_lastLibraryHost = target;
-	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), target);
 }
 
 void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
@@ -384,21 +357,32 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 	if (host == nullptr) return;
 	focusedHost = host;
 	focusedHostItem = item;
-	UpdateWakeHint();
-	UpdateHero();
+	UpdateHints();
 }
 
-// The focused host can come online (or go to sleep) without focus moving, so
-// this also runs on every layout pass.
-void HostSelectorPage::UpdateWakeHint() {
-	// Only while that card is the focused element: X does nothing anywhere else
-	const bool onCard = focusedHostItem != nullptr && FocusManager::GetFocusedElement() == focusedHostItem;
-	auto visible = onCard && focusedHost != nullptr && !focusedHost->Connected && !focusedHost->WolPolling
-		? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
-	if (WakeHint->Visibility != visible) WakeHint->Visibility = visible;
+// Refresh on focus and layout so discovery and wake progress update the hints.
+void HostSelectorPage::UpdateHints() {
+	unsigned int index;
+	const bool onCard = focusedHost != nullptr && focusedHostItem != nullptr
+		&& FocusManager::GetFocusedElement() == focusedHostItem
+		&& state->SavedHosts->IndexOf(focusedHost, &index);
+	const auto visible = Windows::UI::Xaml::Visibility::Visible;
+	const auto collapsed = Windows::UI::Xaml::Visibility::Collapsed;
+	auto options = onCard ? visible : collapsed;
+	if (HostOptionsHint->Visibility != options) HostOptionsHint->Visibility = options;
+	auto wake = onCard && !focusedHost->Connected && !focusedHost->WolPolling ? visible : collapsed;
+	if (WakeHint->Visibility != wake) WakeHint->Visibility = wake;
+	Platform::String^ action = L"Select";
+	if (onCard) {
+		if (!focusedHost->Connected) action = L"Options";
+		else if (focusedHost->Paired) action = L"Open library";
+		else action = L"Pair";
+	} else if (FocusManager::GetFocusedElement() == AddHostCard) action = L"Add PC";
+	if (OpenHintText->Text != action) OpenHintText->Text = action;
 }
 
 void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (OrbitInput::HasOpenPopup()) return;
 	// Only act when a host card is what's focused
 	auto focused = dynamic_cast<GridViewItem^>(FocusManager::GetFocusedElement());
 	if (focused == nullptr || focused != focusedHostItem || focusedHost == nullptr) return;
@@ -769,7 +753,9 @@ void HostSelectorPage::testConnectionButton_Click(Platform::Object^ sender, Wind
 
 void HostSelectorPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	pendingInitialFocus = false;
-	if (OrbitInput::HandleBumpers(e, 0, hostsNavButton, libraryNavButton, settingsNavButton)) return;
+	if (e->Key != Windows::System::VirtualKey::GamepadMenu || OrbitInput::HasOpenPopup()) return;
+	e->Handled = true;
+	if (!e->KeyStatus.WasKeyDown) SettingsButton_Click(nullptr, nullptr);
 }
 
 void HostSelectorPage::TryFocusInitialHost() {
@@ -789,12 +775,11 @@ void HostSelectorPage::TryFocusInitialHost() {
 
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
 	UpdateFirstRunGuide();
-	UpdateWakeHint();
-	UpdateHero();
+	UpdateHints();
 	TryFocusInitialHost();
 }
 
-// The checklist lives next to Add host until any host exists; discovery may add
+// The checklist stays below the picker until a host exists; discovery may add
 // one at any time, so re-evaluate whatever the shelf looks like each layout pass.
 void HostSelectorPage::UpdateFirstRunGuide() {
 	auto visible = state->SavedHosts->Size == 0
@@ -809,104 +794,10 @@ void HostSelectorPage::Page_PointerPressed(Platform::Object^ sender, Windows::UI
 	pendingInitialFocus = false;
 }
 
-// ---- Hero --------------------------------------------------------------
-
-void HostSelectorPage::SetTextIfChanged(TextBlock^ block, Platform::String^ text) {
-	// Runs on every layout pass; an unchanged Text must not trigger another one
-	if (block->Text != text) block->Text = text;
-}
-
-// The hero describes the focused PC: status, name, what it's playing and when it
-// was last streamed. Cheap enough to call from LayoutUpdated, which is how it picks
-// up status changes (waking, coming online, a game starting) without extra events.
-void HostSelectorPage::UpdateHero() {
-	auto host = focusedHost;
-	if (host != nullptr) {
-		unsigned int index;
-		if (!state->SavedHosts->IndexOf(host, &index)) host = nullptr; // removed
-	}
-	const auto visible = Windows::UI::Xaml::Visibility::Visible;
-	const auto collapsed = Windows::UI::Xaml::Visibility::Collapsed;
-
-	if (host == nullptr) {
-		SetTextIfChanged(HeroEyebrow, L"HOSTS");
-		SetTextIfChanged(HeroName, L"Your PCs");
-		SetTextIfChanged(HeroMeta, L"Pick a PC to see its games. PCs running Sunshine on your network show up here on their own.");
-		if (HeroStatusDot->Visibility != collapsed) HeroStatusDot->Visibility = collapsed;
-		if (HeroButtons->Visibility != collapsed) HeroButtons->Visibility = collapsed;
-		heroHost = nullptr;
-		TintAmbient(0);
-		return;
-	}
-
-	// Status line
-	std::wstring status = host->CardStatusText != nullptr ? host->CardStatusText->Data() : L"";
-	if (host->Connected && host->NotPaired) status += L" \u00B7 Not paired";
-	for (auto& c : status) c = static_cast<wchar_t>(towupper(c));
-	SetTextIfChanged(HeroEyebrow, ref new Platform::String(status.c_str()));
-	auto dotKey = host->Connected && !host->NotPaired ? L"OrbitRunningBrush"
-		: (host->WolPolling || host->NotPaired) ? L"OrbitWarningBrush" : L"OrbitTextTertiaryBrush";
-	auto dot = safe_cast<Brush^>(Application::Current->Resources->Lookup(ref new Platform::String(dotKey)));
-	if (HeroStatusDot->Fill != dot) HeroStatusDot->Fill = dot;
-	if (HeroStatusDot->Visibility != visible) HeroStatusDot->Visibility = visible;
-
-	auto name = (host->ComputerName != nullptr && !host->ComputerName->IsEmpty()) ? host->ComputerName : host->LastHostname;
-	SetTextIfChanged(HeroName, name);
-
-	// "Playing X · Last streamed 2 hours ago"
-	std::wstring meta;
-	if (host->PlayingText != nullptr && !host->PlayingText->IsEmpty()) meta = host->PlayingText->Data();
-	const long long lastPlayed = state->GetLastPlayedOnHost(host);
-	if (lastPlayed > 0) {
-		auto ago = Utils::StringFromStdString(OrbitRecents::RelativeTimeLabel(lastPlayed, static_cast<long long>(time(nullptr))));
-		std::wstring when = ago->Data();
-		if (!when.empty()) when[0] = static_cast<wchar_t>(towlower(when[0]));
-		if (!meta.empty()) meta += L"  \u00B7  ";
-		meta += L"Last streamed " + when;
-	}
-	if (meta.empty()) {
-		meta = host->Connected ? L"Ready to stream." : L"Asleep or unreachable. Wake it to start streaming.";
-	}
-	SetTextIfChanged(HeroMeta, ref new Platform::String(meta.c_str()));
-
-	// Primary action mirrors pressing A on the card
-	Platform::String^ action;
-	bool enabled = true;
-	if (host->Connected && host->NotPaired) action = L"Pair";
-	else if (host->Connected) action = L"Open library";
-	else if (host->WolPolling) { action = L"Waking\u2026"; enabled = false; }
-	else action = L"Wake PC";
-	auto current = dynamic_cast<Platform::String^>(HeroPrimaryButton->Content);
-	if (current != action) HeroPrimaryButton->Content = action;
-	if (HeroPrimaryButton->IsEnabled != enabled) HeroPrimaryButton->IsEnabled = enabled;
-	if (HeroButtons->Visibility != visible) HeroButtons->Visibility = visible;
-
-	TintAmbient(static_cast<unsigned int>(host->AccentArgb));
-	if (host != heroHost) {
-		heroHost = host;
-		OrbitMotion::Reveal(HeroPanel, 220, 6, 0.65f);
-	}
-}
-
-void HostSelectorPage::HeroPrimaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	auto host = heroHost;
-	if (host == nullptr) return;
-	if (host->Connected && host->Paired) Connect(host);
-	else if (host->Connected) StartPairing(host);
-	else if (!host->WolPolling) {
-		currentHost = host;
-		wakeHostButton_Click(nullptr, nullptr);
-	}
-}
-
-void HostSelectorPage::HeroOptionsButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	if (heroHost != nullptr) ShowHostActions(HeroOptionsButton, heroHost);
-}
-
 // ---- Ambient background ----------------------------------------------------
 
 void HostSelectorPage::Page_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	UpdateWakeHint();
+	UpdateHints();
 }
 
 void HostSelectorPage::Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
@@ -946,11 +837,7 @@ void HostSelectorPage::StartAmbient() {
 		}
 	};
 	using Windows::Foundation::Numerics::float3;
-	drift(AmbientGlowA, float3(-140, 70, 0), 23, 0.7f);
-	drift(AmbientGlowB, float3(160, -60, 0), 29, 0.6f);
-	drift(AmbientGlowC, float3(-220, -50, 0), 19, 0.5f);
-	drift(AmbientRibbonA, float3(-240, -26, 0), 17, 0.55f);
-	drift(AmbientRibbonB, float3(260, 30, 0), 21, 0.5f);
+	drift(AmbientSpot, float3(65, 40, 0), 31, 0.85f);
 
 	// Specks rising and fading, each on its own schedule
 	if (AmbientParticles->Children->Size == 0) {
@@ -961,10 +848,10 @@ void HostSelectorPage::StartAmbient() {
 			const double size = 2.0 + (next() % 30) / 10.0;
 			speck->Width = size;
 			speck->Height = size;
-			speck->Fill = ref new SolidColorBrush(Windows::UI::ColorHelper::FromArgb(200, 255, 255, 255));
+			speck->Fill = ref new SolidColorBrush(Windows::UI::ColorHelper::FromArgb(200, 95, 151, 255));
 			speck->Opacity = 0;
-			Canvas::SetLeft(speck, 380 + next() % 560);
-			Canvas::SetTop(speck, 140 + next() % 360);
+			Canvas::SetLeft(speck, AmbientLayer->ActualWidth * (next() % 1000) / 1000.0);
+			Canvas::SetTop(speck, AmbientLayer->ActualHeight * (0.25 + (next() % 650) / 1000.0));
 			AmbientParticles->Children->Append(speck);
 		}
 	}
@@ -1004,34 +891,6 @@ void HostSelectorPage::StopAmbient() {
 		visual->StopAnimation(L"Opacity");
 		visual->Opacity = opacity;
 	};
-	UIElement^ layers[] = { AmbientGlowA, AmbientGlowB, AmbientGlowC, AmbientRibbonA, AmbientRibbonB };
-	for (auto layer : layers) stop(layer, 1.0f);
+	stop(AmbientSpot, 1.0f);
 	for (UIElement^ child : AmbientParticles->Children) stop(child, 0.0f);
-}
-
-// Fade the two coloured glows to the focused PC's accent (0 = the default blue)
-void HostSelectorPage::TintAmbient(unsigned int argb) {
-	if (argb == ambientArgb) return;
-	ambientArgb = argb;
-	auto color = argb == 0 ? Windows::UI::ColorHelper::FromArgb(255, 0x1B, 0x3B, 0x8A)
-		: Windows::UI::ColorHelper::FromArgb(255, static_cast<unsigned char>(argb >> 16), static_cast<unsigned char>(argb >> 8), static_cast<unsigned char>(argb));
-	auto storyboard = ref new Windows::UI::Xaml::Media::Animation::Storyboard();
-	GradientStop^ stops[] = { AmbientGlowAStop, AmbientGlowBStop };
-	unsigned char alphas[] = { 0x8C, 0x59 };
-	for (int i = 0; i < 2; ++i) {
-		auto target = color;
-		target.A = alphas[i];
-		if (!OrbitMotion::Enabled()) {
-			stops[i]->Color = target;
-			continue;
-		}
-		auto tint = ref new Windows::UI::Xaml::Media::Animation::ColorAnimation();
-		tint->To = target;
-		tint->Duration = Windows::UI::Xaml::Duration(Windows::Foundation::TimeSpan{ 6000000LL });
-		tint->EnableDependentAnimation = true;
-		Windows::UI::Xaml::Media::Animation::Storyboard::SetTarget(tint, stops[i]);
-		Windows::UI::Xaml::Media::Animation::Storyboard::SetTargetProperty(tint, L"Color");
-		storyboard->Children->Append(tint);
-	}
-	if (storyboard->Children->Size > 0) storyboard->Begin();
 }

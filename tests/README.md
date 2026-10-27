@@ -70,8 +70,14 @@ with a controller at the console's supported display sizes:
 - Launch with no autostart host, an offline autostart host, and an online autostart
   host. Focus starts on the first host card when staying on Hosts, or Add host
   when the list is empty. A successful automatic connection still opens normally.
-- Use LB / RB from the shelf and settings controls. They switch the top tabs in
-  the displayed order. LT / RT page the library and stop at either end.
+- On Hosts, check the centered "Which PC?" picker, round focus ring, scrolling
+  through a long PC list, Add PC, and the first-run checklist with no saved PCs.
+  Menu opens Settings. PC options and Wake hints appear only on a focused PC,
+  and the A hint matches Add PC, Pair, Open library, or Options.
+- Use LB / RB from the shelf and settings controls. They switch the centered top
+  tabs in the displayed order. Check the selected white pill and regional clock
+  on Library, Settings, and PC settings. LT / RT page the library and stop at
+  either end.
 - Open a dropdown or dialog and use the controller. Page navigation must leave
   the popup in control, and B must close it normally.
 - Open Add host, retry a failed address, pair a host, view host details, test a
@@ -105,5 +111,7 @@ The runner consumes that request and writes flushed UTF-16LE checkpoints to
 dropdowns, Add host dialog, progress dialog, action menus, and rapid shelf focus,
 then repeats Library/Hosts/Settings navigation three times. It stops at the first
 failure and leaves the last checkpoint available if a later XAML event crashes.
-It does not change dropdown selections or start a game. Controller button routing,
+It checks the picker hints and top-bar clocks, and opens the Library directly
+without triggering a PC's autostart game. It does not change dropdown selections
+or start a game. Controller button routing,
 streaming, and the system reduced-motion setting still require console checks.

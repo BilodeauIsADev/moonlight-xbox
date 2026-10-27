@@ -3,6 +3,7 @@
 #include "Common/OrbitMotion.h"
 #include "Common/OrbitRecents.h"
 #include "Common/OrbitUiScale.h"
+#include "Common/OrbitClock.h"
 #include "AppPage.Xaml.h"
 #include "Common\ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -59,6 +60,7 @@ AppPage::AppPage()
 {
 	InitializeComponent();
 	AttachUiScale(this, ScaledRoot);
+	AttachClock(ClockText);
 	m_artworkLoadTimer = ref new DispatcherTimer();
 	m_artworkLoadTimer->Interval = ShelfPulseTime(120);
 	Platform::WeakReference weakThis(this);
@@ -270,10 +272,6 @@ void AppPage::AppTile_PointerEntered(Platform::Object^ sender, Windows::UI::Xaml
 	auto tile = dynamic_cast<FrameworkElement^>(sender);
 	auto app = tile != nullptr ? dynamic_cast<MoonlightApp^>(tile->DataContext) : nullptr;
 	if (app != nullptr) SelectedApp = app;
-}
-
-void AppPage::primaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	StartOrResume(SelectedApp);
 }
 
 void AppPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
