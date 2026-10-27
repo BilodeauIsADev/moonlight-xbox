@@ -70,6 +70,7 @@ jobs:
             '-DVCPKG_TARGET_TRIPLET=x64-uwp',
             '-DCMAKE_SYSTEM_NAME=WindowsStore',
             '-DCMAKE_SYSTEM_VERSION=10.0.19041.0',
+            '-DCMAKE_C_FLAGS_INIT=/experimental:c11atomics',
             '-DTARGET_UWP=ON', '-DBUILD_SHARED_LIBS=OFF',
             '-DVCPKG_MANIFEST_MODE=ON',
             "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE"
@@ -102,6 +103,7 @@ jobs:
         run: |
           msbuild moonlight-xbox-dx.vcxproj /m:2 /verbosity:minimal `
             /p:Configuration=Release /p:Platform=x64 `
+            "/p:SolutionDir=$env:GITHUB_WORKSPACE\" `
             /p:WindowsTargetPlatformVersion=10.0.26100.0 `
             /p:AppxBundle=Always /p:AppxBundlePlatforms=x64 `
             "/p:AppxPackageDir=$env:GITHUB_WORKSPACE\artifacts\packages\" `

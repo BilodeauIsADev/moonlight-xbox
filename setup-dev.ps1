@@ -251,6 +251,7 @@ Run-IfNeeded "Configuring moonlight-common-c" {
           -G "$CMakeGenerator" `
           -DCMAKE_SYSTEM_NAME="WindowsStore" `
           -DCMAKE_SYSTEM_VERSION="$WindowsSDK" `
+          -DCMAKE_C_FLAGS_INIT="/experimental:c11atomics" `
           -DTARGET_UWP=ON `
           -DBUILD_SHARED_LIBS=off `
           -DVCPKG_MANIFEST_MODE=$VcpkgManifestMode `
@@ -269,6 +270,7 @@ Run-IfNeeded "Configuring libgamestream" {
           -G "$CMakeGenerator" `
           -DCMAKE_SYSTEM_NAME="WindowsStore" `
           -DCMAKE_SYSTEM_VERSION="$WindowsSDK" `
+          -DCMAKE_C_FLAGS_INIT="/experimental:c11atomics" `
           -DTARGET_UWP=ON `
           -DBUILD_SHARED_LIBS=off `
           -DVCPKG_MANIFEST_MODE=$VcpkgManifestMode `
