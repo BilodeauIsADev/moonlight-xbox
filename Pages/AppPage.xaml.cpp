@@ -560,6 +560,22 @@ void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::I
 		e->Handled = true;
 		return;
 	}
+	if (m_letterJumpOpen) {
+		// Move through the letters by hand: XY focus would leave the picker for the shelf
+		int delta = 0;
+		switch (e->Key) {
+		case Windows::System::VirtualKey::GamepadDPadLeft: case Windows::System::VirtualKey::GamepadLeftThumbstickLeft: case Windows::System::VirtualKey::Left: delta = -1; break;
+		case Windows::System::VirtualKey::GamepadDPadRight: case Windows::System::VirtualKey::GamepadLeftThumbstickRight: case Windows::System::VirtualKey::Right: delta = 1; break;
+		case Windows::System::VirtualKey::GamepadDPadUp: case Windows::System::VirtualKey::GamepadLeftThumbstickUp: case Windows::System::VirtualKey::Up: delta = -14; break;
+		case Windows::System::VirtualKey::GamepadDPadDown: case Windows::System::VirtualKey::GamepadLeftThumbstickDown: case Windows::System::VirtualKey::Down: delta = 14; break;
+		default: break;
+		}
+		if (delta != 0) {
+			MoveLetterFocus(delta);
+			e->Handled = true;
+			return;
+		}
+	}
 	if (OrbitInput::HandleBumpers(e, 1, hostsNavButton, libraryNavButton, settingsNavButton)) return;
 	OrbitInput::HandleShelfTriggers(e, HostsGrid, SelectedApp);
 }
@@ -575,7 +591,10 @@ void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
 	ClearPendingArtwork(true);
 	for (auto child : HeroLogoLayers->Children) OrbitMotion::Stop(child);
 	HeroLogoLayers->Children->Clear();
-	HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	// A logo already on disk decodes in a moment; keep the text title hidden
+	// meanwhile so it doesn't flash. HeroArtworkFailed brings it back.
+	HeroTitle->Visibility = SelectedApp != nullptr && SelectedApp->LogoPath != nullptr && !SelectedApp->LogoPath->IsEmpty()
+		? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
 	UpdateHeroMetadata();
 	if (SelectedApp != nullptr) {
 		m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
@@ -590,6 +609,8 @@ void AppPage::OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI
 	if (sender != SelectedApp) return;
 	if (e->PropertyName == L"BackgroundPath") LoadHeroImage(SelectedApp->BackgroundPath, false);
 	if (e->PropertyName == L"LogoPath") LoadHeroImage(SelectedApp->LogoPath, true);
+	// A sharper square cover can arrive later; it only matters while it stands in for wide art
+	if (e->PropertyName == L"ImagePath" && m_artworkIsCover) LoadHeroImage(nullptr, false);
 }
 
 void AppPage::UpdateHeroArtwork() {
@@ -709,6 +730,18 @@ void AppPage::OpenLetterJump() {
 	}
 }
 
+void AppPage::MoveLetterFocus(int delta) {
+	const int count = static_cast<int>(LetterJumpRow->Children->Size);
+	if (count == 0) return;
+	int current = 0;
+	auto focused = dynamic_cast<UIElement^>(FocusManager::GetFocusedElement());
+	unsigned int index;
+	if (focused != nullptr && LetterJumpRow->Children->IndexOf(focused, &index)) current = static_cast<int>(index);
+	const int target = (std::max)(0, (std::min)(count - 1, current + delta));
+	auto button = dynamic_cast<Button^>(LetterJumpRow->Children->GetAt(target));
+	if (button != nullptr) button->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+}
+
 void AppPage::CloseLetterJump() {
 	if (!m_letterJumpOpen) return;
 	m_letterJumpOpen = false;
@@ -742,7 +775,18 @@ void AppPage::LoadHeroImage(Platform::String^ path, bool logo) {
 	if (!m_heroActive) return;
 	auto& requests = logo ? m_logoRequest : m_artworkRequest;
 	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
+	bool cover = false;
+	if (!logo && (path == nullptr || path->IsEmpty()) && SelectedApp != nullptr) {
+		// No wide art: show the square cover on the right, as before wide art existed.
+		// The placeholder gamepad SVG is not worth a hero.
+		std::wstring imagePath = SelectedApp->ImagePath != nullptr ? SelectedApp->ImagePath->Data() : L"";
+		if (imagePath.size() > 4 && _wcsicmp(imagePath.c_str() + imagePath.size() - 4, L".svg") != 0) {
+			path = SelectedApp->ImagePath;
+			cover = true;
+		}
+	}
 	if (path == nullptr || path->IsEmpty()) {
+		if (!logo) m_artworkIsCover = false;
 		requests.Invalidate();
 		ClearPendingArtwork(logo);
 		for (auto child : layers->Children) OrbitMotion::Stop(child);
@@ -753,11 +797,12 @@ void AppPage::LoadHeroImage(Platform::String^ path, bool logo) {
 	uint64_t request;
 	if (!requests.Begin(path->Data(), request)) return;
 	ClearPendingArtwork(logo);
+	if (!logo) m_artworkIsCover = cover;
 	Platform::WeakReference weakThis(this);
 	try {
 		auto address = OrbitArtworkUri(path->Data(), Windows::Storage::ApplicationData::Current->LocalFolder->Path->Data());
 		auto source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage();
-		source->DecodePixelWidth = logo ? 880 : 1920;
+		source->DecodePixelWidth = logo ? 880 : (cover ? 680 : 1920);
 		source->ImageOpened += ref new RoutedEventHandler([weakThis, request, logo](Platform::Object^ sender, RoutedEventArgs^) {
 			auto page = weakThis.Resolve<AppPage>();
 			if (page != nullptr) page->PresentHeroArtwork(safe_cast<Windows::UI::Xaml::Media::ImageSource^>(sender), request, logo);
@@ -770,14 +815,37 @@ void AppPage::LoadHeroImage(Platform::String^ path, bool logo) {
 		if (logo && SelectedApp != nullptr) Windows::UI::Xaml::Automation::AutomationProperties::SetName(image, SelectedApp->Name);
 		image->Stretch = logo ? Windows::UI::Xaml::Media::Stretch::Uniform : Windows::UI::Xaml::Media::Stretch::UniformToFill;
 		image->HorizontalAlignment = logo ? Windows::UI::Xaml::HorizontalAlignment::Left : Windows::UI::Xaml::HorizontalAlignment::Stretch;
-		image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Stretch;
+		image->VerticalAlignment = cover ? Windows::UI::Xaml::VerticalAlignment::Top : Windows::UI::Xaml::VerticalAlignment::Stretch;
 		image->Source = source;
 		image->Opacity = 0;
 		if (logo) m_pendingLogo = image;
 		else m_pendingArtwork = image;
+		UIElement^ layer = image;
+		if (cover) {
+			// The cover sits on the right with its own soft left edge, like the old hero
+			auto frame = ref new Grid();
+			frame->Width = 680;
+			frame->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Right;
+			frame->Children->Append(image);
+			auto fade = ref new Windows::UI::Xaml::Media::LinearGradientBrush();
+			fade->StartPoint = Windows::Foundation::Point(0, 0);
+			fade->EndPoint = Windows::Foundation::Point(1, 0);
+			auto solid = ref new Windows::UI::Xaml::Media::GradientStop();
+			solid->Color = Windows::UI::ColorHelper::FromArgb(255, 0, 0, 0);
+			solid->Offset = 0;
+			auto clear = ref new Windows::UI::Xaml::Media::GradientStop();
+			clear->Color = Windows::UI::ColorHelper::FromArgb(0, 0, 0, 0);
+			clear->Offset = 0.45;
+			fade->GradientStops->Append(solid);
+			fade->GradientStops->Append(clear);
+			auto edge = ref new Windows::UI::Xaml::Shapes::Rectangle();
+			edge->Fill = fade;
+			frame->Children->Append(edge);
+			layer = frame;
+		}
 		// Decode into an invisible, live Image before presenting it. Title text
 		// remains visible until the logo has successfully opened.
-		layers->Children->Append(image);
+		layers->Children->Append(layer);
 		source->UriSource = ref new Windows::Foundation::Uri(ref new Platform::String(address.c_str()));
 	} catch (Platform::Exception^) {
 		HeroArtworkFailed(request, logo);
@@ -792,7 +860,14 @@ void AppPage::PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, 
 	ClearPendingArtwork(logo);
 	image->Opacity = 1;
 	if (logo) HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	OrbitMotion::FadeArtwork(logo ? HeroLogoLayers : HeroArtLayers, image);
+	OrbitMotion::FadeArtwork(logo ? HeroLogoLayers : HeroArtLayers, HeroLayerFor(image, logo));
+}
+
+// The layer child for an image: the image itself, or the frame wrapping a cover.
+UIElement^ AppPage::HeroLayerFor(Image^ image, bool logo) {
+	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
+	auto frame = dynamic_cast<UIElement^>(image->Parent);
+	return frame != nullptr && frame != layers ? frame : image;
 }
 
 void AppPage::ClearPendingArtwork(bool logo) {
@@ -800,7 +875,7 @@ void AppPage::ClearPendingArtwork(bool logo) {
 	if (image == nullptr) return;
 	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
 	unsigned int index;
-	if (layers->Children->IndexOf(image, &index)) layers->Children->RemoveAt(index);
+	if (layers->Children->IndexOf(HeroLayerFor(image, logo), &index)) layers->Children->RemoveAt(index);
 	if (logo) m_pendingLogo = nullptr;
 	else m_pendingArtwork = nullptr;
 }
@@ -809,6 +884,11 @@ void AppPage::HeroArtworkFailed(uint64_t request, bool logo) {
 	auto& requests = logo ? m_logoRequest : m_artworkRequest;
 	if (!m_heroActive || !requests.IsCurrent(request)) return;
 	ClearPendingArtwork(logo);
+	// Wide art that won't open falls back to the cover
+	if (!logo && !m_artworkIsCover) {
+		LoadHeroImage(nullptr, false);
+		return;
+	}
 	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
 	for (auto child : layers->Children) OrbitMotion::Stop(child);
 	layers->Children->Clear();

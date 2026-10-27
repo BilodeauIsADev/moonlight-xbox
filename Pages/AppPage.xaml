@@ -155,7 +155,8 @@
             <Border x:Name="LetterJumpPanel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                     Margin="0,0,0,12" Padding="12,8" CornerRadius="10" Visibility="Collapsed"
                     Background="{StaticResource OrbitPanelBrush}" BorderBrush="{StaticResource OrbitOverlayBorderBrush}" BorderThickness="1">
-                <StackPanel x:Name="LetterJumpRow" Orientation="Horizontal" Spacing="4" />
+                <!-- Wraps after 14 letters so the whole alphabet fits the TV-safe width -->
+                <VariableSizedWrapGrid x:Name="LetterJumpRow" Orientation="Horizontal" MaximumRowsOrColumns="14" ItemWidth="44" ItemHeight="44" />
             </Border>
 
             <!-- Controller hints -->

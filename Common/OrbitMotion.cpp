@@ -187,7 +187,7 @@ void OrbitMotion::Reveal(UIElement^ element, int milliseconds, float offsetY, fl
 	batch->End();
 }
 
-void OrbitMotion::FadeArtwork(Grid^ layers, Image^ image) {
+void OrbitMotion::FadeArtwork(Grid^ layers, UIElement^ image) {
 	if (!Enabled() || layers->Children->Size == 0) {
 		layers->Children->Clear();
 		layers->Children->Append(image);

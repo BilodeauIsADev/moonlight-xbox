@@ -30,11 +30,15 @@ namespace moonlight_xbox_dx
 		Windows::UI::Xaml::DispatcherTimer^ m_artworkLoadTimer;
 		Windows::Foundation::EventRegistrationToken m_selectedAppChangedToken{};
 		bool m_heroActive = false;
+		// The background request in flight is the square cover standing in for missing wide art
+		bool m_artworkIsCover = false;
 		void OnSelectedAppChanged(MoonlightApp^ previous);
 		void OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e);
 		void UpdateHeroArtwork();
 		void LoadHeroImage(Platform::String^ path, bool logo);
 		void ClearPendingArtwork(bool logo);
+		Windows::UI::Xaml::UIElement^ HeroLayerFor(Windows::UI::Xaml::Controls::Image^ image, bool logo);
+		void MoveLetterFocus(int delta);
 		void PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request, bool logo);
 		void HeroArtworkFailed(uint64_t request, bool logo);
 		void StopHeroMotion();

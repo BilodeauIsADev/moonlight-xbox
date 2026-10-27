@@ -28,7 +28,7 @@ internal:
 	static bool Enabled();
 	static void Reveal(Windows::UI::Xaml::UIElement^ element, int milliseconds, float offsetY, float initialOpacity);
 	static void Stop(Windows::UI::Xaml::UIElement^ element);
-	static void FadeArtwork(Windows::UI::Xaml::Controls::Grid^ layers, Windows::UI::Xaml::Controls::Image^ image);
+	static void FadeArtwork(Windows::UI::Xaml::Controls::Grid^ layers, Windows::UI::Xaml::UIElement^ image);
 
 private:
 	static void OnKindChanged(Windows::UI::Xaml::DependencyObject^ element, Windows::UI::Xaml::DependencyPropertyChangedEventArgs^ args);
