@@ -36,6 +36,7 @@ namespace moonlight_xbox_dx {
 		}
 
 	private:
+		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		struct Entry {
 			bool inFlight = false;
 			int64_t retryAtMs = 0;
@@ -61,6 +62,12 @@ namespace moonlight_xbox_dx {
 
 	private:
 		ApplicationState^ state;
+		bool pendingInitialFocus = true;
+		bool waitingForAutoConnect = false;
+		void TryFocusInitialHost();
+		void Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e);
+		void Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);
+		Windows::UI::Xaml::Controls::TextBlock^ dialogHostnameErrorText;
 		void NewHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void OnNewHostDialogPrimaryClick(Windows::UI::Xaml::Controls::ContentDialog^ sender, Windows::UI::Xaml::Controls::ContentDialogButtonClickEventArgs^ args);
 		Windows::UI::Xaml::Controls::TextBox^ dialogHostnameTextBox;

@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+#include "Common/OrbitInput.h"
 #include "HostSettingsPage.xaml.h"
 #include "MoonlightSettings.xaml.h"
 #include "Utils.hpp"
@@ -419,4 +420,8 @@ void HostSettingsPage::HostsNavButton_Click(Platform::Object^ sender, Windows::U
 		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
 		Frame->GoBack();
 	}
+}
+
+void HostSettingsPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (OrbitInput::HandleBumpers(e, 2, hostsNavButton, backButton, settingsNavButton)) return;
 }

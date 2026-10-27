@@ -26,6 +26,7 @@
 #include <ppltasks.h>
 #include <collection.h>
 #include <gamingdeviceinformation.h>
+#include "Common/OrbitMotion.h"
 #include "App.xaml.h"
 
 #define IMGUI_USER_CONFIG "Common\imconfig.moonlight.h"

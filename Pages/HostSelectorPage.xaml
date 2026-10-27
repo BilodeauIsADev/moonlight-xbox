@@ -9,10 +9,11 @@
     mc:Ignorable="d"
     Background="{StaticResource OrbitBackgroundBrush}"
     XYFocusKeyboardNavigation="Disabled"
-    KeyDown="Page_KeyDown"
+    PreviewKeyDown="Page_PreviewKeyDown" KeyDown="Page_KeyDown" LayoutUpdated="Page_LayoutUpdated"
+    PointerPressed="Page_PointerPressed"
     >
     <FlyoutBase.AttachedFlyout>
-        <MenuFlyout x:Name="ActionsFlyout" AllowFocusOnInteraction="false" Placement="TopEdgeAlignedRight">
+        <MenuFlyout AreOpenCloseAnimationsEnabled="False" MenuFlyoutPresenterStyle="{StaticResource OrbitMenuFlyoutPresenterStyle}" x:Name="ActionsFlyout" AllowFocusOnInteraction="false" Placement="TopEdgeAlignedRight">
             <MenuFlyoutItem x:Name="hostSettingsButton" Click="hostSettingsButton_Click" Text="Host Settings" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
                 <MenuFlyoutItem.Icon>
                     <SymbolIcon Symbol="Setting" />
@@ -40,7 +41,7 @@
             </MenuFlyoutItem>
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
-    <Grid>
+    <Grid local:OrbitMotion.Kind="Page">
         <Grid.Background>
             <LinearGradientBrush StartPoint="1,0" EndPoint="0,1">
                 <GradientStop Color="#FF1B3B8A" Offset="0" />
@@ -68,8 +69,8 @@
                 <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
-                <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="libraryNavButton_Click" />
                 <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}" Content="Hosts" />
+                <Button x:Name="libraryNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="libraryNavButton_Click" />
                 <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Click="SettingsButton_Click" />
             </StackPanel>
             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10">
@@ -143,7 +144,7 @@
             </GridView>
 
             <!-- Add host, as the last card in the row -->
-            <Button Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,14,0,0"
+            <Button x:Name="AddHostCard" Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,14,0,0"
                     HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" Click="NewHostButton_Click">
                 <StackPanel Width="160">
                     <Grid Width="160" Height="100">
@@ -158,6 +159,10 @@
 
         <!-- Controller hints -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
+                </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Open" />

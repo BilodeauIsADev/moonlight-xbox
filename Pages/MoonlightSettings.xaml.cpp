@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+#include "Common/OrbitInput.h"
 #include "MoonlightSettings.xaml.h"
 #include "MoonlightWelcome.xaml.h"
 #include "Utils.hpp"
@@ -143,4 +144,8 @@ void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::
 {
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	navigation->BackRequested -= m_back_cookie;
+}
+
+void MoonlightSettings::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (OrbitInput::HandleBumpers(e, 2, backButton, nullptr, settingsNavButton)) return;
 }

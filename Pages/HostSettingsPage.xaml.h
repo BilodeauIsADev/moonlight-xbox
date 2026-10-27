@@ -17,6 +17,7 @@ namespace moonlight_xbox_dx
 		public ref class HostSettingsPage sealed
 	{
 	private:
+		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		MoonlightHost^ host;
 		Windows::Foundation::Collections::IVector<ScreenResolution^>^ availableResolutions;
 		Windows::Foundation::Collections::IVector<int>^ availableFps;

@@ -1,4 +1,6 @@
 ﻿#include "pch.h"
+#include "Common/OrbitInput.h"
+#include "Common/OrbitMotion.h"
 #include "AppPage.Xaml.h"
 #include "Common\ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -8,6 +10,7 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cwctype>
 #include <vector>
 
 using namespace moonlight_xbox_dx;
@@ -152,6 +155,7 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 }
 
 void AppPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {
+	StopHeroMotion();
 	continueAppFetch.store(false);
 
 	auto observableApps = host != nullptr ? dynamic_cast<IObservableVector<MoonlightApp^>^>(host->Apps) : nullptr;
@@ -373,7 +377,7 @@ void AppPage::closeAndStartButton_Click(Platform::Object ^ sender, Windows::UI::
 
 void AppPage::ExecuteCloseAndStart() {
 	auto that = this;
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(nullptr, Utils::StringFromStdString("Closing app..."));
+	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
 	moonlight_xbox_dx::Utils::Logf("AppPage::ExecuteCloseAndStart: progressToken=%llu\n", (unsigned long long)progressToken);
 
 	concurrency::create_task(concurrency::create_async([that, progressToken]() {
@@ -414,7 +418,7 @@ void AppPage::ExecuteCloseAndStart() {
 void AppPage::closeAppButton_Click(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
 	auto that = this;
 
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(Utils::StringFromStdString("Closing"), Utils::StringFromStdString("Closing app..."));
+	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
 	moonlight_xbox_dx::Utils::Logf("AppPage::closeAppButton_Click: progressToken=%llu\n", (unsigned long long)progressToken);
 
 	concurrency::create_task(concurrency::create_async([that, progressToken]() {
@@ -460,14 +464,121 @@ void AppPage::OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackReques
                                                         }
 
 void AppPage::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	m_heroActive = true;
+	if (SelectedApp != nullptr) {
+		if (m_selectedAppChangedToken.Value == 0) {
+			m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
+		}
+		LoadHeroArtwork(SelectedApp->ImagePath);
+	}
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	m_back_cookie = navigation->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(this, &AppPage::OnBackRequested);
 }
 
 void AppPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StopHeroMotion();
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	navigation->BackRequested -= m_back_cookie;
 	// stop background polling loop
 	continueAppFetch.store(false);
 }
 
+void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (OrbitInput::HandleBumpers(e, 1, hostsNavButton, libraryNavButton, settingsNavButton)) return;
+	OrbitInput::HandleShelfTriggers(e, HostsGrid, SelectedApp);
+}
+
+void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
+	if (previous != nullptr && m_selectedAppChangedToken.Value != 0) {
+		previous->PropertyChanged -= m_selectedAppChangedToken;
+		m_selectedAppChangedToken.Value = 0;
+	}
+	m_artworkRequest.Invalidate();
+	m_pendingArtwork = nullptr;
+	if (SelectedApp == nullptr) return;
+	m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
+	if (m_heroActive) {
+		OrbitMotion::Reveal(HeroTitle, 220, 6, 0.65f);
+		LoadHeroArtwork(SelectedApp->ImagePath);
+	}
+}
+
+void AppPage::OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e) {
+	if (sender == SelectedApp && e->PropertyName == L"ImagePath") LoadHeroArtwork(SelectedApp->ImagePath);
+}
+
+void AppPage::LoadHeroArtwork(Platform::String^ path) {
+	if (!m_heroActive || path == nullptr) return;
+	uint64_t request;
+	if (!m_artworkRequest.Begin(path->Data(), request)) return;
+	Platform::WeakReference weakThis(this);
+	try {
+		auto address = OrbitArtworkUri(path->Data(), Windows::Storage::ApplicationData::Current->LocalFolder->Path->Data());
+		auto uri = ref new Windows::Foundation::Uri(ref new Platform::String(address.c_str()));
+		std::wstring extension = uri->Path->Data();
+		std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
+		if (extension.size() >= 4 && extension.substr(extension.size() - 4) == L".svg") {
+			auto source = ref new Windows::UI::Xaml::Media::Imaging::SvgImageSource();
+			m_pendingArtwork = source;
+			source->RasterizePixelWidth = 680;
+			source->Opened += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^>(
+				[weakThis, request](Windows::UI::Xaml::Media::Imaging::SvgImageSource^ sender, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^) {
+					auto page = weakThis.Resolve<AppPage>();
+					if (page != nullptr) page->PresentHeroArtwork(sender, request);
+				});
+			source->OpenFailed += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceFailedEventArgs^>(
+				[weakThis, request](Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceFailedEventArgs^) {
+					auto page = weakThis.Resolve<AppPage>();
+					if (page != nullptr) page->HeroArtworkFailed(request);
+				});
+			source->UriSource = uri;
+		} else {
+			auto source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage();
+			m_pendingArtwork = source;
+			source->DecodePixelWidth = 680;
+			source->ImageOpened += ref new RoutedEventHandler([weakThis, request](Platform::Object^ sender, RoutedEventArgs^) {
+				auto page = weakThis.Resolve<AppPage>();
+				if (page != nullptr) page->PresentHeroArtwork(safe_cast<Windows::UI::Xaml::Media::ImageSource^>(sender), request);
+			});
+			source->ImageFailed += ref new ExceptionRoutedEventHandler([weakThis, request](Platform::Object^, ExceptionRoutedEventArgs^) {
+				auto page = weakThis.Resolve<AppPage>();
+				if (page != nullptr) page->HeroArtworkFailed(request);
+			});
+			source->UriSource = uri;
+		}
+	} catch (Platform::Exception^) {
+		HeroArtworkFailed(request);
+	}
+}
+
+void AppPage::PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request) {
+	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
+	m_pendingArtwork = nullptr;
+	auto image = ref new Image();
+	image->Source = source;
+	image->Stretch = Windows::UI::Xaml::Media::Stretch::UniformToFill;
+	image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Top;
+	image->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Center;
+	OrbitMotion::FadeArtwork(HeroArtLayers, image);
+}
+
+void AppPage::HeroArtworkFailed(uint64_t request) {
+	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
+	m_pendingArtwork = nullptr;
+	LoadHeroArtwork(L"ms-appx:///Assets/gamepad.svg");
+}
+
+void AppPage::StopHeroMotion() {
+	m_heroActive = false;
+	m_artworkRequest.Invalidate();
+	m_pendingArtwork = nullptr;
+	if (SelectedApp != nullptr && m_selectedAppChangedToken.Value != 0) {
+		SelectedApp->PropertyChanged -= m_selectedAppChangedToken;
+		m_selectedAppChangedToken.Value = 0;
+	}
+	OrbitMotion::Stop(HeroTitle);
+	auto previous = ref new Platform::Collections::Vector<Windows::UI::Xaml::UIElement^>();
+	for (auto child : HeroArtLayers->Children) previous->Append(child);
+	HeroArtLayers->Children->Clear();
+	for (auto child : previous) OrbitMotion::Stop(child);
+}

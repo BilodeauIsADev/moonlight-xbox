@@ -499,7 +499,7 @@ void StreamPage::disconnectAndCloseButton_Click(Platform::Object ^ sender, Windo
 
 	auto that = this;
 
-	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(nullptr, Utils::StringFromStdString("Closing..."));
+	auto progressToken = ::moonlight_xbox_dx::ModalDialog::ShowProgressDialogToken(L"Closing app", L"Waiting for the host to close the running app.");
 
 	concurrency::create_task(concurrency::create_async([that, progressToken]() {
 		try {

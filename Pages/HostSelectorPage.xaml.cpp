@@ -5,6 +5,7 @@
 
 // clang-format off
 #include "pch.h"
+#include "Common/OrbitInput.h"
 // clang-format on
 #include "HostSelectorPage.xaml.h"
 #include "AppPage.xaml.h"
@@ -38,6 +39,7 @@ using namespace Windows::UI::ViewManagement::Core;
 
 // Host whose library was opened last; the Library tab returns to it
 static MoonlightHost^ s_lastLibraryHost = nullptr;
+static bool s_stateLoaded = false;
 
 HostSelectorPage::HostSelectorPage() {
 	state = GetApplicationState();
@@ -85,29 +87,56 @@ HostSelectorPage::HostSelectorPage() {
 
 void HostSelectorPage::NewHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
 	dialogHostnameTextBox = ref new TextBox();
+	dialogHostnameTextBox->Style = safe_cast<Style^>(Application::Current->Resources->Lookup("OrbitTextBoxStyle"));
+	dialogHostnameTextBox->Header = L"Host address";
+	dialogHostnameTextBox->PlaceholderText = L"IP address or hostname";
 	dialogHostnameTextBox->AcceptsReturn = false;
 	dialogHostnameTextBox->KeyDown += ref new Windows::UI::Xaml::Input::KeyEventHandler(this, &HostSelectorPage::OnKeyDown);
+	dialogHostnameErrorText = ref new TextBlock();
+	dialogHostnameErrorText->TextWrapping = TextWrapping::Wrap;
+	dialogHostnameErrorText->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitWarningBrush"));
+	dialogHostnameErrorText->Visibility = Visibility::Collapsed;
+	auto content = ref new StackPanel();
+	content->Spacing = 12;
+	content->Children->Append(dialogHostnameTextBox);
+	content->Children->Append(dialogHostnameErrorText);
 	ContentDialog^ dialog = ref new ContentDialog();
-	dialog->Content = dialogHostnameTextBox;
-	dialog->Title = L"Add new Host";
-	dialog->IsSecondaryButtonEnabled = true;
-	dialog->PrimaryButtonText = "Ok";
-	dialog->SecondaryButtonText = "Cancel";
+	dialog->Content = content;
+	dialog->Title = L"Add host";
+	dialog->PrimaryButtonText = L"Add host";
+	dialog->CloseButtonText = L"Cancel";
+	dialog->PrimaryButtonClick += ref new Windows::Foundation::TypedEventHandler<ContentDialog^, ContentDialogButtonClickEventArgs^>(this, &HostSelectorPage::OnNewHostDialogPrimaryClick);
 	concurrency::create_task(dialog->ShowAsync());
-	dialog->PrimaryButtonClick += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Controls::ContentDialog^, Windows::UI::Xaml::Controls::ContentDialogButtonClickEventArgs^>(this, &HostSelectorPage::OnNewHostDialogPrimaryClick);
 }
 
 void HostSelectorPage::OnNewHostDialogPrimaryClick(Windows::UI::Xaml::Controls::ContentDialog^ sender, Windows::UI::Xaml::Controls::ContentDialogButtonClickEventArgs^ args) {
-	sender->IsPrimaryButtonEnabled = false;
 	Platform::String^ hostname = dialogHostnameTextBox->Text;
+	if (hostname == nullptr || std::wstring(hostname->Data()).find_first_not_of(L" \t\r\n") == std::wstring::npos) {
+		args->Cancel = true;
+		dialogHostnameErrorText->Text = L"Enter an IP address or hostname.";
+		dialogHostnameErrorText->Visibility = Visibility::Visible;
+		return;
+	}
+	dialogHostnameErrorText->Visibility = Visibility::Collapsed;
+	sender->IsPrimaryButtonEnabled = false;
 	auto def = args->GetDeferral();
 	Concurrency::create_task([def, hostname, this, args, sender]() {
-		bool status = state->AddHost(hostname);
+		bool status = false;
+		try {
+			status = state->AddHost(hostname);
+		} catch (...) {
+			Utils::Log("Add host failed\n");
+		}
 		if (!status) {
 			Platform::WeakReference weakThis(this);
 			concurrency::create_task(Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([sender, weakThis, hostname, def, args]() {
 				args->Cancel = true;
-				sender->Content = L"Failed to Connect to " + hostname;
+				auto page = weakThis.Resolve<HostSelectorPage>();
+				if (page != nullptr) {
+					page->dialogHostnameErrorText->Text = L"Could not connect to " + hostname + L". Check the address and try again.";
+					page->dialogHostnameErrorText->Visibility = Visibility::Visible;
+				}
+				sender->IsPrimaryButtonEnabled = true;
 				def->Complete();
 				})))
 				.then([](concurrency::task<void> t) {
@@ -250,6 +279,8 @@ void HostSelectorPage::SettingsButton_Click(Platform::Object^ sender, Windows::U
 }
 
 void HostSelectorPage::OnStateLoaded() {
+	s_stateLoaded = true;
+	waitingForAutoConnect = !state->autostartInstance.empty();
 	if (GetApplicationState()->FirstTime) {
 		this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(MoonlightWelcome::typeid));
 		return;
@@ -281,21 +312,19 @@ void HostSelectorPage::OnStateLoaded() {
 			}));
 	}
 	concurrency::when_all(checks.begin(), checks.end()).then([this]() {
-		if (GetApplicationState()->autostartInstance.size() > 0) {
-			auto pii = Utils::StringFromStdString(GetApplicationState()->autostartInstance);
-			for (unsigned int i = 0; i < GetApplicationState()->SavedHosts->Size; i++) {
-				auto host = GetApplicationState()->SavedHosts->GetAt(i);
-				if (host->InstanceId->Equals(pii)) {
-					auto that = this;
-					Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
-						Windows::UI::Core::CoreDispatcherPriority::High,
-						ref new Windows::UI::Core::DispatchedHandler([that, host]() {
-							that->Connect(host);
-							}));
-					break;
+		waitingForAutoConnect = false;
+		if (Frame == nullptr || Frame->Content != this) return;
+		if (!state->autostartInstance.empty()) {
+			auto instance = Utils::StringFromStdString(state->autostartInstance);
+			for (auto host : state->SavedHosts) {
+				if (host->InstanceId != nullptr && host->InstanceId->Equals(instance) && host->Connected) {
+					pendingInitialFocus = false;
+					Connect(host);
+					return;
 				}
 			}
 		}
+		TryFocusInitialHost();
 		},
 		concurrency::task_continuation_context::use_current())
 		.then([this](concurrency::task<void> t) {
@@ -713,4 +742,32 @@ void HostSelectorPage::testConnectionButton_Click(Platform::Object^ sender, Wind
 			concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog));
 			}));
 		});
+}
+
+void HostSelectorPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	pendingInitialFocus = false;
+	if (OrbitInput::HandleBumpers(e, 0, hostsNavButton, libraryNavButton, settingsNavButton)) return;
+}
+
+void HostSelectorPage::TryFocusInitialHost() {
+	if (!pendingInitialFocus || !s_stateLoaded || waitingForAutoConnect || Frame == nullptr || Frame->Content != this) return;
+	if (OrbitInput::HasOpenPopup()) return;
+	if (HostsGrid->Items->Size == 0) {
+		if (AddHostCard->Focus(FocusState::Keyboard)) pendingInitialFocus = false;
+		return;
+	}
+	auto item = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromIndex(0));
+	if (item == nullptr) {
+		HostsGrid->ScrollIntoView(HostsGrid->Items->GetAt(0));
+		return; // LayoutUpdated retries after the first container is realized.
+	}
+	if (item->Focus(FocusState::Keyboard)) pendingInitialFocus = false;
+}
+
+void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
+	TryFocusInitialHost();
+}
+
+void HostSelectorPage::Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e) {
+	pendingInitialFocus = false;
 }

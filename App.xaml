@@ -35,6 +35,10 @@
                 <GradientStop Color="#00000000" Offset="0.58" />
             </LinearGradientBrush>
 
+            <local:OrbitVisualStateManager x:Key="OrbitVisualStateManager" />
+            <x:String x:Key="OrbitDialogEnterDuration">0:0:0.18</x:String>
+            <x:String x:Key="OrbitDialogExitDuration">0:0:0.13</x:String>
+
             <!-- Large white pill: the primary action on every screen -->
             <Style x:Key="OrbitPillButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="#FFFFFFFF" />
@@ -50,31 +54,51 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
+                            <Grid local:OrbitMotion.Kind="Button" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform><CompositeTransform x:Name="PressTransform" /></Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.9" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.9" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.75" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.75" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.4" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
-                                            <VisualState.Setters>
-                                                <Setter Target="FocusRing.Opacity" Value="1" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
                                         <VisualState x:Name="PointerFocused" />
@@ -112,32 +136,54 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
+                            <Grid local:OrbitMotion.Kind="Button" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform><CompositeTransform x:Name="PressTransform" /></Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="0.6" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="1" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.4" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
                                             <VisualState.Setters>
-                                                <Setter Target="FocusRing.Opacity" Value="1" />
+
                                                 <Setter Target="Surface.Background" Value="#33FFFFFF" />
                                             </VisualState.Setters>
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
                                         <VisualState x:Name="PointerFocused" />
@@ -173,32 +219,54 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
+                            <Grid local:OrbitMotion.Kind="Button" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform><CompositeTransform x:Name="PressTransform" /></Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="0.6" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="1" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.4" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
                                             <VisualState.Setters>
-                                                <Setter Target="FocusRing.Opacity" Value="1" />
+
                                                 <Setter Target="Label.Foreground" Value="#FFFFFFFF" />
                                             </VisualState.Setters>
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
                                         <VisualState x:Name="PointerFocused" />
@@ -237,32 +305,54 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
+                            <Grid local:OrbitMotion.Kind="Button" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform><CompositeTransform x:Name="PressTransform" /></Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="0.6" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="1" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.4" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
                                             <VisualState.Setters>
-                                                <Setter Target="FocusRing.Opacity" Value="1" />
+
                                                 <Setter Target="Surface.Background" Value="#29FFFFFF" />
                                             </VisualState.Setters>
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
                                         <VisualState x:Name="PointerFocused" />
@@ -300,38 +390,59 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+                            <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5" local:OrbitMotion.Kind="Button" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
-                                    <CompositeTransform x:Name="RootTransform" />
+                                    <TransformGroup><CompositeTransform x:Name="PressTransform" /><CompositeTransform x:Name="RootTransform" /></TransformGroup>
                                 </Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="0.6" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0.6" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Hover.Opacity" Value="1" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="PressTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
-                                            <VisualState.Setters>
-                                                <Setter Target="Surface.Opacity" Value="0.4" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Surface" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
                                             <VisualState.Setters>
                                                 <Setter Target="Surface.Background" Value="#F2FFFFFF" />
                                                 <Setter Target="TileContent.Foreground" Value="#FF111111" />
-                                                <Setter Target="RootTransform.ScaleX" Value="1.06" />
-                                                <Setter Target="RootTransform.ScaleY" Value="1.06" />
-                                                <Setter Target="RootTransform.TranslateY" Value="-5" />
+
                                             </VisualState.Setters>
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="RootTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="RootTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="RootTransform" Storyboard.TargetProperty="TranslateY" To="-5" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
                                         <VisualState x:Name="PointerFocused" />
@@ -365,45 +476,63 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="GridViewItem">
-                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35">
+                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
                                     <CompositeTransform x:Name="LiftTransform" />
                                 </Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver" />
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Body.Opacity" Value="0.8" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="Opacity" To="0.8" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Selected" />
                                         <VisualState x:Name="PointerOverSelected" />
                                         <VisualState x:Name="PressedSelected" />
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.160">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.160">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
-                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0:0:0.18">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0:0:0.18">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
-                                        <VisualState x:Name="Unfocused">
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused">
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
-                                        <VisualState x:Name="PointerFocused" />
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
                                 <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
@@ -426,45 +555,63 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="GridViewItem">
-                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35">
+                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
                                     <CompositeTransform x:Name="LiftTransform" />
                                 </Grid.RenderTransform>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Pressed" GeneratedDuration="0:0:0.080">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver" />
                                         <VisualState x:Name="Pressed">
-                                            <VisualState.Setters>
-                                                <Setter Target="Body.Opacity" Value="0.8" />
-                                            </VisualState.Setters>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="Opacity" To="0.8" Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Selected" />
                                         <VisualState x:Name="PointerOverSelected" />
                                         <VisualState x:Name="PressedSelected" />
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.120">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.160">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.160">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
-                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0:0:0.18">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0:0:0.18">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
-                                        <VisualState x:Name="Unfocused">
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused">
+
+                                        <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
-                                        <VisualState x:Name="PointerFocused" />
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
                                 <Border x:Name="Glow" VerticalAlignment="Top" Height="118" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
@@ -529,6 +676,437 @@
                 <Setter Property="BorderThickness" Value="1.5" />
                 <Setter Property="Padding" Value="4,0" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- Shared dialog chrome keeps progress, forms, confirmations and errors in Orbit. -->
+            <SolidColorBrush x:Key="OrbitOverlayBorderBrush" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="OrbitOverlayBrush" Color="#FF1C1C1E" />
+            <CornerRadius x:Key="OrbitOverlayCornerRadius">16</CornerRadius>
+            <StaticResource x:Key="OverlayCornerRadius" ResourceKey="OrbitOverlayCornerRadius" />
+            <StaticResource x:Key="ContentDialogBackground" ResourceKey="OrbitOverlayBrush" />
+            <StaticResource x:Key="ContentDialogTopOverlay" ResourceKey="OrbitOverlayBrush" />
+            <StaticResource x:Key="ContentDialogForeground" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="OrbitOverlayBorderBrush" />
+            <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#B3000000" />
+            <Thickness x:Key="ContentDialogPadding">28</Thickness>
+            <Thickness x:Key="ContentDialogTitleMargin">0,0,0,16</Thickness>
+            <Thickness x:Key="ContentDialogSeparatorThickness">0</Thickness>
+            <x:Double x:Key="ContentDialogMaxWidth">520</x:Double>
+
+            <Style x:Key="OrbitSecondaryPillButtonStyle" TargetType="Button" BasedOn="{StaticResource OrbitPillButtonStyle}">
+                <Setter Property="Background" Value="{StaticResource OrbitSurfaceStrongBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+            </Style>
+            <!-- Dialog template adapted from Microsoft.UI.Xaml 2.7 (MIT).
+                 Copyright (c) Microsoft Corporation. See Common/OrbitDialogTemplate.LICENSE.txt. -->
+            <ControlTemplate x:Key="OrbitDialogTemplate" TargetType="ContentDialog">
+                    <Border x:Name="Container" local:OrbitMotion.Kind="Dialog" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="DialogShowingStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition To="DialogHidden">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="IsHitTestVisible">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="False" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" KeySpline="0.16,1,0.3,1" Value="0.985" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" KeySpline="0.16,1,0.3,1" Value="0.985" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
+                                                <LinearDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" Value="0.0" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition To="DialogShowing">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Visibility">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="Visible" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.97" />
+                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" KeySpline="0.16,1,0.3,1" Value="1.0" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.97" />
+                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" KeySpline="0.16,1,0.3,1" Value="1.0" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
+                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.0" />
+                                                <LinearDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" Value="1.0" />
+                                            </DoubleAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                </VisualStateGroup.Transitions>
+                                <VisualState x:Name="DialogHidden" />
+                                <VisualState x:Name="DialogShowing">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.IsTabStop" Value="True"/>
+                                        <Setter Target="SecondaryButton.IsTabStop" Value="True"/>
+                                        <Setter Target="CloseButton.IsTabStop" Value="True"/>
+                                        <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                        <Setter Target="BackgroundElement.TabFocusNavigation" Value="Cycle" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="DialogShowingWithoutSmokeLayer">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.IsTabStop" Value="True"/>
+                                        <Setter Target="SecondaryButton.IsTabStop" Value="True"/>
+                                        <Setter Target="CloseButton.IsTabStop" Value="True"/>
+                                        <Setter Target="LayoutRoot.Visibility" Value="Visible" />
+                                        <Setter Target="LayoutRoot.Background" Value="{x:Null}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DialogSizingStates">
+                                <VisualState x:Name="DefaultDialogSizing" />
+                                <VisualState x:Name="FullDialogSizing">
+                                    <VisualState.Setters>
+                                        <Setter Target="BackgroundElement.VerticalAlignment" Value="Stretch" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="ButtonsVisibilityStates">
+                                <VisualState x:Name="AllVisible" >
+                                    <VisualState.Setters>
+                                        <Setter Target="FirstSpacer.Width" Value="{ThemeResource ContentDialogButtonSpacing}" />
+                                        <Setter Target="SecondaryColumn.Width" Value="*" />
+                                        <Setter Target="SecondaryButton.(Grid.Column)" Value="2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="NoneVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="CommandSpace.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PrimaryVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.(Grid.Column)" Value="4" />
+                                        <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                        <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SecondaryVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="SecondaryButton.(Grid.Column)" Value="4" />
+                                        <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                        <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CloseVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                        <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PrimaryAndSecondaryVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="SecondaryButton.(Grid.Column)" Value="4" />
+                                        <Setter Target="CloseButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PrimaryAndCloseVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="SecondaryButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SecondaryAndCloseVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.Visibility" Value="Collapsed" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DefaultButtonStates">
+                                <VisualState x:Name="NoDefaultButton" />
+                                <VisualState x:Name="PrimaryAsDefaultButton">
+                                    <VisualState.Setters>
+                                        <Setter Target="PrimaryButton.Style" Value="{StaticResource AccentButtonStyle}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SecondaryAsDefaultButton">
+                                    <VisualState.Setters>
+                                        <Setter Target="SecondaryButton.Style" Value="{StaticResource AccentButtonStyle}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CloseAsDefaultButton">
+                                    <VisualState.Setters>
+                                        <Setter Target="CloseButton.Style" Value="{StaticResource AccentButtonStyle}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DialogBorderStates">
+                                <VisualState x:Name="NoBorder" />
+                                <VisualState x:Name="AccentColorBorder">
+                                    <VisualState.Setters>
+                                        <Setter Target="BackgroundElement.BorderBrush" Value="{ThemeResource SystemControlForegroundAccentBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Grid x:Name="LayoutRoot">
+                            <Rectangle x:Name="SmokeLayerBackground" Fill="{ThemeResource ContentDialogSmokeFill}" />
+                            <Border
+                                x:Name="BackgroundElement"
+                                Background="{TemplateBinding Background}"
+                                FlowDirection="{TemplateBinding FlowDirection}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BackgroundSizing="InnerBorderEdge"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                MinWidth="{ThemeResource ContentDialogMinWidth}"
+                                MaxWidth="{ThemeResource ContentDialogMaxWidth}"
+                                MinHeight="{ThemeResource ContentDialogMinHeight}"
+                                MaxHeight="{ThemeResource ContentDialogMaxHeight}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="ScaleTransform" />
+                                </Border.RenderTransform>
+                                <Grid x:Name="DialogSpace" CornerRadius="{ThemeResource OverlayCornerRadius}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <ScrollViewer
+                                        x:Name="ContentScrollViewer"
+                                        HorizontalScrollBarVisibility="Disabled"
+                                        VerticalScrollBarVisibility="Disabled"
+                                        ZoomMode="Disabled"
+                                        IsTabStop="False">
+                                        <Grid
+                                            Background="{ThemeResource ContentDialogTopOverlay}"
+                                            Padding="{ThemeResource ContentDialogPadding}"
+                                            BorderThickness="{ThemeResource ContentDialogSeparatorThickness}"
+                                            BorderBrush="{ThemeResource ContentDialogSeparatorBorderBrush}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <ContentControl
+                                                x:Name="Title"
+                                                Margin="{ThemeResource ContentDialogTitleMargin}"
+                                                Content="{TemplateBinding Title}"
+                                                ContentTemplate="{TemplateBinding TitleTemplate}"
+                                                FontSize="20"
+                                                FontFamily="XamlAutoFontFamily"
+                                                FontWeight="SemiBold"
+                                                Foreground="{TemplateBinding Foreground}"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                IsTabStop="False">
+                                                <ContentControl.Template>
+                                                    <ControlTemplate TargetType="ContentControl">
+                                                        <ContentPresenter
+                                                            Content="{TemplateBinding Content}"
+                                                            MaxLines="2"
+                                                            TextWrapping="Wrap"
+                                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                            Margin="{TemplateBinding Padding}"
+                                                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                    </ControlTemplate>
+                                                </ContentControl.Template>
+                                            </ContentControl>
+                                            <ContentPresenter
+                                                x:Name="Content"
+                                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                Content="{TemplateBinding Content}"
+                                                FontSize="{StaticResource ControlContentThemeFontSize}"
+                                                FontFamily="{StaticResource ContentControlThemeFontFamily}"
+                                                Foreground="{TemplateBinding Foreground}"
+                                                Grid.Row="1"
+                                                TextWrapping="Wrap" />
+                                        </Grid>
+                                    </ScrollViewer>
+                                    <Grid
+                                        x:Name="CommandSpace"
+                                        Grid.Row="1"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Bottom"
+                                        XYFocusKeyboardNavigation="Enabled"
+                                        Padding="{ThemeResource ContentDialogPadding}"
+                                        Background="{TemplateBinding Background}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition x:Name="PrimaryColumn" Width="*" />
+                                            <ColumnDefinition x:Name="FirstSpacer" Width="0" />
+                                            <ColumnDefinition x:Name="SecondaryColumn" Width="0" />
+                                            <ColumnDefinition x:Name="SecondSpacer" Width="{ThemeResource ContentDialogButtonSpacing}" />
+                                            <ColumnDefinition x:Name="CloseColumn" Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button
+                                            x:Name="PrimaryButton"
+                                            IsTabStop="False"
+                                            Content="{TemplateBinding PrimaryButtonText}"
+                                            IsEnabled="{TemplateBinding IsPrimaryButtonEnabled}"
+                                            Style="{TemplateBinding PrimaryButtonStyle}"
+                                            ElementSoundMode="FocusOnly"
+                                            HorizontalAlignment="Stretch" />
+                                        <Button
+                                            x:Name="SecondaryButton"
+                                            IsTabStop="False"
+                                            Content="{TemplateBinding SecondaryButtonText}"
+                                            IsEnabled="{TemplateBinding IsSecondaryButtonEnabled}"
+                                            Style="{TemplateBinding SecondaryButtonStyle}"
+                                            ElementSoundMode="FocusOnly"
+                                            HorizontalAlignment="Stretch" />
+                                        <Button
+                                            x:Name="CloseButton"
+                                            IsTabStop="False"
+                                            Grid.Column="4"
+                                            Content="{TemplateBinding CloseButtonText}"
+                                            Style="{TemplateBinding CloseButtonStyle}"
+                                            ElementSoundMode="FocusOnly"
+                                            HorizontalAlignment="Stretch" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            <Style x:Key="OrbitContentDialogStyle" TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}">
+                <Setter Property="Template" Value="{StaticResource OrbitDialogTemplate}" />
+                <Setter Property="Background" Value="{StaticResource OrbitOverlayBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource OrbitOverlayBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{StaticResource OrbitOverlayCornerRadius}" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="PrimaryButtonStyle" Value="{StaticResource OrbitPillButtonStyle}" />
+                <Setter Property="SecondaryButtonStyle" Value="{StaticResource OrbitSecondaryPillButtonStyle}" />
+                <Setter Property="CloseButtonStyle" Value="{StaticResource OrbitSecondaryPillButtonStyle}" />
+            </Style>
+            <Style TargetType="ContentDialog" BasedOn="{StaticResource OrbitContentDialogStyle}" />
+
+            <!-- Theme the native popups as well as the closed ComboBox. Keep native selection,
+                 scrolling and accessibility behavior, including controller focus. -->
+            <StaticResource x:Key="ComboBoxBackground" ResourceKey="OrbitSurfaceBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundUnfocused" ResourceKey="OrbitSurfaceBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundFocused" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="OrbitFocusBrush" />
+            <StaticResource x:Key="ComboBoxBackgroundBorderBrushUnfocused" ResourceKey="OrbitOverlayBorderBrush" />
+            <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="OrbitOverlayBorderBrush" />
+            <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="OrbitTextSecondaryBrush" />
+            <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="OrbitFocusBrush" />
+            <StaticResource x:Key="ComboBoxForeground" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxForegroundPointerOver" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxForegroundPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxForegroundFocusedPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="OrbitOverlayBrush" />
+            <StaticResource x:Key="ComboBoxDropDownForeground" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="OrbitOverlayBorderBrush" />
+            <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="OrbitTextSecondaryBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundPointerOver" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundSelectedUnfocused" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundPointerOver" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundPressed" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundSelectedUnfocused" ResourceKey="OrbitSurfaceBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="ComboBoxItemPillFillBrush" ResourceKey="OrbitFocusBrush" />
+            <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="OrbitOverlayBrush" />
+            <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="OrbitOverlayBorderBrush" />
+            <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="MenuFlyoutItemFocusedBackgroundThemeBrush" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="MenuFlyoutItemFocusedForegroundThemeBrush" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="OrbitSurfaceStrongBrush" />
+            <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="OrbitFocusBrush" />
+            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="OrbitTextBrush" />
+            <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="OrbitTextSecondaryBrush" />
+
+            <Style x:Key="OrbitComboBoxItemStyle" TargetType="ComboBoxItem" BasedOn="{StaticResource DefaultComboBoxItemStyle}">
+                <Setter Property="local:OrbitMotion.Kind" Value="Option" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource OrbitFocusBrush}" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+            </Style>
+            <Style x:Key="OrbitComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                <Setter Property="local:OrbitMotion.Kind" Value="ComboBox" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Background" Value="{StaticResource OrbitSurfaceBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource OrbitFocusBrush}" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+                <Setter Property="ItemContainerStyle" Value="{StaticResource OrbitComboBoxItemStyle}" />
+            </Style>
+            <Style TargetType="ComboBox" BasedOn="{StaticResource OrbitComboBoxStyle}" />
+            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource OrbitComboBoxItemStyle}" />
+            <Style x:Key="OrbitMenuFlyoutPresenterStyle" TargetType="MenuFlyoutPresenter" BasedOn="{StaticResource DefaultMenuFlyoutPresenterStyle}">
+                <Setter Property="Background" Value="{StaticResource OrbitOverlayBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource OrbitOverlayBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{StaticResource OrbitOverlayCornerRadius}" />
+                <Setter Property="Padding" Value="8" />
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuFlyoutPresenter">
+                    <Border local:OrbitMotion.Kind="Dropdown"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        BackgroundSizing="InnerBorderEdge">
+                        <ScrollViewer x:Name="MenuFlyoutPresenterScrollViewer"
+                            Margin="{TemplateBinding Padding}"
+                            MinWidth="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.FlyoutContentMinWidth}"
+                            HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}"
+                            HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                            VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}"
+                            VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                            IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}"
+                            IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}"
+                            ZoomMode="{TemplateBinding ScrollViewer.ZoomMode}"
+                            AutomationProperties.AccessibilityView="Raw">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate></Setter.Value></Setter>
+            </Style>
+            <Style TargetType="MenuFlyoutPresenter" BasedOn="{StaticResource OrbitMenuFlyoutPresenterStyle}" />
+            <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
+                <Setter Property="local:OrbitMotion.Kind" Value="Option" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource OrbitFocusBrush}" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+            </Style>
+            <Style x:Key="OrbitTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="Background" Value="{StaticResource OrbitSurfaceBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource OrbitOverlayBorderBrush}" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="Padding" Value="12,10" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

@@ -4,6 +4,14 @@ project(moonlight_xbox_tests LANGUAGES CXX)
 enable_testing()
 find_package(Threads REQUIRED)
 
+add_executable(orbit_navigation_tests OrbitNavigationTests.cpp)
+target_compile_features(orbit_navigation_tests PRIVATE cxx_std_17)
+add_test(NAME orbit_navigation COMMAND orbit_navigation_tests)
+
+add_executable(orbit_artwork_tests OrbitArtworkTests.cpp)
+target_compile_features(orbit_artwork_tests PRIVATE cxx_std_17)
+add_test(NAME orbit_artwork COMMAND orbit_artwork_tests)
+
 add_executable(stream_session_tests StreamSessionTests.cpp)
 target_compile_features(stream_session_tests PRIVATE cxx_std_17)
 target_link_libraries(stream_session_tests PRIVATE Threads::Threads)

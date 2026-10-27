@@ -15,7 +15,8 @@ namespace moonlight_xbox_dx
 	[Windows::Foundation::Metadata::WebHostHidden]
 	public ref class MoonlightSettings sealed
 	{
-	private: 
+	private:
+		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		ApplicationState^ state;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
 	public:

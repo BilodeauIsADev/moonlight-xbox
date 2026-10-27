@@ -1,4 +1,4 @@
-﻿<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:moonlight_xbox_dx" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" x:Class="moonlight_xbox_dx.MoonlightSettings" mc:Ignorable="d" XYFocusKeyboardNavigation="Enabled" Background="{StaticResource OrbitBackgroundBrush}">
+﻿<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:moonlight_xbox_dx" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" x:Class="moonlight_xbox_dx.MoonlightSettings" mc:Ignorable="d" PreviewKeyDown="Page_PreviewKeyDown" XYFocusKeyboardNavigation="Enabled" Background="{StaticResource OrbitBackgroundBrush}">
     <Page.Resources>
         <Style x:Key="SettingsSectionButtonStyle" TargetType="Button" BasedOn="{StaticResource OrbitRowButtonStyle}">
             <Setter Property="Background" Value="Transparent"/>
@@ -18,15 +18,8 @@
             <Setter Property="Foreground" Value="{StaticResource OrbitTextTertiaryBrush}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
-        <Style TargetType="ComboBox">
+        <Style TargetType="ComboBox" BasedOn="{StaticResource OrbitComboBoxStyle}">
             <Setter Property="Width" Value="220"/>
-            <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="{StaticResource OrbitSurfaceBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}"/>
-            <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource OrbitFocusBrush}"/>
-            <Setter Property="FocusVisualSecondaryThickness" Value="0"/>
         </Style>
         <Style TargetType="Slider">
             <Setter Property="Width" Value="220"/>
@@ -43,7 +36,7 @@
             <Setter Property="FocusVisualSecondaryThickness" Value="0"/>
         </Style>
     </Page.Resources>
-    <Grid>
+    <Grid local:OrbitMotion.Kind="Page">
         <Grid Margin="60,36,60,36">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -60,9 +53,9 @@
                     <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" Foreground="{StaticResource OrbitTextBrush}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
-                    <Button Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Visibility="Collapsed"/>
                     <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click"/>
-                    <Button Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
+                    <Button Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Visibility="Collapsed"/>
+                    <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
                 </StackPanel>
             </Grid>
             <Grid Grid.Row="1" ColumnSpacing="28">
@@ -195,6 +188,10 @@
                 </Grid>
             </Grid>
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,18,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold"/>
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33"/>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>

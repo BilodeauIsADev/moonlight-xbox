@@ -393,6 +393,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Content Include="Common\OrbitDialogTemplate.LICENSE.txt" />
     <Image Include="Assets\LargeTile.scale-100.png" />
     <Image Include="Assets\LargeTile.scale-125.png" />
     <Image Include="Assets\LargeTile.scale-150.png" />
@@ -449,6 +450,10 @@
     <ClInclude Include="App.xaml.h">
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="Common\OrbitMotion.h" />
+    <ClInclude Include="Common\OrbitArtworkRequest.h" />
+    <ClInclude Include="Common\OrbitNavigation.h" />
+    <ClInclude Include="Common\OrbitInput.h" />
     <ClInclude Include="Common\DeviceWatcherHelper.h" />
     <ClInclude Include="Common\imconfig.moonlight.h" />
     <ClInclude Include="Common\TextConsole.h" />
@@ -518,6 +523,7 @@
     <ClCompile Include="App.xaml.cpp">
       <DependentUpon>App.xaml</DependentUpon>
     </ClCompile>
+    <ClCompile Include="Common\OrbitMotion.cpp" />
     <ClCompile Include="Common\DeviceWatcherHelper.cpp" />
     <ClCompile Include="Common\DirectXHelper.cpp" />
     <ClCompile Include="Common\TextConsole.cpp" />

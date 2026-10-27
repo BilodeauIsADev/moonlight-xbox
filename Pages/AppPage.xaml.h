@@ -7,6 +7,7 @@
 
 #include "Pages\AppPage.g.h"
 #include "State\MoonlightApp.h"
+#include "Common/OrbitArtworkRequest.h"
 #include <atomic>
 
 namespace moonlight_xbox_dx
@@ -18,9 +19,20 @@ namespace moonlight_xbox_dx
 	public ref class AppPage sealed : Windows::UI::Xaml::Data::INotifyPropertyChanged
 	{
 	private:
+		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		MoonlightHost^ host;
 		MoonlightApp^ currentApp;
 		MoonlightApp^ selectedApp;
+		OrbitArtworkRequest m_artworkRequest;
+		Windows::UI::Xaml::Media::ImageSource^ m_pendingArtwork;
+		Windows::Foundation::EventRegistrationToken m_selectedAppChangedToken{};
+		bool m_heroActive = false;
+		void OnSelectedAppChanged(MoonlightApp^ previous);
+		void OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e);
+		void LoadHeroArtwork(Platform::String^ path);
+		void PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request);
+		void HeroArtworkFailed(uint64_t request);
+		void StopHeroMotion();
 		Windows::Foundation::EventRegistrationToken m_appsChangedToken;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
 		std::atomic<bool> continueAppFetch{ false };
@@ -44,8 +56,10 @@ namespace moonlight_xbox_dx
 			}
 			void set(MoonlightApp^ value) {
 				if (this->selectedApp != value) {
+					auto previous = this->selectedApp;
 					this->selectedApp = value;
 					PropertyChanged(this, ref new Windows::UI::Xaml::Data::PropertyChangedEventArgs("SelectedApp"));
+					OnSelectedAppChanged(previous);
 				}
 			}
 		}
