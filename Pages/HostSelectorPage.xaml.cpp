@@ -15,6 +15,7 @@
 #include "MoonlightWelcome.xaml.h"
 #include "State/MoonlightClient.h"
 #include "Utils.hpp"
+#include <chrono>
 
 #include <Ws2tcpip.h>
 #include <chrono>
@@ -564,9 +565,10 @@ void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^
 			host->WolPolling = true;
 			concurrency::create_task(concurrency::create_async([host]() {
 				int consecutiveSuccess = 0;
+				auto wakeStarted = std::chrono::steady_clock::now();
 				for (int i = 0; i < 60; ++i) {
-					// One polling tick per second; shown alongside the waking spinner.
-					host->WolPollingSeconds = i + 1;
+					// Probes can time out, so show real elapsed time rather than the attempt count.
+					host->WolPollingSeconds = (int)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - wakeStarted).count();
 					try {
 						host->UpdateHostInfo(false);
 						if (host->Connected) {
