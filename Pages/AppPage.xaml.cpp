@@ -768,9 +768,9 @@ void AppPage::LoadHeroImage(Platform::String^ path, bool logo) {
 		});
 		auto image = ref new Image();
 		if (logo && SelectedApp != nullptr) Windows::UI::Xaml::Automation::AutomationProperties::SetName(image, SelectedApp->Name);
-		image->Stretch = logo ? Stretch::Uniform : Stretch::UniformToFill;
-		image->HorizontalAlignment = logo ? HorizontalAlignment::Left : HorizontalAlignment::Stretch;
-		image->VerticalAlignment = VerticalAlignment::Stretch;
+		image->Stretch = logo ? Windows::UI::Xaml::Media::Stretch::Uniform : Windows::UI::Xaml::Media::Stretch::UniformToFill;
+		image->HorizontalAlignment = logo ? Windows::UI::Xaml::HorizontalAlignment::Left : Windows::UI::Xaml::HorizontalAlignment::Stretch;
+		image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Stretch;
 		image->Source = source;
 		image->Opacity = 0;
 		if (logo) m_pendingLogo = image;
