@@ -758,6 +758,12 @@
     <None Include="Assets\disconnected.svg">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="Assets\Font\NotoSans-Regular.ttf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Font\NotoSans-OFL.txt">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Assets\Font\ModeSeven-12.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>

@@ -375,7 +375,7 @@ void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml:
 }
 
 void HostSelectorPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {
-	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseVisible);
+	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 
 	// Windows will do all the hard mDNS work for us
 	String^ selector =

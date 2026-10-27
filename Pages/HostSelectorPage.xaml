@@ -56,7 +56,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top bar -->
-        <Grid Grid.Row="0" Margin="32,16,32,0">
+        <Grid Grid.Row="0" Margin="56,30,56,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -83,7 +83,7 @@
         </Grid>
 
         <!-- Hero -->
-        <StackPanel Grid.Row="1" Margin="40,28,0,0" MaxWidth="520" HorizontalAlignment="Left">
+        <StackPanel Grid.Row="1" Margin="56,24,0,0" MaxWidth="520" HorizontalAlignment="Left">
             <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="HOSTS" />
             <TextBlock Style="{StaticResource OrbitTitleTextStyle}" Margin="0,6,0,0" Text="Your PCs" />
             <TextBlock Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextWrapping="WrapWholeWords"
@@ -91,7 +91,7 @@
         </StackPanel>
 
         <!-- Host shelf -->
-        <Grid Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40,32,40,0">
+        <Grid Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="56,24,56,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -100,8 +100,8 @@
             <GridView IsRightTapEnabled="True" RightTapped="HostsGrid_RightTapped" x:Name="HostsGrid" ItemsSource="{x:Bind State.SavedHosts}"
                       IsItemClickEnabled="True" ItemClick="GridView_ItemClick" GotFocus="HostsGrid_GotFocus" TabIndex="1" SelectionMode="None"
                       MaxWidth="600"
-                      Padding="0,6,0,6"
-                      ItemContainerStyle="{StaticResource OrbitShelfItemStyle}"
+                      Padding="10,14,0,10"
+                      ItemContainerStyle="{StaticResource OrbitHostItemStyle}"
                       ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                       ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                 <GridView.ItemsPanel>
@@ -143,7 +143,7 @@
             </GridView>
 
             <!-- Add host, as the last card in the row -->
-            <Button Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,6,0,0"
+            <Button Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,14,0,0"
                     HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" Click="NewHostButton_Click">
                 <StackPanel Width="160">
                     <Grid Width="160" Height="100">
@@ -157,17 +157,17 @@
         </Grid>
 
         <!-- Controller hints -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,4,40,14">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF66CC33"><TextBlock Text="A" FontSize="11" FontWeight="Bold" Foreground="#FF66CC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Open" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF3399FF"><TextBlock Text="X" FontSize="11" FontWeight="Bold" Foreground="#FF3399FF" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF096;" Foreground="#FF3399FF" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Wake" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FFFFCC33"><TextBlock Text="Y" FontSize="11" FontWeight="Bold" Foreground="#FFFFCC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF095;" Foreground="#FFFFCC33" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Host options" />
             </StackPanel>
         </StackPanel>

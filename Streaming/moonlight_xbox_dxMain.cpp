@@ -124,8 +124,7 @@ moonlight_xbox_dxMain::moonlight_xbox_dxMain(const std::shared_ptr<DX::DeviceRes
 				DISPATCH_UI(([weakPage, client]() {
 					auto page = weakPage.Resolve<StreamPage>();
 					if (page == nullptr || client->IsConnectionTerminated()) return;
-					page->m_progressRing->IsActive = false;
-					page->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+					page->m_statusText->Text = L"Starting video...";
 				}));
 			}
 		});
@@ -310,6 +309,15 @@ void moonlight_xbox_dxMain::StartRenderLoop() {
 						auto guard = FFMpegDecoder::Lock();
 						m_deviceResources->Present();
 						FrameMark;
+					}
+					if (!m_loadingScreenHidden) {
+						m_loadingScreenHidden = true;
+						Platform::WeakReference weakPage(m_streamPage);
+						auto client = moonlightClient;
+						DISPATCH_UI(([weakPage, client]() {
+							auto page = weakPage.Resolve<StreamPage>();
+							if (page != nullptr && !client->IsConnectionTerminated()) page->HideLoadingScreen();
+						}));
 					}
 
 					TracyD3D11Collect(g_tracyCtx11);
@@ -605,16 +613,17 @@ void moonlight_xbox_dxMain::ProcessInput(int64_t now) {
 		auto result = state.GetComboResult(50, now); // hold buttons for a short time for View + Menu combo
 
 		if (result.comboTriggered) {
+			// Suppress host input before dispatching the UI toggle. The UI can
+			// clear this flag immediately when the same combo closes the panel.
+			insideFlyout = true;
 			DISPATCH_UI(([this]() {
-				Windows::UI::Xaml::Controls::Flyout::ShowAttachedFlyout(m_streamPage->m_flyoutButton);
+				m_streamPage->OpenControlCenter();
 			}));
 
 			// send an empty controller packet, otherwise Sunshine may see View being kept held down,
 			// triggering the "Home/Guide Button Emulation Timeout" to send a Guide button press after a few seconds.
 			SendGamepadReadingForState(state, EmptyReading());
 
-			// disable future input until the flyout is closed
-			insideFlyout = true;
 			continue;
 		}
 
@@ -893,12 +902,15 @@ bool moonlight_xbox_dxMain::Render() {
 	}
 
 	// Render the scene objects.
-	bool showImGui = m_deviceResources->GetShowImGui();
+	const bool showGraphs = m_deviceResources->GetShowImGui();
+	const bool showImGui = showGraphs || m_statsTextRenderer->GetVisible();
 
-	// ImGui setup and update handling (which we don't use)
+	// The stats card uses ImGui even when graph collection is disabled.
 	if (showImGui) {
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplUwp_NewFrame(m_deviceResources->GetPixelWidth(), m_deviceResources->GetPixelHeight());
+		// A single atlas baked for 4K also covers 1080p/1440p and live size changes.
+		ImGui::GetIO().FontGlobalScale = (18.0f / 60.0f) * ImGui::GetIO().DisplaySize.y / 1080.0f;
 		ImGui::NewFrame();
 	}
 
@@ -906,7 +918,9 @@ bool moonlight_xbox_dxMain::Render() {
 	if (shouldPresent) {
 		// avoid useless rendering without an underlying frame change
 		m_LogRenderer->Render();
-		m_statsTextRenderer->Render(showImGui);
+		// Visibility can change on the UI thread after NewFrame's decision.
+		// Defer a newly enabled overlay until the next initialized ImGui frame.
+		if (showImGui) m_statsTextRenderer->Render(showGraphs);
 	}
 
 	if (showImGui) {

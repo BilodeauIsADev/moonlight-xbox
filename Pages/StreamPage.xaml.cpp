@@ -63,13 +63,19 @@ void StreamPage::OnBackRequested(Platform::Object^ e,Windows::UI::Core::BackRequ
 	// UWP on Xbox One triggers a back request whenever the B
 	// button is pressed which can result in the app being
 	// suspended if unhandled
+	if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) HideControlCenter();
 	args->Handled = true;
 }
 
 void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
 
 	this->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	this->m_progressView->Opacity = 1;
 	this->m_progressRing->IsActive = true;
+	StatusText->Text = L"Connecting...";
+	StepText->Text = L"";
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Begin();
 
 	if (Utils::ShowDevTools()) {
 		toggleCapture->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -135,6 +141,9 @@ void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::Route
 }
 
 void StreamPage::Page_Unloaded(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
+	HideControlCenter();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	navigation->BackRequested -= m_back_cookie;
 
@@ -179,20 +188,21 @@ void StreamPage::OnSwapChainPanelSizeChanged(Object^ sender, Windows::UI::Xaml::
 
 void StreamPage::flyoutButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	Windows::UI::Xaml::Controls::Flyout::ShowAttachedFlyout((FrameworkElement^)sender);
-	m_main->SetFlyoutOpened(true);
+	OpenControlCenter();
 }
 
 // Runs for both the hidden button and the View + Menu combo in moonlight_xbox_dxMain
-void StreamPage::ActionsFlyout_Opening(Platform::Object^ sender, Platform::Object^ e)
+void StreamPage::OpenControlCenter()
 {
+	if (m_main == nullptr) return;
+	if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+		HideControlCenter();
+		return;
+	}
+	m_main->SetFlyoutOpened(true);
+	ControlCenter->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	// Capture stops itself when it hits the size limit, so resync the button text.
 	this->CaptureMode = FFMpegDecoder::instance().IsCaptureActive();
-
-	// Placement="Full" centers the presenter; size the content to cover the whole window
-	auto bounds = Window::Current->Bounds;
-	ControlCenter->Width = bounds.Width;
-	ControlCenter->Height = bounds.Height;
 
 	RefreshControlCenter();
 	ShowCard(m_activeTile != nullptr ? m_activeTile : StatsTile);
@@ -205,29 +215,61 @@ void StreamPage::ActionsFlyout_Opening(Platform::Object^ sender, Platform::Objec
 		m_controlCenterTimer->Tick += ref new EventHandler<Platform::Object^>(this, &StreamPage::OnControlCenterTick);
 	}
 	m_controlCenterTimer->Start();
-}
-
-void StreamPage::ActionsFlyout_Opened(Platform::Object^ sender, Platform::Object^ e)
-{
-	// Land on the tile used last time. Deferred so the flyout's own initial focus doesn't override it.
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("ControlCenterIntro"))->Begin();
+	// Wait for layout before positioning the card and focusing its tile.
 	Platform::WeakReference weakThis(this);
 	Dispatcher->RunAsync(CoreDispatcherPriority::Low, ref new DispatchedHandler([weakThis]() {
 		auto that = weakThis.Resolve<StreamPage>();
-		if (that != nullptr && that->m_activeTile != nullptr) {
-			that->m_activeTile->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+		if (that != nullptr && that->ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) {
+			that->ControlCenter->UpdateLayout();
+			that->FocusActiveTile();
 		}
 	}));
 }
 
-void StreamPage::ActionsFlyout_Closed(Platform::Object^ sender, Platform::Object^ e)
+void StreamPage::FocusActiveTile()
 {
-	if (m_controlCenterTimer != nullptr) m_controlCenterTimer->Stop();
-	if (m_main != nullptr) m_main->SetFlyoutOpened(false);
+	if (m_activeTile == nullptr) m_activeTile = StatsTile;
+	ShowCard(m_activeTile);
+	m_activeTile->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 }
 
 void StreamPage::HideControlCenter()
 {
-	ActionsFlyout->Hide();
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("ControlCenterIntro"))->Stop();
+	ControlCenter->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	if (m_controlCenterTimer != nullptr) m_controlCenterTimer->Stop();
+	if (m_main != nullptr) m_main->SetFlyoutOpened(false);
+}
+
+void StreamPage::ControlCenter_KeyDown(Platform::Object^ sender, KeyRoutedEventArgs^ e)
+{
+	if (e->Key == Windows::System::VirtualKey::GamepadB || e->Key == Windows::System::VirtualKey::Escape) {
+		HideControlCenter();
+		e->Handled = true;
+	} else if ((e->Key == Windows::System::VirtualKey::GamepadDPadUp || e->Key == Windows::System::VirtualKey::Up) &&
+		FocusManager::GetFocusedElement() == m_activeTile) {
+		Tile_Click(nullptr, nullptr);
+		e->Handled = true;
+	}
+}
+
+void StreamPage::HideLoadingScreen()
+{
+	if (ProgressView->Visibility != Windows::UI::Xaml::Visibility::Visible) return;
+	m_progressRing->IsActive = false;
+	auto outro = dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"));
+	if (!m_loadingOutroHooked) {
+		outro->Completed += ref new EventHandler<Platform::Object^>(this, &StreamPage::OnLoadingOutroCompleted);
+		m_loadingOutroHooked = true;
+	}
+	outro->Begin();
+}
+
+void StreamPage::OnLoadingOutroCompleted(Platform::Object^ sender, Platform::Object^ e)
+{
+	ProgressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
 }
 
 void StreamPage::Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -279,9 +321,11 @@ void StreamPage::RefreshControlCenter()
 		SessionTitleText->Text = configuration->appName;
 		QuitTitleText->Text = L"Quit " + configuration->appName;
 		VideoChipText->Text = video;
-		StatVideoText->Text = video;
+		StatVideoText->Text = Utils::StringFromStdString(std::to_string(configuration->width) + "\xC3\x97" + std::to_string(configuration->height));
+		StatFpsText->Text = Utils::StringFromStdString(std::to_string(configuration->FPS) + " FPS");
 		CodecChipText->Text = codec;
-		StatCodecText->Text = codec;
+		StatCodecText->Text = configuration->videoCodec;
+		StatHdrText->Text = configuration->enableHDR ? L"HDR" : L"SDR";
 		StatBitrateText->Text = Utils::StringFromStdString(std::to_string(configuration->bitrate / 1000) + " Mbps");
 	}
 
@@ -390,6 +434,10 @@ void StreamPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArg
 	SetStreamConfig(configuration);
 
 	if (configuration == nullptr)return;
+	m_loadingArtPath = configuration->appImagePath;
+	m_loadingTitle = configuration->appName;
+	OnPropertyChanged("LoadingArtPath");
+	OnPropertyChanged("LoadingTitle");
 
 	m_streamStart = std::chrono::steady_clock::now();
 	SetCaptureMode(false);
@@ -411,6 +459,7 @@ void StreamPage::disonnectButton_Click(Platform::Object^ sender, Windows::UI::Xa
 
 void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ e)
 {
+	if (m_main == nullptr || ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) return;
 	//Ignore Gamepad input
 	if (e->VirtualKey >= Windows::System::VirtualKey::GamepadA && e->VirtualKey <= Windows::System::VirtualKey::GamepadRightThumbstickLeft) {
 		return;
@@ -425,6 +474,8 @@ void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::C
 
 void StreamPage::OnKeyUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ e)
 {
+	// Release keys held before opening the menu so they cannot stick on the PC.
+	if (m_main == nullptr) return;
 	//Ignore Gamepad input
 	if (e->VirtualKey >= Windows::System::VirtualKey::GamepadA && e->VirtualKey <= Windows::System::VirtualKey::GamepadRightThumbstickLeft) {
 		return;

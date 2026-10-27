@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <atomic>
 #include "Common\StepTimer.h"
 #include "State\GamepadState.h"
 #include "Streaming\VideoRenderer.h"
@@ -64,7 +65,8 @@ namespace moonlight_xbox_dx
 
 		// Track current input pointer position.
 		float m_pointerLocationX;
-		bool insideFlyout = false;
+		std::atomic<bool> insideFlyout{false};
+		bool m_loadingScreenHidden = false;
 		StreamPage^ m_streamPage;
 
 		// Gamepad handling

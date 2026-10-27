@@ -25,6 +25,7 @@ Stats::Stats() :
 void Stats::Reset()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
+	m_displaySnapshot = {};
 	m_bwTracker.Reset();
 	m_avgQueueSize = 1.0f;
 	m_avgMbpsSmoothed = 0.0;
@@ -35,6 +36,12 @@ void Stats::Reset()
 	ZeroMemory(&m_LastWndVideoStats, sizeof(VIDEO_STATS));
 	ZeroMemory(&m_GlobalVideoStats, sizeof(VIDEO_STATS));
 	ZeroMemory(&m_LastRtpVideoStats, sizeof(RTP_VIDEO_STATS));
+}
+
+StatsSnapshot Stats::GetDisplaySnapshot()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_displaySnapshot;
 }
 
 void Stats::sampleRtpStats()
@@ -369,6 +376,26 @@ void Stats::formatVideoStats(DX::StepTimer const &timer, VIDEO_STATS &stats, cha
 		break;
 	}
 
+	// formatVideoStats is called with m_mutex held. Publish independently of the
+	// legacy text buffer size, before any formatting can return on overflow.
+	StatsSnapshot snapshot = {};
+	snapshot.revision = m_displaySnapshot.revision + 1;
+	snapshot.valid = stats.receivedFrames != 0;
+	snapshot.isPyroWave = isPyroWave;
+	snapshot.immediatePacing = Pacer::instance().getPacingImmediate();
+	snapshot.width = videoWidth;
+	snapshot.height = videoHeight;
+	snprintf(snapshot.codec, sizeof(snapshot.codec), "%s", codecString);
+	snapshot.video = stats;
+	snapshot.averageMbps = m_bwTracker.GetAverageMbps();
+	snapshot.peakMbps = m_bwTracker.GetPeakMbps();
+	snapshot.bitrateWindowSeconds = m_bwTracker.GetWindowSeconds();
+	snapshot.averageQueueSize = m_avgQueueSize;
+	snapshot.audioBufferMs = ImGuiPlots::instance().getAvg(PLOT_AUDIO_BUFFER_MS);
+	snapshot.lostPackets60s = m_lostPackets.GetTotal();
+	snapshot.recoveredPackets60s = m_recoveredPackets.GetTotal();
+	m_displaySnapshot = snapshot;
+
 	if (stats.receivedFps > 0) {
 		ret = snprintf(&output[offset],
 		               length - offset,
@@ -483,7 +510,7 @@ void Stats::formatVideoStats(DX::StepTimer const &timer, VIDEO_STATS &stats, cha
 		               ImGuiPlots::instance().getAvg(PLOT_AUDIO_BUFFER_MS),
 		               stats.renderedFrames ? (double)stats.totalPacerTimeUs / 1000.0 / stats.renderedFrames : 0.0f,
 		               stats.renderedFrames ? (double)stats.totalRenderTimeUs / 1000.0 / stats.renderedFrames : 0.0f,
-		               stats.renderedFrames ? (double)stats.totalPresentDisplayMs / stats.countPresentDisplayMs : 0.0f);
+		               stats.countPresentDisplayMs ? (double)stats.totalPresentDisplayMs / stats.countPresentDisplayMs : 0.0f);
 		if (ret < 0 || (size_t)ret >= (length - offset)) {
 			Utils::Log("Error: stringifyVideoStats length overflow\n");
 			return;

@@ -45,7 +45,7 @@ AppPage::AppPage()
 {
 	InitializeComponent();
 
-	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseVisible);
+	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 
 	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &AppPage::OnLoaded);
 	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &AppPage::OnUnloaded);
@@ -233,6 +233,7 @@ void AppPage::Connect(int appId) {
 	config->hostname = host->LastHostname;
 	config->appID = appId;
 	config->appName = app ? app->Name : "App";
+	config->appImagePath = app ? app->ImagePath : nullptr;
 	config->width = host->Resolution->Width;
 	config->height = host->Resolution->Height;
 	config->bitrate = host->Bitrate;

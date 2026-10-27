@@ -33,9 +33,19 @@
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <Grid>
-        <!-- Hero artwork: the focused app's cover, faded into black on the left and bottom -->
-        <Grid HorizontalAlignment="Right" Width="640" IsHitTestVisible="False">
-            <Image x:Name="HeroArt" Source="{x:Bind SelectedApp.ImagePath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0.85" />
+        <!-- Hero artwork: the focused app's cover, edge to edge on the right and faded into black -->
+        <Grid HorizontalAlignment="Right" Width="680" IsHitTestVisible="False">
+            <Image x:Name="HeroArt" Source="{x:Bind SelectedApp.ImagePath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0.9" />
+            <!-- Soft left edge so the art never shows a hard seam -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FF000000" Offset="0" />
+                        <GradientStop Color="#B3000000" Offset="0.22" />
+                        <GradientStop Color="#00000000" Offset="0.55" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
         </Grid>
         <Rectangle Fill="{StaticResource OrbitHeroLeftFadeBrush}" IsHitTestVisible="False" />
         <Rectangle Fill="{StaticResource OrbitHeroBottomFadeBrush}" IsHitTestVisible="False" />
@@ -49,7 +59,7 @@
             </Grid.RowDefinitions>
 
             <!-- Top bar -->
-            <Grid Grid.Row="0" Margin="32,16,32,0">
+            <Grid Grid.Row="0" Margin="56,30,56,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -71,7 +81,7 @@
             </Grid>
 
             <!-- Hero: whatever app is focused in the shelf -->
-            <StackPanel Grid.Row="1" Margin="40,12,0,0" MaxWidth="470" HorizontalAlignment="Left">
+            <StackPanel Grid.Row="1" Margin="56,12,0,0" MaxWidth="470" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal" Spacing="7">
                     <Ellipse Width="7" Height="7" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" />
                     <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}">
@@ -92,13 +102,13 @@
 
             <!-- App shelf -->
             <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,0,4">
-                <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Margin="40,0,0,4">
+                <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Margin="56,0,0,0">
                     <Run Text="On " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
                 </TextBlock>
                 <GridView x:Name="HostsGrid" ItemsSource="{x:Bind Host.Apps}" IsRightTapEnabled="True" IsItemClickEnabled="True" SelectionMode="None"
                           ItemClick="AppsGrid_ItemClick" RightTapped="AppsGrid_RightTapped" GotFocus="AppsGrid_GotFocus" TabIndex="1"
-                          Padding="40,6,40,6"
-                          ItemContainerStyle="{StaticResource OrbitShelfItemStyle}"
+                          Padding="56,14,56,10"
+                          ItemContainerStyle="{StaticResource OrbitPosterItemStyle}"
                           ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                           ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                     <GridView.ItemsPanel>
@@ -123,22 +133,23 @@
             </StackPanel>
 
             <!-- Controller hints -->
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,4,40,14">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF66CC33"><TextBlock Text="A" FontSize="11" FontWeight="Bold" Foreground="#FF66CC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
-                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FF3399FF"><TextBlock Text="X" FontSize="11" FontWeight="Bold" Foreground="#FF3399FF" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF096;" Foreground="#FF3399FF" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#FFFFCC33"><TextBlock Text="Y" FontSize="11" FontWeight="Bold" Foreground="#FFFFCC33" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF095;" Foreground="#FFFFCC33" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#D9FFFFFF" CornerRadius="4"><TextBlock Text="View" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                    <Border Style="{StaticResource OrbitHintBadgeStyle}" BorderBrush="#D9FFFFFF" CornerRadius="4"><TextBlock Text="Menu" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xEECA;" Foreground="#FFFFFFFF" />
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="+" />
+                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xEDE3;" Foreground="#FFFFFFFF" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream menu, in game" Margin="2,0,0,0" />
                 </StackPanel>
             </StackPanel>

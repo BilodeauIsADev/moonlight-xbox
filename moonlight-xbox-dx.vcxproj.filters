@@ -732,6 +732,12 @@
     <None Include="Assets\Font\ModeSeven-24.spritefont">
       <Filter>Assets</Filter>
     </None>
+    <None Include="Assets\Font\NotoSans-Regular.ttf">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\Font\NotoSans-OFL.txt">
+      <Filter>Assets</Filter>
+    </None>
     <None Include="Assets\Font\ModeSeven-12.spritefont">
       <Filter>Assets</Filter>
     </None>

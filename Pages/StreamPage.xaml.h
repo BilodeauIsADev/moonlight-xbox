@@ -84,10 +84,17 @@ namespace moonlight_xbox_dx
 				return GetApplicationState();
 			}
 		}
-		property Windows::UI::Xaml::Controls::Flyout^ m_flyout {
-			Windows::UI::Xaml::Controls::Flyout^ get() {
-				return this->ActionsFlyout;
-			}
+		// Control center (View + Menu). Called from the render thread via DISPATCH_UI.
+		void OpenControlCenter();
+		// Fades out the loading screen once the first frame is ready.
+		void HideLoadingScreen();
+
+		// Loading screen
+		property Platform::String^ LoadingArtPath {
+			Platform::String^ get() { return m_loadingArtPath; }
+		}
+		property Platform::String^ LoadingTitle {
+			Platform::String^ get() { return m_loadingTitle; }
 		}
 
 		property Button^ m_flyoutButton {
@@ -149,9 +156,12 @@ namespace moonlight_xbox_dx
 
 		void OnSwapChainPanelSizeChanged(Object^ sender, Windows::UI::Xaml::SizeChangedEventArgs^ e);
 		void flyoutButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void ActionsFlyout_Closed(Platform::Object^ sender, Platform::Object^ e);
-		void ActionsFlyout_Opening(Platform::Object^ sender, Platform::Object^ e);
-		void ActionsFlyout_Opened(Platform::Object^ sender, Platform::Object^ e);
+		void ControlCenter_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
+		void FocusActiveTile();
+		void OnLoadingOutroCompleted(Platform::Object^ sender, Platform::Object^ e);
+		Platform::String^ m_loadingArtPath;
+		Platform::String^ m_loadingTitle;
+		bool m_loadingOutroHooked = false;
 
 		// Control center (the in-stream menu)
 		void Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

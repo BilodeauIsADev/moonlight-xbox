@@ -65,7 +65,10 @@ MoonlightSettings::MoonlightSettings()
 void MoonlightSettings::backButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	GetApplicationState()->UpdateFile();
-	this->Frame->GoBack();
+	if (Frame->CanGoBack) {
+		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
+		Frame->GoBack();
+	}
 }
 
 void MoonlightSettings::HostSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
@@ -105,8 +108,36 @@ void MoonlightSettings::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::Ro
 {
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	m_back_cookie = navigation->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(this, &MoonlightSettings::OnBackRequested);
+	GeneralSectionButton->Focus(Windows::UI::Xaml::FocusState::Programmatic);
 }
 
+
+void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	auto selected = dynamic_cast<Button^>(sender);
+	if (selected == nullptr) return;
+	Button^ buttons[] = { GeneralSectionButton, DisplaySectionButton, InputSectionButton };
+	StackPanel^ panels[] = { GeneralPanel, DisplayPanel, InputPanel };
+	Platform::String^ titles[] = { L"General", L"Display", L"Input" };
+	for (int i = 0; i < 3; i++) {
+		if (buttons[i] == selected) {
+			bool changed = panels[i]->Visibility != Windows::UI::Xaml::Visibility::Visible;
+			for (int j = 0; j < 3; j++) {
+				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+				if (i == j) {
+					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
+					buttons[j]->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitTextBrush"));
+				} else {
+					buttons[j]->ClearValue(Control::BackgroundProperty);
+					buttons[j]->ClearValue(Control::ForegroundProperty);
+				}
+			}
+			SectionTitle->Text = titles[i];
+			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
+			break;
+		}
+	}
+}
 
 void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {

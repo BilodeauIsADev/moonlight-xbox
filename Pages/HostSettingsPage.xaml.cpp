@@ -31,7 +31,7 @@ using namespace Windows::UI::ViewManagement::Core;
 HostSettingsPage::HostSettingsPage()
 {
 	InitializeComponent();
-	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseVisible);
+	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnLoaded);
 	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnUnloaded);
 }
@@ -288,6 +288,7 @@ void HostSettingsPage::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::Rou
 {
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	m_back_cookie = navigation->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(this, &HostSettingsPage::OnBackRequested);
+	VideoSectionButton->Focus(Windows::UI::Xaml::FocusState::Programmatic);
 }
 
 void HostSettingsPage::CodecComboBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
@@ -309,6 +310,33 @@ void HostSettingsPage::CodecComboBox_SelectionChanged(Platform::Object^ sender, 
 	}
 
 	host->VideoCodec = selectedCodec;
+}
+
+void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	auto selected = dynamic_cast<Button^>(sender);
+	if (selected == nullptr) return;
+	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton };
+	StackPanel^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel };
+	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General" };
+	for (int i = 0; i < 4; i++) {
+		if (buttons[i] == selected) {
+			bool changed = panels[i]->Visibility != Windows::UI::Xaml::Visibility::Visible;
+			for (int j = 0; j < 4; j++) {
+				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+				if (i == j) {
+					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
+					buttons[j]->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitTextBrush"));
+				} else {
+					buttons[j]->ClearValue(Control::BackgroundProperty);
+					buttons[j]->ClearValue(Control::ForegroundProperty);
+				}
+			}
+			SectionTitle->Text = titles[i];
+			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
+			break;
+		}
+	}
 }
 
 void HostSettingsPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -382,4 +410,13 @@ int HostSettingsPage::getDefaultBitrate(int width, int height, int fps, Platform
 	}
 
 	return std::lround(resolutionFactor * frameRateFactor) * 1000;
+}
+
+void HostSettingsPage::HostsNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	GetApplicationState()->UpdateFile();
+	if (Frame->CanGoBack) {
+		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
+		Frame->GoBack();
+	}
 }

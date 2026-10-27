@@ -292,8 +292,8 @@
                 <Setter Property="Background" Value="#1AFFFFFF" />
                 <Setter Property="Foreground" Value="#FFFFFFFF" />
                 <Setter Property="FontSize" Value="12" />
-                <Setter Property="Width" Value="84" />
-                <Setter Property="Height" Value="84" />
+                <Setter Property="Width" Value="76" />
+                <Setter Property="Height" Value="76" />
                 <Setter Property="Padding" Value="2" />
                 <Setter Property="CornerRadius" Value="12" />
                 <Setter Property="UseSystemFocusVisuals" Value="False" />
@@ -352,6 +352,136 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <!-- App posters (96x128 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
+            <Style x:Key="OrbitPosterItemStyle" TargetType="GridViewItem">
+                <Setter Property="Margin" Value="0,0,16,0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewItem">
+                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35">
+                                <Grid.RenderTransform>
+                                    <CompositeTransform x:Name="LiftTransform" />
+                                </Grid.RenderTransform>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver" />
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Body.Opacity" Value="0.8" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Selected" />
+                                        <VisualState x:Name="PointerOverSelected" />
+                                        <VisualState x:Name="PressedSelected" />
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0:0:0.18">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0:0:0.18">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <ContentPresenter x:Name="Body" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" />
+                                <Border x:Name="Ring" VerticalAlignment="Top" Height="136" Margin="-4,-4,-4,0" CornerRadius="10" BorderThickness="2.5" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Host cards (160x100 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
+            <Style x:Key="OrbitHostItemStyle" TargetType="GridViewItem">
+                <Setter Property="Margin" Value="0,0,16,0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewItem">
+                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35">
+                                <Grid.RenderTransform>
+                                    <CompositeTransform x:Name="LiftTransform" />
+                                </Grid.RenderTransform>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver" />
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Body.Opacity" Value="0.8" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Selected" />
+                                        <VisualState x:Name="PointerOverSelected" />
+                                        <VisualState x:Name="PressedSelected" />
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0:0:0.18">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0:0:0.18">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="Glow" VerticalAlignment="Top" Height="118" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <ContentPresenter x:Name="Body" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" />
+                                <Border x:Name="Ring" VerticalAlignment="Top" Height="108" Margin="-4,-4,-4,0" CornerRadius="10" BorderThickness="2.5" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Controller button glyphs (A, B, X, Y, View, Menu) for footer hints -->
+            <FontFamily x:Key="OrbitGlyphFont">Segoe MDL2 Assets</FontFamily>
+            <Style x:Key="OrbitHintGlyphStyle" TargetType="FontIcon">
+                <Setter Property="FontFamily" Value="{StaticResource OrbitGlyphFont}" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->

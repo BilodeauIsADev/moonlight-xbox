@@ -7,6 +7,7 @@
 #include <Streaming/FFmpegDecoder.h>
 #include <Plot/ImGuiPlots.h>
 #include <Utils.hpp>
+#include <cstdio>
 
 using namespace moonlight_xbox_dx;
 using namespace D2D1;
@@ -640,7 +641,40 @@ void DX::DeviceResources::ImGui_Init(const ComPtr<ISwapChainPanelNative>& panelN
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 
-		io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", m_pixelHeight == 2160 ? 36.0f : 18.0f);
+		// Noto Sans Regular is redistributed under SIL OFL 1.1; see Assets/Font/NotoSans-OFL.txt.
+		// Read from the app package using its absolute UTF-16 path. The install
+		// location need not be ASCII and is independent of the working directory.
+		std::wstring fontPath(Windows::ApplicationModel::Package::Current->InstalledLocation->Path->Data());
+		fontPath += L"\\Assets\\Font\\NotoSans-Regular.ttf";
+		FILE* fontFile = nullptr;
+		ImFont* font = nullptr;
+		if (_wfopen_s(&fontFile, fontPath.c_str(), L"rb") == 0 && fontFile) {
+			if (fseek(fontFile, 0, SEEK_END) == 0) {
+				const long length = ftell(fontFile);
+				// Bound allocation if an installed asset is corrupt.
+				if (length > 0 && length <= 4 * 1024 * 1024 && fseek(fontFile, 0, SEEK_SET) == 0) {
+					void* bytes = ImGui::MemAlloc(static_cast<size_t>(length));
+					if (bytes) {
+						if (fread(bytes, 1, length, fontFile) == static_cast<size_t>(length)) {
+							// Atlas owns bytes. Bake once at the largest 4K value size;
+							// explicit text sizes and FontGlobalScale handle display changes.
+							font = io.Fonts->AddFontFromMemoryTTF(bytes, static_cast<int>(length), 60.0f);
+						} else {
+							ImGui::MemFree(bytes);
+						}
+					}
+				}
+			}
+			fclose(fontFile);
+		}
+		if (!font) {
+			Utils::Log("Unable to load packaged Noto Sans; using ImGui fallback font\n");
+			ImFontConfig fallback;
+			fallback.SizePixels = 60.0f;
+			font = io.Fonts->AddFontDefault(&fallback);
+		}
+		io.FontDefault = font;
+		io.FontGlobalScale = (18.0f / 60.0f) * m_pixelHeight / 1080.0f;
 
 		io.ConfigFlags |= ImGuiConfigFlags_NoKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouse;

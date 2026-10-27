@@ -62,6 +62,27 @@ typedef struct _VIDEO_STATS {
 
 namespace moonlight_xbox_dx
 {
+	// Published once per display update. Owns all data, so callers never retain
+	// decoder pointers or references into a window being accumulated.
+	struct StatsSnapshot
+	{
+		uint64_t revision;
+		bool valid;
+		bool isPyroWave;
+		bool immediatePacing;
+		int width;
+		int height;
+		char codec[40];
+		VIDEO_STATS video;
+		double averageMbps;
+		double peakMbps;
+		uint32_t bitrateWindowSeconds;
+		float averageQueueSize;
+		float audioBufferMs;
+		uint64_t lostPackets60s;
+		uint64_t recoveredPackets60s;
+	};
+
 	class Stats
 	{
 	public:
@@ -70,6 +91,8 @@ namespace moonlight_xbox_dx
 		void Reset();
 
 		bool ShouldUpdateDisplay(DX::StepTimer const& timer, bool isVisible, char* output, size_t length);
+
+		StatsSnapshot GetDisplaySnapshot();
 
 		// submitters for various types of data
 		void SubmitVideoBytesAndReassemblyTime(uint32_t length, PDECODE_UNIT decodeUnit, uint32_t droppedFrames);
@@ -91,6 +114,8 @@ namespace moonlight_xbox_dx
 		void sampleRtpStats(); // m_mutex must be held
 
 		std::mutex                           m_mutex;
+
+		StatsSnapshot                        m_displaySnapshot = {};
 
 		// Moonlight stats overlay
 		VIDEO_STATS                          m_ActiveWndVideoStats;
