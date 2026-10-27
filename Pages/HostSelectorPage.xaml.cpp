@@ -15,11 +15,13 @@
 #include "MoonlightWelcome.xaml.h"
 #include "State/MoonlightClient.h"
 #include "Utils.hpp"
+#include "Common/OrbitRecents.h"
 #include <chrono>
 
 #include <Ws2tcpip.h>
 #include <chrono>
 #include <cstdlib>
+#include <cwctype>
 #include <string>
 #include <winsock2.h>
 
@@ -381,6 +383,7 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 	focusedHost = host;
 	focusedHostItem = item;
 	UpdateWakeHint();
+	UpdateHero();
 }
 
 // The focused host can come online (or go to sleep) without focus moving, so
@@ -783,6 +786,7 @@ void HostSelectorPage::TryFocusInitialHost() {
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
 	UpdateFirstRunGuide();
 	UpdateWakeHint();
+	UpdateHero();
 	TryFocusInitialHost();
 }
 
@@ -799,4 +803,227 @@ void HostSelectorPage::UpdateFirstRunGuide() {
 
 void HostSelectorPage::Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e) {
 	pendingInitialFocus = false;
+}
+
+// ---- Hero --------------------------------------------------------------
+
+void HostSelectorPage::SetTextIfChanged(TextBlock^ block, Platform::String^ text) {
+	// Runs on every layout pass; an unchanged Text must not trigger another one
+	if (block->Text != text) block->Text = text;
+}
+
+// The hero describes the focused PC: status, name, what it's playing and when it
+// was last streamed. Cheap enough to call from LayoutUpdated, which is how it picks
+// up status changes (waking, coming online, a game starting) without extra events.
+void HostSelectorPage::UpdateHero() {
+	auto host = focusedHost;
+	if (host != nullptr) {
+		unsigned int index;
+		if (!state->SavedHosts->IndexOf(host, &index)) host = nullptr; // removed
+	}
+	const auto visible = Windows::UI::Xaml::Visibility::Visible;
+	const auto collapsed = Windows::UI::Xaml::Visibility::Collapsed;
+
+	if (host == nullptr) {
+		SetTextIfChanged(HeroEyebrow, L"HOSTS");
+		SetTextIfChanged(HeroName, L"Your PCs");
+		SetTextIfChanged(HeroMeta, L"Pick a PC to see its games. PCs running Sunshine on your network show up here on their own.");
+		if (HeroStatusDot->Visibility != collapsed) HeroStatusDot->Visibility = collapsed;
+		if (HeroButtons->Visibility != collapsed) HeroButtons->Visibility = collapsed;
+		heroHost = nullptr;
+		TintAmbient(0);
+		return;
+	}
+
+	// Status line
+	std::wstring status = host->CardStatusText != nullptr ? host->CardStatusText->Data() : L"";
+	if (host->Connected && host->NotPaired) status += L" \u00B7 Not paired";
+	for (auto& c : status) c = static_cast<wchar_t>(towupper(c));
+	SetTextIfChanged(HeroEyebrow, ref new Platform::String(status.c_str()));
+	auto dotKey = host->Connected && !host->NotPaired ? L"OrbitRunningBrush"
+		: (host->WolPolling || host->NotPaired) ? L"OrbitWarningBrush" : L"OrbitTextTertiaryBrush";
+	auto dot = safe_cast<Brush^>(Application::Current->Resources->Lookup(ref new Platform::String(dotKey)));
+	if (HeroStatusDot->Fill != dot) HeroStatusDot->Fill = dot;
+	if (HeroStatusDot->Visibility != visible) HeroStatusDot->Visibility = visible;
+
+	auto name = (host->ComputerName != nullptr && !host->ComputerName->IsEmpty()) ? host->ComputerName : host->LastHostname;
+	SetTextIfChanged(HeroName, name);
+
+	// "Playing X · Last streamed 2 hours ago"
+	std::wstring meta;
+	if (host->PlayingText != nullptr && !host->PlayingText->IsEmpty()) meta = host->PlayingText->Data();
+	const long long lastPlayed = state->GetLastPlayedOnHost(host);
+	if (lastPlayed > 0) {
+		auto ago = Utils::StringFromStdString(OrbitRecents::RelativeTimeLabel(lastPlayed, static_cast<long long>(time(nullptr))));
+		std::wstring when = ago->Data();
+		if (!when.empty()) when[0] = static_cast<wchar_t>(towlower(when[0]));
+		if (!meta.empty()) meta += L"  \u00B7  ";
+		meta += L"Last streamed " + when;
+	}
+	if (meta.empty()) {
+		meta = host->Connected ? L"Ready to stream." : L"Asleep or unreachable. Wake it to start streaming.";
+	}
+	SetTextIfChanged(HeroMeta, ref new Platform::String(meta.c_str()));
+
+	// Primary action mirrors pressing A on the card
+	Platform::String^ action;
+	bool enabled = true;
+	if (host->Connected && host->NotPaired) action = L"Pair";
+	else if (host->Connected) action = L"Open library";
+	else if (host->WolPolling) { action = L"Waking\u2026"; enabled = false; }
+	else action = L"Wake PC";
+	auto current = dynamic_cast<Platform::String^>(HeroPrimaryButton->Content);
+	if (current != action) HeroPrimaryButton->Content = action;
+	if (HeroPrimaryButton->IsEnabled != enabled) HeroPrimaryButton->IsEnabled = enabled;
+	if (HeroButtons->Visibility != visible) HeroButtons->Visibility = visible;
+
+	TintAmbient(static_cast<unsigned int>(host->AccentArgb));
+	if (host != heroHost) {
+		heroHost = host;
+		OrbitMotion::Reveal(HeroPanel, 220, 6, 0.65f);
+	}
+}
+
+void HostSelectorPage::HeroPrimaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	auto host = heroHost;
+	if (host == nullptr) return;
+	if (host->Connected && host->Paired) Connect(host);
+	else if (host->Connected) StartPairing(host);
+	else if (!host->WolPolling) {
+		currentHost = host;
+		wakeHostButton_Click(nullptr, nullptr);
+	}
+}
+
+void HostSelectorPage::HeroOptionsButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	if (heroHost != nullptr) ShowHostActions(HeroOptionsButton, heroHost);
+}
+
+// ---- Ambient background ----------------------------------------------------
+
+void HostSelectorPage::Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StartAmbient();
+}
+
+void HostSelectorPage::Page_Unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StopAmbient();
+}
+
+// Slow drift loops on the compositor, so they cost nothing on the UI thread.
+// Each layer has its own period, so the combined picture takes minutes to repeat.
+void HostSelectorPage::StartAmbient() {
+	if (!OrbitMotion::Enabled()) return;
+	using namespace Windows::UI::Composition;
+	using Windows::UI::Xaml::Hosting::ElementCompositionPreview;
+	auto drift = [](UIElement^ element, Windows::Foundation::Numerics::float3 to, int seconds, float opacityLow) {
+		ElementCompositionPreview::SetIsTranslationEnabled(element, true);
+		auto visual = ElementCompositionPreview::GetElementVisual(element);
+		auto compositor = visual->Compositor;
+		auto ease = compositor->CreateCubicBezierEasingFunction(Windows::Foundation::Numerics::float2(0.45f, 0.0f), Windows::Foundation::Numerics::float2(0.55f, 1.0f));
+		auto move = compositor->CreateVector3KeyFrameAnimation();
+		move->InsertKeyFrame(0.0f, Windows::Foundation::Numerics::float3(0, 0, 0));
+		move->InsertKeyFrame(1.0f, to, ease);
+		move->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
+		move->IterationBehavior = AnimationIterationBehavior::Forever;
+		move->Direction = AnimationDirection::Alternate;
+		visual->StartAnimation(L"Translation", move);
+		if (opacityLow < 1.0f) {
+			auto breathe = compositor->CreateScalarKeyFrameAnimation();
+			breathe->InsertKeyFrame(0.0f, 1.0f);
+			breathe->InsertKeyFrame(1.0f, opacityLow, ease);
+			breathe->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 7000000LL };
+			breathe->IterationBehavior = AnimationIterationBehavior::Forever;
+			breathe->Direction = AnimationDirection::Alternate;
+			visual->StartAnimation(L"Opacity", breathe);
+		}
+	};
+	using Windows::Foundation::Numerics::float3;
+	drift(AmbientGlowA, float3(-140, 70, 0), 23, 0.7f);
+	drift(AmbientGlowB, float3(160, -60, 0), 29, 0.6f);
+	drift(AmbientGlowC, float3(-220, -50, 0), 19, 0.5f);
+	drift(AmbientRibbonA, float3(-240, -26, 0), 17, 0.55f);
+	drift(AmbientRibbonB, float3(260, 30, 0), 21, 0.5f);
+
+	// Specks rising and fading, each on its own schedule
+	if (AmbientParticles->Children->Size == 0) {
+		unsigned int seed = 7;
+		auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7FFF; };
+		for (int i = 0; i < 16; ++i) {
+			auto speck = ref new Windows::UI::Xaml::Shapes::Ellipse();
+			const double size = 2.0 + (next() % 30) / 10.0;
+			speck->Width = size;
+			speck->Height = size;
+			speck->Fill = ref new SolidColorBrush(Windows::UI::ColorHelper::FromArgb(200, 255, 255, 255));
+			speck->Opacity = 0;
+			Canvas::SetLeft(speck, 380 + next() % 560);
+			Canvas::SetTop(speck, 140 + next() % 360);
+			AmbientParticles->Children->Append(speck);
+		}
+	}
+	unsigned int index = 0;
+	for (auto child : AmbientParticles->Children) {
+		ElementCompositionPreview::SetIsTranslationEnabled(child, true);
+		auto visual = ElementCompositionPreview::GetElementVisual(child);
+		auto compositor = visual->Compositor;
+		const int seconds = 11 + static_cast<int>(index % 5) * 2;
+		auto rise = compositor->CreateVector3KeyFrameAnimation();
+		rise->InsertKeyFrame(0.0f, float3(0, 0, 0));
+		rise->InsertKeyFrame(1.0f, float3(static_cast<float>(static_cast<int>(index % 3) - 1) * 18.0f, -110.0f, 0), compositor->CreateLinearEasingFunction());
+		rise->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
+		rise->DelayTime = Windows::Foundation::TimeSpan{ static_cast<long long>(index) * 9000000LL };
+		rise->IterationBehavior = AnimationIterationBehavior::Forever;
+		visual->StartAnimation(L"Translation", rise);
+		auto fade = compositor->CreateScalarKeyFrameAnimation();
+		fade->InsertKeyFrame(0.0f, 0.0f);
+		fade->InsertKeyFrame(0.3f, 0.55f);
+		fade->InsertKeyFrame(1.0f, 0.0f);
+		fade->Duration = rise->Duration;
+		fade->DelayTime = rise->DelayTime;
+		fade->IterationBehavior = AnimationIterationBehavior::Forever;
+		// Element opacity stays 0 until composition takes over, so nothing pops in
+		safe_cast<UIElement^>(child)->Opacity = 1;
+		visual->Opacity = 0;
+		visual->StartAnimation(L"Opacity", fade);
+		++index;
+	}
+}
+
+void HostSelectorPage::StopAmbient() {
+	using Windows::UI::Xaml::Hosting::ElementCompositionPreview;
+	auto stop = [](UIElement^ element, float opacity) {
+		auto visual = ElementCompositionPreview::GetElementVisual(element);
+		visual->StopAnimation(L"Translation");
+		visual->StopAnimation(L"Opacity");
+		visual->Opacity = opacity;
+	};
+	UIElement^ layers[] = { AmbientGlowA, AmbientGlowB, AmbientGlowC, AmbientRibbonA, AmbientRibbonB };
+	for (auto layer : layers) stop(layer, 1.0f);
+	for (auto child : AmbientParticles->Children) stop(child, 0.0f);
+}
+
+// Fade the two coloured glows to the focused PC's accent (0 = the default blue)
+void HostSelectorPage::TintAmbient(unsigned int argb) {
+	if (argb == ambientArgb) return;
+	ambientArgb = argb;
+	auto color = argb == 0 ? Windows::UI::ColorHelper::FromArgb(255, 0x1B, 0x3B, 0x8A)
+		: Windows::UI::ColorHelper::FromArgb(255, static_cast<unsigned char>(argb >> 16), static_cast<unsigned char>(argb >> 8), static_cast<unsigned char>(argb));
+	auto storyboard = ref new Windows::UI::Xaml::Media::Animation::Storyboard();
+	GradientStop^ stops[] = { AmbientGlowAStop, AmbientGlowBStop };
+	unsigned char alphas[] = { 0x8C, 0x59 };
+	for (int i = 0; i < 2; ++i) {
+		auto target = color;
+		target.A = alphas[i];
+		if (!OrbitMotion::Enabled()) {
+			stops[i]->Color = target;
+			continue;
+		}
+		auto tint = ref new Windows::UI::Xaml::Media::Animation::ColorAnimation();
+		tint->To = target;
+		tint->Duration = Windows::UI::Xaml::Duration(Windows::Foundation::TimeSpan{ 6000000LL });
+		tint->EnableDependentAnimation = true;
+		Windows::UI::Xaml::Media::Animation::Storyboard::SetTarget(tint, stops[i]);
+		Windows::UI::Xaml::Media::Animation::Storyboard::SetTargetProperty(tint, L"Color");
+		storyboard->Children->Append(tint);
+	}
+	if (storyboard->Children->Size > 0) storyboard->Begin();
 }

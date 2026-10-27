@@ -32,6 +32,8 @@ namespace moonlight_xbox_dx {
 		std::map<std::string, long long> lastPlayedByApp;
 		void RecordAppPlayed(MoonlightHost^ host, int appId);
 		long long GetLastPlayed(MoonlightHost^ host, int appId);
+		// Most recent launch of any app on this host, or 0
+		long long GetLastPlayedOnHost(MoonlightHost^ host);
 
 		bool WakeHost(MoonlightHost^ host);
 		void Validate_WoL(MoonlightHost^ host);

@@ -189,6 +189,16 @@ void moonlight_xbox_dx::ApplicationState::RecordAppPlayed(MoonlightHost^ host, i
 	UpdateFile();
 }
 
+long long moonlight_xbox_dx::ApplicationState::GetLastPlayedOnHost(MoonlightHost^ host) {
+	if (host == nullptr) return 0;
+	const std::string prefix = LastPlayedHostKey(host) + ":";
+	long long latest = 0;
+	for (auto& stamp : lastPlayedByApp) {
+		if (stamp.first.compare(0, prefix.size(), prefix) == 0 && stamp.second > latest) latest = stamp.second;
+	}
+	return latest;
+}
+
 long long moonlight_xbox_dx::ApplicationState::GetLastPlayed(MoonlightHost^ host, int appId) {
 	if (host == nullptr) return 0;
 	auto stamp = lastPlayedByApp.find(LastPlayedHostKey(host) + ":" + std::to_string(appId));

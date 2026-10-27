@@ -6,10 +6,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:muxm="using:Microsoft.UI.Xaml.Media"
     mc:Ignorable="d"
     Background="{StaticResource OrbitBackgroundBrush}"
     XYFocusKeyboardNavigation="Disabled"
-    PreviewKeyDown="Page_PreviewKeyDown" KeyDown="Page_KeyDown" LayoutUpdated="Page_LayoutUpdated"
+    PreviewKeyDown="Page_PreviewKeyDown" KeyDown="Page_KeyDown" LayoutUpdated="Page_LayoutUpdated" Loaded="Page_Loaded" Unloaded="Page_Unloaded"
     PointerPressed="Page_PointerPressed"
     >
     <FlyoutBase.AttachedFlyout>
@@ -42,19 +43,83 @@
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <Grid local:OrbitMotion.Kind="Page">
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="1,0" EndPoint="0,1">
-                <GradientStop Color="#FF1B3B8A" Offset="0" />
-                <GradientStop Color="#FF0B1530" Offset="0.35" />
-                <GradientStop Color="#FF000000" Offset="0.75" />
-            </LinearGradientBrush>
-        </Grid.Background>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+
+        <!-- Ambient background: soft glows and light ribbons drifting on a slow loop
+             (animated on the compositor from HostSelectorPage::StartAmbient), tinted
+             with the focused PC's accent colour. -->
+        <Grid x:Name="AmbientLayer" Grid.RowSpan="4" IsHitTestVisible="False">
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                        <GradientStop Color="#FF060A18" Offset="0" />
+                        <GradientStop Color="#FF02030A" Offset="0.7" />
+                        <GradientStop Color="#FF000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Ellipse x:Name="AmbientGlowA" Width="900" Height="640" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-260,-240,0">
+                <Ellipse.Fill>
+                    <muxm:RadialGradientBrush>
+                        <GradientStop x:Name="AmbientGlowAStop" Color="#8C1B3B8A" Offset="0" />
+                        <GradientStop Color="#001B3B8A" Offset="1" />
+                    </muxm:RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Ellipse x:Name="AmbientGlowB" Width="760" Height="520" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-260,0,0,-200">
+                <Ellipse.Fill>
+                    <muxm:RadialGradientBrush>
+                        <GradientStop x:Name="AmbientGlowBStop" Color="#591B3B8A" Offset="0" />
+                        <GradientStop Color="#001B3B8A" Offset="1" />
+                    </muxm:RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Ellipse x:Name="AmbientGlowC" Width="560" Height="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="260,40,0,0">
+                <Ellipse.Fill>
+                    <muxm:RadialGradientBrush>
+                        <GradientStop Color="#1FFFFFFF" Offset="0" />
+                        <GradientStop Color="#00FFFFFF" Offset="1" />
+                    </muxm:RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <!-- Two wide ribbons of light, wider than the screen so the drift never shows an end -->
+            <Path x:Name="AmbientRibbonA" Width="1600" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,120,0,0" Stretch="Fill"
+                  Data="M0,140 C260,40 520,240 800,140 C1080,40 1340,240 1600,140 L1600,170 C1340,270 1080,70 800,170 C520,270 260,70 0,170 Z">
+                <Path.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#00FFFFFF" Offset="0" />
+                        <GradientStop x:Name="AmbientRibbonStop" Color="#2E9DB8FF" Offset="0.5" />
+                        <GradientStop Color="#00FFFFFF" Offset="1" />
+                    </LinearGradientBrush>
+                </Path.Fill>
+            </Path>
+            <Path x:Name="AmbientRibbonB" Width="1700" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,200,0,0" Stretch="Fill" Opacity="0.6"
+                  Data="M0,160 C300,260 560,60 850,160 C1140,260 1400,60 1700,160 L1700,176 C1400,76 1140,276 850,176 C560,76 300,276 0,176 Z">
+                <Path.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#00FFFFFF" Offset="0.05" />
+                        <GradientStop Color="#33FFFFFF" Offset="0.45" />
+                        <GradientStop Color="#00FFFFFF" Offset="0.95" />
+                    </LinearGradientBrush>
+                </Path.Fill>
+            </Path>
+            <!-- Floating specks, filled in from code -->
+            <Canvas x:Name="AmbientParticles" />
+            <!-- Keep text readable over the glow -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#99000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="0.6" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Grid>
 
         <!-- Top bar -->
         <Grid Grid.Row="0" Margin="56,30,56,0">
@@ -83,16 +148,27 @@
             </StackPanel>
         </Grid>
 
-        <!-- Hero -->
-        <StackPanel Grid.Row="1" Margin="56,24,0,0" MaxWidth="520" HorizontalAlignment="Left">
-            <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="HOSTS" />
-            <TextBlock Style="{StaticResource OrbitTitleTextStyle}" Margin="0,6,0,0" Text="Your PCs" />
-            <TextBlock Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextWrapping="WrapWholeWords"
+        <!-- Hero: the focused PC, filled in by HostSelectorPage::UpdateHero.
+             With no PCs yet it shows the introduction instead. -->
+        <StackPanel x:Name="HeroPanel" Grid.Row="1" Margin="56,40,0,0" MaxWidth="620" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Ellipse x:Name="HeroStatusDot" Width="7" Height="7" VerticalAlignment="Center" Fill="{StaticResource OrbitRunningBrush}" Visibility="Collapsed" />
+                <TextBlock x:Name="HeroEyebrow" Style="{StaticResource OrbitEyebrowTextStyle}" Text="HOSTS" />
+            </StackPanel>
+            <TextBlock x:Name="HeroName" Style="{StaticResource OrbitTitleTextStyle}" FontSize="40" LineHeight="46" MaxLines="1" Margin="0,6,0,0" Text="Your PCs" />
+            <TextBlock x:Name="HeroMeta" Margin="0,8,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextWrapping="WrapWholeWords" MaxLines="2"
                        Text="Pick a PC to see its games. PCs running Sunshine on your network show up here on their own." />
+            <StackPanel x:Name="HeroButtons" Orientation="Horizontal" Spacing="12" Margin="0,20,0,0" Visibility="Collapsed">
+                <Button x:Name="HeroPrimaryButton" Style="{StaticResource OrbitPillButtonStyle}" Click="HeroPrimaryButton_Click" Content="Open library" />
+                <Button x:Name="HeroOptionsButton" Style="{StaticResource OrbitPillButtonStyle}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"
+                        Click="HeroOptionsButton_Click" Content="PC options" />
+            </StackPanel>
         </StackPanel>
 
-        <!-- Host shelf -->
-        <Grid Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="56,24,56,0">
+        <!-- Host shelf, along the bottom like the Library shelf -->
+        <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,0,14">
+        <TextBlock x:Name="ShelfTitle" Style="{StaticResource OrbitShelfTitleTextStyle}" Text="Your PCs" Margin="56,0,0,0" />
+        <Grid HorizontalAlignment="Left" Margin="56,0,56,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -101,7 +177,7 @@
             <!-- Capped so a long host list scrolls instead of pushing "Add host" off the TV-safe area -->
             <GridView IsRightTapEnabled="True" RightTapped="HostsGrid_RightTapped" x:Name="HostsGrid" ItemsSource="{x:Bind State.SavedHosts}"
                       IsItemClickEnabled="True" ItemClick="GridView_ItemClick" GotFocus="HostsGrid_GotFocus" TabIndex="1" SelectionMode="None"
-                      MaxWidth="600"
+                      MaxWidth="590"
                       Padding="10,14,0,10"
                       ItemContainerStyle="{StaticResource OrbitHostItemStyle}"
                       ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -113,9 +189,9 @@
                 </GridView.ItemsPanel>
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="local:MoonlightHost" x:DefaultBindMode="OneWay">
-                        <StackPanel Width="160">
+                        <StackPanel Width="176">
                             <!-- Accent gradient from the host's name so each PC gets its own card colour -->
-                            <Grid Width="160" Height="100" CornerRadius="8" Background="{x:Bind CardBackground}">
+                            <Grid Width="176" Height="99" CornerRadius="10" Background="{x:Bind CardBackground}">
                                 <!-- When the host reports a running game, its cached artwork fills the card -->
                                 <Image Source="{x:Bind PlayingImage}" Stretch="UniformToFill" Visibility="{x:Bind PlayingArtworkVisibility}" />
                                 <Grid Background="#B3000000" Visibility="{x:Bind PlayingArtworkVisibility}" />
@@ -128,8 +204,12 @@
                                 <Grid Visibility="{x:Bind LoadingVisibility}" Background="#80000000">
                                     <muxc:ProgressRing IsActive="True" Width="28" Height="28" />
                                 </Grid>
-                                <!-- Wake gave up: dim the card, no spinner -->
-                                <Grid Visibility="{x:Bind TimedOutVisibility}" Background="#66000000" />
+                                <!-- Asleep or unreachable: dim the card, no spinner -->
+                                <Grid Visibility="{x:Bind NotConnected}" Background="#73000000" />
+                                <Border Visibility="{x:Bind PlayingArtworkVisibility}" Background="#80000000" CornerRadius="9" Padding="7,2" Margin="8"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBlock Text="In game" FontSize="11" />
+                                </Border>
                             </Grid>
                             <TextBlock Text="{x:Bind ComputerName}" FontSize="14" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{x:Bind PlayingText}" FontSize="11" Foreground="{StaticResource OrbitRunningBrush}" Margin="0,1,0,0" Visibility="{x:Bind PlayingVisibility}" TextTrimming="CharacterEllipsis" />
@@ -147,12 +227,12 @@
             <!-- Add host, as the last card in the row -->
             <Button x:Name="AddHostCard" Grid.Column="1" Style="{StaticResource OrbitRowButtonStyle}" Background="Transparent" Padding="0" VerticalAlignment="Top" Margin="0,14,0,0"
                     HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" Click="NewHostButton_Click">
-                <StackPanel Width="160">
-                    <Grid Width="160" Height="100">
-                        <Rectangle RadiusX="8" RadiusY="8" Fill="#0FFFFFFF" Stroke="#4DFFFFFF" StrokeThickness="1" StrokeDashArray="4,3" />
+                <StackPanel Width="176">
+                    <Grid Width="176" Height="99">
+                        <Rectangle RadiusX="10" RadiusY="10" Fill="#0FFFFFFF" Stroke="#4DFFFFFF" StrokeThickness="1" StrokeDashArray="4,3" />
                         <FontIcon Glyph="&#xE710;" FontSize="26" />
                     </Grid>
-                    <TextBlock Text="Add host" FontSize="14" Margin="0,8,0,0" />
+                    <TextBlock Text="Add PC" FontSize="14" Margin="0,8,0,0" />
                     <TextBlock Text="Enter an IP or hostname" FontSize="12" Margin="0,2,0,0" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
                 </StackPanel>
             </Button>
@@ -171,24 +251,28 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
+        </StackPanel>
 
         <!-- Controller hints -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="3">
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LB" />
+                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RB" />
+                    </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
                 </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon Style="{StaticResource OrbitHintAGlyphStyle}" />
+                <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Open" />
             </StackPanel>
             <!-- Only while the focused PC is offline -->
             <StackPanel x:Name="WakeHint" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
-                <FontIcon Style="{StaticResource OrbitHintXGlyphStyle}" />
+                <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="X" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Wake" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon Style="{StaticResource OrbitHintYGlyphStyle}" />
+                <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="Y" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Host options" />
             </StackPanel>
         </StackPanel>
