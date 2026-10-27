@@ -33,8 +33,8 @@
         </MenuFlyout>
     </FlyoutBase.AttachedFlyout>
     <Grid local:OrbitMotion.Kind="Page">
-        <!-- Hero artwork: the focused app's cover, edge to edge on the right and faded into black -->
-        <Grid HorizontalAlignment="Right" Width="680" IsHitTestVisible="False">
+        <!-- Wide artwork for the highlighted game, faded into the page behind the controls -->
+        <Grid IsHitTestVisible="False">
             <Grid x:Name="HeroArtLayers" Opacity="0.9" />
             <!-- Soft left edge so the art never shows a hard seam -->
             <Rectangle>
@@ -88,7 +88,10 @@
                         <Run Text="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='RUNNING ON|ON'}" /><Run Text=" " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
                     </TextBlock>
                 </StackPanel>
-                <TextBlock x:Name="HeroTitle" Style="{StaticResource OrbitTitleTextStyle}" MaxLines="1" Margin="0,6,0,0" Text="{x:Bind SelectedApp.Name, Mode=OneWay}" />
+                <Grid x:Name="HeroIdentity" Width="440" Height="112" Margin="0,6,0,0" HorizontalAlignment="Left">
+                    <TextBlock x:Name="HeroTitle" Style="{StaticResource OrbitTitleTextStyle}" VerticalAlignment="Center" Text="{x:Bind SelectedApp.Name, Mode=OneWay}" />
+                    <Grid x:Name="HeroLogoLayers" IsHitTestVisible="False" AutomationProperties.Name="{x:Bind SelectedApp.Name, Mode=OneWay}" />
+                </Grid>
                 <TextBlock x:Name="StreamSummaryText" Margin="0,10,0,0" FontSize="15" Foreground="{StaticResource OrbitTextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
                 <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,18,0,0">
                     <Button x:Name="primaryButton" Style="{StaticResource OrbitPillButtonStyle}" Click="primaryButton_Click"
@@ -127,7 +130,7 @@
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="local:MoonlightApp" x:DefaultBindMode="OneWay">
-                            <StackPanel Width="128">
+                            <StackPanel Width="128" Background="Transparent" PointerEntered="AppTile_PointerEntered">
                                 <Grid Width="128" Height="128" CornerRadius="6" Background="{StaticResource OrbitSurfaceBrush}">
                                     <Image Source="{x:Bind ImagePath}" Stretch="UniformToFill" />
                                     <Border Visibility="{x:Bind CurrentlyRunning}" Background="{StaticResource OrbitRunningBrush}" CornerRadius="4" Padding="5,1" Margin="6" HorizontalAlignment="Left" VerticalAlignment="Top">

@@ -28,8 +28,8 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitNavigationTests.cpp -o /tmp/orbi
 ```
 
 The artwork tests cover rapid selection changes, out-of-order image loads, page
-exit and re-entry, fallback failure, and conversion of the Windows cover cache
-paths to app-data URIs:
+exit and re-entry, independent logo/background decodes, missing logos, and
+conversion of the Windows artwork cache paths to app-data URIs:
 
 ```sh
 c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitArtworkTests.cpp -o /tmp/orbit-artwork-tests
@@ -79,10 +79,15 @@ with a controller at the console's supported display sizes:
   rounded corners, white focus rings, and readable disabled states.
 - Close a running app from the library, close and launch another, and close from
   the stream menu. Each progress dialog uses the same Orbit layout.
-- Browse rapidly across games, including covers that have not loaded yet. Titles
-  update immediately, stale decodes never replace the current game, and artwork
-  fades over the previous image without flashing black. Leave the page while a
-  cover loads, then return and confirm it still loads.
+- Highlight games with the controller and pointer. Square covers stay on the
+  shelf, logos replace the hero title after decoding, and wide artwork fills the
+  background. Check wide and tall logos for preserved proportions and readable
+  controls at each display size.
+- Browse rapidly across games, including artwork that has not loaded yet.
+  Stale logos and backgrounds must never replace the current game. A game with
+  no logo keeps its title, and missing or broken backgrounds leave the dark
+  page. Check a game with only one artwork type and a build without an API key.
+  Leave while images load, then return and confirm cached artwork still loads.
 - Check the 180ms page arrival, 160ms card focus, 80ms press / 120ms release,
   180ms dialog opening / 130ms dismissal, and 120ms dropdown opening / 90ms
   dismissal. Navigation and clicks must remain immediate during these effects.

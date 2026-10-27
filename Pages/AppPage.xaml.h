@@ -24,15 +24,19 @@ namespace moonlight_xbox_dx
 		MoonlightApp^ currentApp;
 		MoonlightApp^ selectedApp;
 		OrbitArtworkRequest m_artworkRequest;
+		OrbitArtworkRequest m_logoRequest;
 		Windows::UI::Xaml::Controls::Image^ m_pendingArtwork;
+		Windows::UI::Xaml::Controls::Image^ m_pendingLogo;
+		Windows::UI::Xaml::DispatcherTimer^ m_artworkLoadTimer;
 		Windows::Foundation::EventRegistrationToken m_selectedAppChangedToken{};
 		bool m_heroActive = false;
 		void OnSelectedAppChanged(MoonlightApp^ previous);
 		void OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e);
-		void LoadHeroArtwork(Platform::String^ path);
-		void ClearPendingArtwork();
-		void PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request);
-		void HeroArtworkFailed(uint64_t request);
+		void UpdateHeroArtwork();
+		void LoadHeroImage(Platform::String^ path, bool logo);
+		void ClearPendingArtwork(bool logo);
+		void PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request, bool logo);
+		void HeroArtworkFailed(uint64_t request, bool logo);
 		void StopHeroMotion();
 		Windows::Foundation::EventRegistrationToken m_appsChangedToken;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
@@ -63,7 +67,7 @@ namespace moonlight_xbox_dx
 				return this->host;
 			}
 		}
-		// The app shown in the hero area: whichever shelf item has focus
+		// The app shown in the hero area: whichever shelf item is focused or hovered
 		property MoonlightApp^ SelectedApp {
 			MoonlightApp^ get() {
 				return this->selectedApp;
@@ -81,6 +85,7 @@ namespace moonlight_xbox_dx
 	private:
 		void AppsGrid_ItemClick(Platform::Object^ sender, Windows::UI::Xaml::Controls::ItemClickEventArgs^ e);
 		void AppsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void AppTile_PointerEntered(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);
 		void OnAppsChanged(Windows::Foundation::Collections::IObservableVector<MoonlightApp^>^ sender, Windows::Foundation::Collections::IVectorChangedEventArgs^ e);
 		void primaryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void StartOrResume(MoonlightApp^ app);

@@ -150,7 +150,10 @@ void BuildSteps() {
 	Action(L"Open Library", []() { Invoke("libraryNavButton"); });
 	Page<AppPage>(L"Library loaded");
 	steps.push_back({ L"Game list populated", []() { return Named<GridView>("HostsGrid")->Items->Size > 0; } });
-	steps.push_back({ L"Hero artwork presented", []() {
+	steps.push_back({ L"Hero artwork or empty background presented", []() {
+		auto page = safe_cast<AppPage^>(frame->Content);
+		if (page->SelectedApp == nullptr || page->SelectedApp->BackgroundPath == nullptr)
+			return Named<Grid>("HeroArtLayers")->Children->Size == 0;
 		for (UIElement^ child : Named<Grid>("HeroArtLayers")->Children) if (child->Opacity > 0) return true;
 		return false;
 	} });

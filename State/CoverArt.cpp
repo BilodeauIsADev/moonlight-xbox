@@ -28,6 +28,7 @@ namespace moonlight_xbox_dx {
 			const int64_t kMissRetry100ns = 7LL * 24 * 3600 * 10000000;
 
 			enum class Result { Found, Missing, Failed };
+			enum class Kind { Square, Logo, Hero };
 
 			// "Hollow Knight: Voidheart Edition" -> "hollowknightvoidheartedition"
 			std::wstring Normalize(const wchar_t *s) {
@@ -74,67 +75,105 @@ namespace moonlight_xbox_dx {
 				return ((int64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
 			}
 
-			Result Download(String ^ name, String ^ path) {
+			Result ResolveGame(String^ name, int64_t& gameId) {
 				// Only an exact name match is used, so "Desktop" doesn't pick up some random game.
 				auto games = GetData(L"search/autocomplete/" + Uri::EscapeComponent(name));
 				if (games == nullptr) return Result::Failed;
 				std::wstring want = Normalize(name->Data());
-				double gameId = -1;
 				for (unsigned i = 0; i < games->Size && gameId < 0; i++) {
 					auto game = games->GetObjectAt(i);
-					if (Normalize(game->GetNamedString(L"name", L"")->Data()) == want) gameId = game->GetNamedNumber(L"id", -1);
+					if (Normalize(game->GetNamedString(L"name", L"")->Data()) == want) gameId = static_cast<int64_t>(game->GetNamedNumber(L"id", -1));
 				}
-				if (gameId < 0) return Result::Missing;
+				return gameId < 0 ? Result::Missing : Result::Found;
+			}
 
-				// Results come sorted by community score, so the first grid is the best one.
-				auto grids = GetData(L"grids/game/" + ref new String(std::to_wstring((int64_t)gameId).c_str()) +
-				                     L"?dimensions=1024x1024,512x512&types=static&nsfw=false&humor=false");
-				if (grids == nullptr) return Result::Failed;
-				if (grids->Size == 0) return Result::Missing;
-				auto url = grids->GetObjectAt(0)->GetNamedString(L"url", L"");
+			Result Download(int64_t gameId, Kind kind, String^ path) {
+				// Request formats the UWP bitmap decoder supports, and only static art.
+				String^ endpoint;
+				String^ filters = L"?types=static&nsfw=false&humor=false&mimes=image/png,image/jpeg";
+				switch (kind) {
+				case Kind::Square:
+					endpoint = L"grids/game/";
+					filters += L"&dimensions=1024x1024,512x512";
+					break;
+				case Kind::Logo:
+					endpoint = L"logos/game/";
+					filters = L"?types=static&nsfw=false&humor=false&mimes=image/png&styles=official,white,custom";
+					break;
+				default:
+					endpoint = L"heroes/game/";
+					break;
+				}
+				auto artwork = GetData(endpoint + ref new String(std::to_wstring(gameId).c_str()) + filters);
+				if (artwork == nullptr) return Result::Failed;
+				if (artwork->Size == 0) return Result::Missing;
+				auto url = artwork->GetObjectAt(0)->GetNamedString(L"url", L"");
 				if (url->IsEmpty()) return Result::Missing;
 
 				// The CDN doesn't need the API key, so don't send it there.
-				auto image = create_task((ref new HttpClient())->GetBufferAsync(ref new Uri(url))).get();
+				auto cdn = ref new HttpClient();
+				auto image = create_task(cdn->GetBufferAsync(ref new Uri(url))).get();
 				if (image->Length == 0) return Result::Failed;
 				std::vector<uint8_t> bytes(image->Length);
 				Windows::Storage::Streams::DataReader::FromBuffer(image)->ReadBytes(
 					ArrayReference<uint8_t>(bytes.data(), (unsigned)bytes.size()));
 
-				// Write then rename, so an interrupted download never leaves a broken cover cached.
-				String ^ part = path + L".part";
+				// Separate temporary files also protect overlapping page/host requests
+				// for the same game. A completed download wins without being replaced.
+				String ^ part = path + L"." + ref new String(std::to_wstring(GetCurrentThreadId()).c_str()) + L".part";
 				{
 					std::ofstream out(part->Data(), std::ios::binary | std::ios::trunc);
 					out.write((const char *)bytes.data(), bytes.size());
 					if (!out) return Result::Failed;
 				}
-				_wremove(path->Data());
-				return _wrename(part->Data(), path->Data()) == 0 ? Result::Found : Result::Failed;
+				if (_wrename(part->Data(), path->Data()) == 0) return Result::Found;
+				int64_t time;
+				const bool cached = FileTime(path, &time);
+				_wremove(part->Data());
+				return cached ? Result::Found : Result::Failed;
+			}
+
+			String^ FindArtwork(String^ appName, String^ cacheFolder, Kind kind, int64_t& gameId, Result& lookup) {
+				if (STEAMGRIDDB_API_KEY[0] == L'\0' || appName == nullptr || cacheFolder == nullptr) return nullptr;
+				std::wstring key = Normalize(appName->Data());
+				if (key.empty()) return nullptr;
+
+				// Preserve the existing square-cover cache when adding new artwork types.
+				String^ prefix = kind == Kind::Square ? L"sgdb_" : kind == Kind::Logo ? L"sgdb_logo_" : L"sgdb_hero_";
+				String ^ path = cacheFolder + prefix + ref new String(key.c_str()) + L".img";
+				String ^ missPath = path + L".miss";
+				int64_t time;
+				if (FileTime(path, &time)) return path;
+				if (FileTime(missPath, &time) && Now() - time < kMissRetry100ns) return nullptr;
+
+				Result result;
+				try {
+					if (gameId < 0 && lookup != Result::Missing) lookup = ResolveGame(appName, gameId);
+					result = lookup == Result::Found ? Download(gameId, kind, path) : lookup;
+				} catch (Exception ^ e) {
+					Utils::Logf("SteamGridDB: lookup failed: %S\n", e->Message->Data());
+					result = Result::Failed;
+				}
+
+				if (result == Result::Found) return path;
+				if (result == Result::Missing) std::ofstream(missPath->Data()).close();
+				return nullptr;
 			}
 		}
 
-		String ^ FindSquareCover(String ^ appName, String ^ cacheFolder) {
-			if (STEAMGRIDDB_API_KEY[0] == L'\0' || appName == nullptr) return nullptr;
-			std::wstring key = Normalize(appName->Data());
-			if (key.empty()) return nullptr;
+		String^ FindSquareCover(String^ appName, String^ cacheFolder) {
+			int64_t gameId = -1;
+			auto lookup = Result::Failed;
+			return FindArtwork(appName, cacheFolder, Kind::Square, gameId, lookup);
+		}
 
-			String ^ path = cacheFolder + L"sgdb_" + ref new String(key.c_str()) + L".img";
-			String ^ missPath = path + L".miss";
-			int64_t time;
-			if (FileTime(path, &time)) return path;
-			if (FileTime(missPath, &time) && Now() - time < kMissRetry100ns) return nullptr;
-
-			Result result;
-			try {
-				result = Download(appName, path);
-			} catch (Exception ^ e) {
-				Utils::Logf("SteamGridDB: lookup failed: %S\n", e->Message->Data());
-				result = Result::Failed;
-			}
-
-			if (result == Result::Found) return path;
-			if (result == Result::Missing) std::ofstream(missPath->Data()).close();
-			return nullptr;
+		HeroArtwork FindHeroArtwork(String^ appName, String^ cacheFolder) {
+			int64_t gameId = -1;
+			auto lookup = Result::Failed;
+			HeroArtwork artwork;
+			artwork.LogoPath = FindArtwork(appName, cacheFolder, Kind::Logo, gameId, lookup);
+			artwork.BackgroundPath = FindArtwork(appName, cacheFolder, Kind::Hero, gameId, lookup);
+			return artwork;
 		}
 	}
 }

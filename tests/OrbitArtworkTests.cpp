@@ -26,8 +26,18 @@ int main() {
 	Check(!requests.IsCurrent(second), "Leaving the page cancels pending presentation");
 	Check(requests.Begin(L"second.png", repeated), "Re-entering the page can load the same artwork again");
 	Check(repeated != second && !requests.IsCurrent(second), "An old callback stays invalid after re-entry");
-	Check(requests.Begin(L"ms-appx:///Assets/gamepad.svg", first), "A failed cover can request the SVG fallback");
-	Check(!requests.Begin(L"ms-appx:///Assets/gamepad.svg", second), "A failed fallback does not recurse");
+	OrbitArtworkRequest logos;
+	uint64_t logo = 0;
+	Check(logos.Begin(L"first-logo.img", logo), "Load the logo independently of its background");
+	Check(requests.IsCurrent(repeated), "A logo load does not invalidate the background decode");
+	Check(requests.Begin(L"third-hero.img", first), "A background arriving later starts its own decode");
+	Check(logos.IsCurrent(logo), "A later background does not cancel the pending logo");
+	logos.Invalidate();
+	requests.Invalidate();
+	Check(!logos.IsCurrent(logo) && !requests.IsCurrent(first), "Selecting a game without artwork cancels both previous decodes");
+	Check(!logos.Begin(L"", second), "A missing logo keeps the text fallback without a decode");
+	Check(logos.Begin(L"first-logo.img", repeated), "Returning to a cached game decodes its logo again");
+	Check(!logos.IsCurrent(logo), "A stale logo callback cannot hide the current game's title");
 
 	const std::wstring folder = L"C:\\Users\\Xbox\\LocalState";
 	Check(OrbitArtworkUri(folder + L"\\images\\12.png", folder) == L"ms-appdata:///local/images/12.png", "Map the existing Windows cover cache to an app-data URI");

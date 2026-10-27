@@ -67,7 +67,7 @@ still need testing on the console.
 ## Features
 
 - Connection and pairing
-- App list with square cover art from [SteamGridDB](https://www.steamgriddb.com/), falling back to the host's box art
+- App list with square covers, game logos, and wide backgrounds from [SteamGridDB](https://www.steamgriddb.com/). Highlight a game with the controller or pointer to show its logo and background. Missing artwork falls back to the game title and dark background; covers fall back to the host's box art.
 - Video streaming, configurable per host
 - HDR
 - Audio
@@ -129,7 +129,7 @@ It needs Pillow and the Ubuntu Sans variable font.
    1. In Solution Explorer, expand `moonlight-xbox-dx (Universal Windows)` and open `Package.appxmanifest`.
    2. On the **Packaging** tab, next to **Publisher**, click **Choose Certificate**.
    3. Pick an existing certificate, or click **Create...** to make one. A password isn't needed for personal or debug builds.
-6. Optional: for SteamGridDB covers, copy `SteamGridDbKey.h.example` to `SteamGridDbKey.h` and paste your [API key](https://www.steamgriddb.com/profile/preferences/api). The file is gitignored. CI builds read it from the `STEAMGRIDDB_API_KEY` repository secret.
+6. Optional: for SteamGridDB covers, logos, and backgrounds, copy `SteamGridDbKey.h.example` to `SteamGridDbKey.h` and paste your [API key](https://www.steamgriddb.com/profile/preferences/api). The file is gitignored. CI builds read it from the `STEAMGRIDDB_API_KEY` repository secret.
 7. Build the solution.
 
 ## Credits

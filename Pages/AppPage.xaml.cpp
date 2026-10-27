@@ -57,6 +57,15 @@ static TimeSpan ShelfPulseTime(int milliseconds) {
 AppPage::AppPage()
 {
 	InitializeComponent();
+	m_artworkLoadTimer = ref new DispatcherTimer();
+	m_artworkLoadTimer->Interval = ShelfPulseTime(120);
+	Platform::WeakReference weakThis(this);
+	m_artworkLoadTimer->Tick += ref new EventHandler<Platform::Object^>([weakThis](Platform::Object^, Platform::Object^) {
+		auto page = weakThis.Resolve<AppPage>();
+		if (page == nullptr) return;
+		page->m_artworkLoadTimer->Stop();
+		if (page->m_heroActive && page->SelectedApp != nullptr) page->SelectedApp->EnsureHeroArtwork();
+	});
 
 	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 
@@ -223,6 +232,12 @@ void AppPage::AppsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::Rou
 	auto item = dynamic_cast<GridViewItem^>(e->OriginalSource);
 	if (item == nullptr) return;
 	auto app = dynamic_cast<MoonlightApp^>(item->Content);
+	if (app != nullptr) SelectedApp = app;
+}
+
+void AppPage::AppTile_PointerEntered(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e) {
+	auto tile = dynamic_cast<FrameworkElement^>(sender);
+	auto app = tile != nullptr ? dynamic_cast<MoonlightApp^>(tile->DataContext) : nullptr;
 	if (app != nullptr) SelectedApp = app;
 }
 
@@ -518,7 +533,7 @@ void AppPage::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventA
 		if (m_selectedAppChangedToken.Value == 0) {
 			m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
 		}
-		LoadHeroArtwork(SelectedApp->ImagePath);
+		UpdateHeroArtwork();
 	}
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	m_back_cookie = navigation->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(this, &AppPage::OnBackRequested);
@@ -555,18 +570,34 @@ void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
 		m_selectedAppChangedToken.Value = 0;
 	}
 	m_artworkRequest.Invalidate();
-	ClearPendingArtwork();
+	m_logoRequest.Invalidate();
+	ClearPendingArtwork(false);
+	ClearPendingArtwork(true);
+	for (auto child : HeroLogoLayers->Children) OrbitMotion::Stop(child);
+	HeroLogoLayers->Children->Clear();
+	HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	UpdateHeroMetadata();
-	if (SelectedApp == nullptr) return;
-	m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
+	if (SelectedApp != nullptr) {
+		m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
+	}
 	if (m_heroActive) {
-		OrbitMotion::Reveal(HeroTitle, 220, 6, 0.65f);
-		LoadHeroArtwork(SelectedApp->ImagePath);
+		OrbitMotion::Reveal(HeroIdentity, 220, 6, 0.65f);
+		UpdateHeroArtwork();
 	}
 }
 
 void AppPage::OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e) {
-	if (sender == SelectedApp && e->PropertyName == L"ImagePath") LoadHeroArtwork(SelectedApp->ImagePath);
+	if (sender != SelectedApp) return;
+	if (e->PropertyName == L"BackgroundPath") LoadHeroImage(SelectedApp->BackgroundPath, false);
+	if (e->PropertyName == L"LogoPath") LoadHeroImage(SelectedApp->LogoPath, true);
+}
+
+void AppPage::UpdateHeroArtwork() {
+	m_artworkLoadTimer->Stop();
+	LoadHeroImage(SelectedApp != nullptr ? SelectedApp->LogoPath : nullptr, true);
+	LoadHeroImage(SelectedApp != nullptr ? SelectedApp->BackgroundPath : nullptr, false);
+	// Passing quickly over a shelf item should not start two image downloads.
+	if (m_heroActive && SelectedApp != nullptr) m_artworkLoadTimer->Start();
 }
 
 void AppPage::ShowShelfLoading(bool show) {
@@ -707,96 +738,98 @@ void AppPage::JumpToLetter(wchar_t letter) {
 	}
 }
 
-void AppPage::LoadHeroArtwork(Platform::String^ path) {
-	if (!m_heroActive || path == nullptr) return;
+void AppPage::LoadHeroImage(Platform::String^ path, bool logo) {
+	if (!m_heroActive) return;
+	auto& requests = logo ? m_logoRequest : m_artworkRequest;
+	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
+	if (path == nullptr || path->IsEmpty()) {
+		requests.Invalidate();
+		ClearPendingArtwork(logo);
+		for (auto child : layers->Children) OrbitMotion::Stop(child);
+		layers->Children->Clear();
+		if (logo) HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Visible;
+		return;
+	}
 	uint64_t request;
-	if (!m_artworkRequest.Begin(path->Data(), request)) return;
-	ClearPendingArtwork();
+	if (!requests.Begin(path->Data(), request)) return;
+	ClearPendingArtwork(logo);
 	Platform::WeakReference weakThis(this);
-	auto prepareImage = [this](Windows::UI::Xaml::Media::ImageSource^ source) {
-		auto image = ref new Image();
-		image->Source = source;
-		image->Stretch = Windows::UI::Xaml::Media::Stretch::UniformToFill;
-		image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Top;
-		image->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Center;
-		image->Opacity = 0;
-		m_pendingArtwork = image;
-		// XAML image loading needs a live Image consumer. Keep the old artwork
-		// visible beneath this pending image until its decode completes.
-		HeroArtLayers->Children->Append(image);
-	};
 	try {
 		auto address = OrbitArtworkUri(path->Data(), Windows::Storage::ApplicationData::Current->LocalFolder->Path->Data());
-		auto uri = ref new Windows::Foundation::Uri(ref new Platform::String(address.c_str()));
-		std::wstring extension = uri->Path->Data();
-		std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
-		if (extension.size() >= 4 && extension.substr(extension.size() - 4) == L".svg") {
-			auto source = ref new Windows::UI::Xaml::Media::Imaging::SvgImageSource();
-			source->RasterizePixelWidth = 680;
-			source->Opened += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^>(
-				[weakThis, request](Windows::UI::Xaml::Media::Imaging::SvgImageSource^ sender, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^) {
-					auto page = weakThis.Resolve<AppPage>();
-					if (page != nullptr) page->PresentHeroArtwork(sender, request);
-				});
-			source->OpenFailed += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceFailedEventArgs^>(
-				[weakThis, request](Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceFailedEventArgs^) {
-					auto page = weakThis.Resolve<AppPage>();
-					if (page != nullptr) page->HeroArtworkFailed(request);
-				});
-			prepareImage(source);
-			source->UriSource = uri;
-		} else {
-			auto source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage();
-			source->DecodePixelWidth = 680;
-			source->ImageOpened += ref new RoutedEventHandler([weakThis, request](Platform::Object^ sender, RoutedEventArgs^) {
-				auto page = weakThis.Resolve<AppPage>();
-				if (page != nullptr) page->PresentHeroArtwork(safe_cast<Windows::UI::Xaml::Media::ImageSource^>(sender), request);
-			});
-			source->ImageFailed += ref new ExceptionRoutedEventHandler([weakThis, request](Platform::Object^, ExceptionRoutedEventArgs^) {
-				auto page = weakThis.Resolve<AppPage>();
-				if (page != nullptr) page->HeroArtworkFailed(request);
-			});
-			prepareImage(source);
-			source->UriSource = uri;
-		}
+		auto source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage();
+		source->DecodePixelWidth = logo ? 880 : 1920;
+		source->ImageOpened += ref new RoutedEventHandler([weakThis, request, logo](Platform::Object^ sender, RoutedEventArgs^) {
+			auto page = weakThis.Resolve<AppPage>();
+			if (page != nullptr) page->PresentHeroArtwork(safe_cast<Windows::UI::Xaml::Media::ImageSource^>(sender), request, logo);
+		});
+		source->ImageFailed += ref new ExceptionRoutedEventHandler([weakThis, request, logo](Platform::Object^, ExceptionRoutedEventArgs^) {
+			auto page = weakThis.Resolve<AppPage>();
+			if (page != nullptr) page->HeroArtworkFailed(request, logo);
+		});
+		auto image = ref new Image();
+		if (logo && SelectedApp != nullptr) Windows::UI::Xaml::Automation::AutomationProperties::SetName(image, SelectedApp->Name);
+		image->Stretch = logo ? Stretch::Uniform : Stretch::UniformToFill;
+		image->HorizontalAlignment = logo ? HorizontalAlignment::Left : HorizontalAlignment::Stretch;
+		image->VerticalAlignment = VerticalAlignment::Stretch;
+		image->Source = source;
+		image->Opacity = 0;
+		if (logo) m_pendingLogo = image;
+		else m_pendingArtwork = image;
+		// Decode into an invisible, live Image before presenting it. Title text
+		// remains visible until the logo has successfully opened.
+		layers->Children->Append(image);
+		source->UriSource = ref new Windows::Foundation::Uri(ref new Platform::String(address.c_str()));
 	} catch (Platform::Exception^) {
-		HeroArtworkFailed(request);
+		HeroArtworkFailed(request, logo);
 	}
 }
 
-void AppPage::PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request) {
-	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
-	auto image = m_pendingArtwork;
+void AppPage::PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request, bool logo) {
+	auto& requests = logo ? m_logoRequest : m_artworkRequest;
+	if (!m_heroActive || !requests.IsCurrent(request)) return;
+	auto image = logo ? m_pendingLogo : m_pendingArtwork;
 	if (image == nullptr || image->Source != source) return;
-	ClearPendingArtwork();
+	ClearPendingArtwork(logo);
 	image->Opacity = 1;
-	OrbitMotion::FadeArtwork(HeroArtLayers, image);
+	if (logo) HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	OrbitMotion::FadeArtwork(logo ? HeroLogoLayers : HeroArtLayers, image);
 }
 
-void AppPage::ClearPendingArtwork() {
-	if (m_pendingArtwork == nullptr) return;
+void AppPage::ClearPendingArtwork(bool logo) {
+	auto image = logo ? m_pendingLogo : m_pendingArtwork;
+	if (image == nullptr) return;
+	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
 	unsigned int index;
-	if (HeroArtLayers->Children->IndexOf(m_pendingArtwork, &index)) HeroArtLayers->Children->RemoveAt(index);
-	m_pendingArtwork = nullptr;
+	if (layers->Children->IndexOf(image, &index)) layers->Children->RemoveAt(index);
+	if (logo) m_pendingLogo = nullptr;
+	else m_pendingArtwork = nullptr;
 }
 
-void AppPage::HeroArtworkFailed(uint64_t request) {
-	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
-	ClearPendingArtwork();
-	LoadHeroArtwork(L"ms-appx:///Assets/gamepad.svg");
+void AppPage::HeroArtworkFailed(uint64_t request, bool logo) {
+	auto& requests = logo ? m_logoRequest : m_artworkRequest;
+	if (!m_heroActive || !requests.IsCurrent(request)) return;
+	ClearPendingArtwork(logo);
+	auto layers = logo ? HeroLogoLayers : HeroArtLayers;
+	for (auto child : layers->Children) OrbitMotion::Stop(child);
+	layers->Children->Clear();
+	if (logo) HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
 
 void AppPage::StopHeroMotion() {
 	m_heroActive = false;
+	m_artworkLoadTimer->Stop();
 	m_artworkRequest.Invalidate();
-	ClearPendingArtwork();
+	m_logoRequest.Invalidate();
+	ClearPendingArtwork(false);
+	ClearPendingArtwork(true);
 	if (SelectedApp != nullptr && m_selectedAppChangedToken.Value != 0) {
 		SelectedApp->PropertyChanged -= m_selectedAppChangedToken;
 		m_selectedAppChangedToken.Value = 0;
 	}
-	OrbitMotion::Stop(HeroTitle);
-	auto previous = ref new Platform::Collections::Vector<Windows::UI::Xaml::UIElement^>();
-	for (auto child : HeroArtLayers->Children) previous->Append(child);
+	OrbitMotion::Stop(HeroIdentity);
+	for (auto child : HeroArtLayers->Children) OrbitMotion::Stop(child);
+	for (auto child : HeroLogoLayers->Children) OrbitMotion::Stop(child);
 	HeroArtLayers->Children->Clear();
-	for (auto child : previous) OrbitMotion::Stop(child);
+	HeroLogoLayers->Children->Clear();
+	HeroTitle->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }

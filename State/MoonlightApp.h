@@ -7,6 +7,9 @@ namespace moonlight_xbox_dx {
     private:
         Platform::String^ name;
         Platform::String^ imagePath = "ms-appx:///Assets/gamepad.svg";
+        Platform::String^ logoPath;
+        Platform::String^ backgroundPath;
+        bool heroArtworkRequested = false;
         int id;
         bool currentlyRunning;
     public:
@@ -34,6 +37,22 @@ namespace moonlight_xbox_dx {
             }
         }
         
+        property Platform::String^ LogoPath {
+            Platform::String^ get() { return logoPath; }
+            void set(Platform::String^ value) {
+                logoPath = value;
+                OnPropertyChanged("LogoPath");
+            }
+        }
+
+        property Platform::String^ BackgroundPath {
+            Platform::String^ get() { return backgroundPath; }
+            void set(Platform::String^ value) {
+                backgroundPath = value;
+                OnPropertyChanged("BackgroundPath");
+            }
+        }
+
         property int Id
         {
             int get() { return this->id; }
@@ -51,5 +70,9 @@ namespace moonlight_xbox_dx {
                 OnPropertyChanged("CurrentlyRunning");
             }
         }
+    internal:
+        // Called on the UI thread when the app is highlighted. Downloads once per
+        // app-list entry, independently of the host and square-cover fetches.
+        void EnsureHeroArtwork();
     };
 }
