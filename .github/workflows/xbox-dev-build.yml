@@ -3,6 +3,8 @@ name: Xbox development package
 on:
   push:
     branches: [master, feature/pyrowave-support]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
     inputs:
       ui_smoke_tests:
@@ -118,7 +120,7 @@ jobs:
         run: |
           msbuild moonlight-xbox-dx.vcxproj /m:2 /verbosity:minimal `
             /p:Configuration=Release /p:Platform=x64 `
-            /p:OrbitUiTests=${{ inputs.ui_smoke_tests || false }} `
+            /p:OrbitUiTests=${{ inputs.ui_smoke_tests || github.event_name == 'pull_request' }} `
             "/p:SolutionDir=$env:GITHUB_WORKSPACE\" `
             /p:WindowsTargetPlatformVersion=10.0.26100.0 `
             /p:AppxBundle=Always /p:AppxBundlePlatforms=x64 `

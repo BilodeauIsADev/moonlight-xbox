@@ -55,6 +55,7 @@ namespace moonlight_xbox_dx
 	private:
 		const std::array<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>, 2>*
 			getDirectSampleSrvs(ID3D11Texture2D* texture, UINT slice, const D3D11_TEXTURE2D_DESC& desc);
+		bool setupCopyTexture(const D3D11_TEXTURE2D_DESC& frameDesc);
 		void setupVertexBuffer(D3D11_TEXTURE2D_DESC frameDesc, float uMax, float vMax);
 		void getFramePremultipliedCscConstants(const AVFrame* frame, std::array<float, 9> &cscMatrix, std::array<float, 3> &offsets);
 		void getFrameChromaCositingOffsets(const AVFrame* frame, std::array<float, 2> &chromaOffsets);
@@ -105,6 +106,11 @@ namespace moonlight_xbox_dx
 		// each holding the (luma, chroma) pair.
 		std::unordered_map<ID3D11Texture2D*,
 			std::vector<std::array<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>, 2>>> m_DirectSampleSrvs;
+
+		// Copy path: each decoded frame is copied into this texture before sampling,
+		// so the renderer never reads the decoder's own surfaces
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> m_CopyTexture;
+		std::array<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>, 2> m_CopySrvs;
 	};
 }
 

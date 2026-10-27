@@ -6,11 +6,13 @@
 #include "pch.h"
 #include "Common/OrbitInput.h"
 #include "HostSettingsPage.xaml.h"
-#include "MoonlightSettings.xaml.h"
+#include "Common/OrbitUiScale.h"
+#include "Common/OrbitClock.h"
 #include "Utils.hpp"
 #include <gamingdeviceinformation.h>
 #include <Limelight.h> // SCM_* server codec support bits
 #include <cmath> // sqrtf, lround
+#include <vector>
 
 using namespace Windows::UI::Core;
 
@@ -32,6 +34,10 @@ using namespace Windows::UI::ViewManagement::Core;
 HostSettingsPage::HostSettingsPage()
 {
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
+	AttachClock(ClockText);
+	AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
+	GlobalSettingsOption->XYFocusRight = AppSettingsPanel->SectionFocusTarget(0);
 	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnLoaded);
 	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnUnloaded);
@@ -111,6 +117,19 @@ void HostSettingsPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEv
 	for (int i = 0; i < AvailableFramePacing->Size; i++) {
 		if (host->FramePacing == AvailableFramePacing->GetAt(i)) {
 			FramePacingComboBox->SelectedIndex = i;
+			break;
+		}
+	}
+
+	// Periodic refresh options
+	AvailablePeriodicRefresh->Append("Off");
+	AvailablePeriodicRefresh->Append("5 seconds");
+	AvailablePeriodicRefresh->Append("10 seconds");
+	AvailablePeriodicRefresh->Append("30 seconds");
+	AvailablePeriodicRefresh->Append("60 seconds");
+	for (int i = 0; i < AvailablePeriodicRefresh->Size; i++) {
+		if (host->PeriodicRefresh == AvailablePeriodicRefresh->GetAt(i)) {
+			PeriodicRefreshComboBox->SelectedIndex = i;
 			break;
 		}
 	}
@@ -272,12 +291,6 @@ void HostSettingsPage::PacketSizeSelector_SelectionChanged(Platform::Object^ sen
 	host->PacketSize = selectedPacketSize;
 }
 
-void HostSettingsPage::GlobalSettingsOption_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(MoonlightSettings::typeid));
-}
-
-
 void HostSettingsPage::BitrateInput_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e)
 {
 	if (e->Key == Windows::System::VirtualKey::Enter) {
@@ -313,17 +326,46 @@ void HostSettingsPage::CodecComboBox_SelectionChanged(Platform::Object^ sender, 
 	host->VideoCodec = selectedCodec;
 }
 
+// Visible controls under root, top to bottom
+static void CollectFocusableControls(DependencyObject^ root, std::vector<Control^>& out) {
+	const int count = VisualTreeHelper::GetChildrenCount(root);
+	for (int i = 0; i < count; i++) {
+		auto child = VisualTreeHelper::GetChild(root, i);
+		auto element = dynamic_cast<FrameworkElement^>(child);
+		if (element != nullptr && element->Visibility != Windows::UI::Xaml::Visibility::Visible) continue;
+		auto control = dynamic_cast<Control^>(child);
+		if (control != nullptr && control->IsTabStop) {
+			out.push_back(control);
+			continue;
+		}
+		CollectFocusableControls(child, out);
+	}
+}
+
+// XY focus passes over the right-aligned toggles in these rows, so give each
+// panel an explicit Up/Down order. Rebuilt on each show since rows such as HDR
+// can be hidden.
+static void ChainPanelFocus(FrameworkElement^ panel) {
+	std::vector<Control^> controls;
+	CollectFocusableControls(panel, controls);
+	for (size_t i = 0; i + 1 < controls.size(); i++) {
+		controls[i]->XYFocusDown = controls[i + 1];
+		controls[i + 1]->XYFocusUp = controls[i];
+	}
+}
+
 void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	auto selected = dynamic_cast<Button^>(sender);
 	if (selected == nullptr) return;
-	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton };
-	StackPanel^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel };
-	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General" };
-	for (int i = 0; i < 4; i++) {
+	m_activeSection = selected;
+	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton, GlobalSettingsOption };
+	FrameworkElement^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel, AppSettingsPanel };
+	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General", L"App settings" };
+	for (int i = 0; i < 5; i++) {
 		if (buttons[i] == selected) {
 			bool changed = panels[i]->Visibility != Windows::UI::Xaml::Visibility::Visible;
-			for (int j = 0; j < 4; j++) {
+			for (int j = 0; j < 5; j++) {
 				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 				if (i == j) {
 					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
@@ -334,6 +376,10 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 				}
 			}
 			SectionTitle->Text = titles[i];
+			if (selected != GlobalSettingsOption) ChainPanelFocus(panels[i]);
+			ContentScroll->Visibility = selected == GlobalSettingsOption ? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
+			CalibrationFrame->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+			if (selected == GlobalSettingsOption) AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
 			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 			break;
 		}
@@ -413,15 +459,7 @@ int HostSettingsPage::getDefaultBitrate(int width, int height, int fps, Platform
 	return std::lround(resolutionFactor * frameRateFactor) * 1000;
 }
 
-void HostSettingsPage::HostsNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	GetApplicationState()->UpdateFile();
-	if (Frame->CanGoBack) {
-		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
-		Frame->GoBack();
-	}
-}
-
 void HostSettingsPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
-	if (OrbitInput::HandleBumpers(e, 2, hostsNavButton, backButton, settingsNavButton)) return;
+	if (OrbitInput::HandleBumpers(e, 2, nullptr, backButton, settingsNavButton)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, [this]() -> Control^ { return m_activeSection; })) return;
 }

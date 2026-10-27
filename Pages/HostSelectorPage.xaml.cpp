@@ -8,6 +8,7 @@
 #include "Common/OrbitInput.h"
 // clang-format on
 #include "HostSelectorPage.xaml.h"
+#include "Common/OrbitUiScale.h"
 #include "AppPage.xaml.h"
 #include "Common/ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -37,13 +38,12 @@ using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::UI::ViewManagement::Core;
 
-// Host whose library was opened last; the Library tab returns to it
-static MoonlightHost^ s_lastLibraryHost = nullptr;
 static bool s_stateLoaded = false;
 
 HostSelectorPage::HostSelectorPage() {
 	state = GetApplicationState();
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
 
 	discoveredDevices = ref new Platform::Collections::Map<String^, DeviceInformation^>();
 	deviceWatcherHelper = ref new DeviceWatcherHelper(Dispatcher);
@@ -249,7 +249,6 @@ void HostSelectorPage::StartPairing(MoonlightHost^ host) {
 }
 
 void HostSelectorPage::removeHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	if (currentHost == s_lastLibraryHost) s_lastLibraryHost = nullptr;
 	State->RemoveHost(currentHost);
 }
 
@@ -348,28 +347,7 @@ void HostSelectorPage::Connect(MoonlightHost^ host) {
 	}
 	state->shouldAutoConnect = true;
 	deviceWatcherHelper->StopWatcher();
-	s_lastLibraryHost = host;
 	bool result = this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host);
-}
-
-void HostSelectorPage::libraryNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	MoonlightHost^ target = nullptr;
-	if (s_lastLibraryHost != nullptr && s_lastLibraryHost->Connected && s_lastLibraryHost->Paired) {
-		target = s_lastLibraryHost;
-	} else {
-		for (auto host : state->SavedHosts) {
-			if (host->Connected && host->Paired) {
-				target = host;
-				break;
-			}
-		}
-	}
-	if (target == nullptr) return;
-
-	// Unlike Connect(), browsing the library must not trigger the host's autostart app
-	deviceWatcherHelper->StopWatcher();
-	s_lastLibraryHost = target;
-	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), target);
 }
 
 void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
@@ -379,9 +357,32 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 	if (host == nullptr) return;
 	focusedHost = host;
 	focusedHostItem = item;
+	UpdateHints();
+}
+
+// Refresh on focus and layout so discovery and wake progress update the hints.
+void HostSelectorPage::UpdateHints() {
+	unsigned int index;
+	const bool onCard = focusedHost != nullptr && focusedHostItem != nullptr
+		&& FocusManager::GetFocusedElement() == focusedHostItem
+		&& state->SavedHosts->IndexOf(focusedHost, &index);
+	const auto visible = Windows::UI::Xaml::Visibility::Visible;
+	const auto collapsed = Windows::UI::Xaml::Visibility::Collapsed;
+	auto options = onCard ? visible : collapsed;
+	if (HostOptionsHint->Visibility != options) HostOptionsHint->Visibility = options;
+	auto wake = onCard && !focusedHost->Connected && !focusedHost->WolPolling ? visible : collapsed;
+	if (WakeHint->Visibility != wake) WakeHint->Visibility = wake;
+	Platform::String^ action = L"Select";
+	if (onCard) {
+		if (!focusedHost->Connected) action = L"Options";
+		else if (focusedHost->Paired) action = L"Open library";
+		else action = L"Pair";
+	} else if (FocusManager::GetFocusedElement() == AddHostCard) action = L"Add PC";
+	if (OpenHintText->Text != action) OpenHintText->Text = action;
 }
 
 void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (OrbitInput::HasOpenPopup()) return;
 	// Only act when a host card is what's focused
 	auto focused = dynamic_cast<GridViewItem^>(FocusManager::GetFocusedElement());
 	if (focused == nullptr || focused != focusedHostItem || focusedHost == nullptr) return;
@@ -564,7 +565,10 @@ void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^
 			host->WolPolling = true;
 			concurrency::create_task(concurrency::create_async([host]() {
 				int consecutiveSuccess = 0;
+				auto wakeStarted = std::chrono::steady_clock::now();
 				for (int i = 0; i < 60; ++i) {
+					// Probes can time out, so show real elapsed time rather than the attempt count.
+					host->WolPollingSeconds = (int)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - wakeStarted).count();
 					try {
 						host->UpdateHostInfo(false);
 						if (host->Connected) {
@@ -591,6 +595,9 @@ void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^
 					}
 					Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([host]() {
 						host->WolPolling = false;
+						// Polling gave up without ever reaching the host: dim the card
+						// until the next wake attempt clears the timeout.
+						if (!host->Connected) host->WakeTimedOut = true;
 						}));
 					});
 		}
@@ -746,7 +753,9 @@ void HostSelectorPage::testConnectionButton_Click(Platform::Object^ sender, Wind
 
 void HostSelectorPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	pendingInitialFocus = false;
-	if (OrbitInput::HandleBumpers(e, 0, hostsNavButton, libraryNavButton, settingsNavButton)) return;
+	if (e->Key != Windows::System::VirtualKey::GamepadMenu || OrbitInput::HasOpenPopup()) return;
+	e->Handled = true;
+	if (!e->KeyStatus.WasKeyDown) SettingsButton_Click(nullptr, nullptr);
 }
 
 void HostSelectorPage::TryFocusInitialHost() {
@@ -765,9 +774,123 @@ void HostSelectorPage::TryFocusInitialHost() {
 }
 
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
+	UpdateFirstRunGuide();
+	UpdateHints();
 	TryFocusInitialHost();
+}
+
+// The checklist stays below the picker until a host exists; discovery may add
+// one at any time, so re-evaluate whatever the shelf looks like each layout pass.
+void HostSelectorPage::UpdateFirstRunGuide() {
+	auto visible = state->SavedHosts->Size == 0
+		? Windows::UI::Xaml::Visibility::Visible
+		: Windows::UI::Xaml::Visibility::Collapsed;
+	if (FirstRunChecklist->Visibility != visible) {
+		FirstRunChecklist->Visibility = visible;
+	}
 }
 
 void HostSelectorPage::Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e) {
 	pendingInitialFocus = false;
+}
+
+// ---- Ambient background ----------------------------------------------------
+
+void HostSelectorPage::Page_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	UpdateHints();
+}
+
+void HostSelectorPage::Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StartAmbient();
+}
+
+void HostSelectorPage::Page_Unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	StopAmbient();
+}
+
+// Slow drift loops on the compositor, so they cost nothing on the UI thread.
+// Each layer has its own period, so the combined picture takes minutes to repeat.
+void HostSelectorPage::StartAmbient() {
+	if (!OrbitMotion::Enabled()) return;
+	using namespace Windows::UI::Composition;
+	using Windows::UI::Xaml::Hosting::ElementCompositionPreview;
+	auto drift = [](UIElement^ element, Windows::Foundation::Numerics::float3 to, int seconds, float opacityLow) {
+		ElementCompositionPreview::SetIsTranslationEnabled(element, true);
+		auto visual = ElementCompositionPreview::GetElementVisual(element);
+		auto compositor = visual->Compositor;
+		auto ease = compositor->CreateCubicBezierEasingFunction(Windows::Foundation::Numerics::float2(0.45f, 0.0f), Windows::Foundation::Numerics::float2(0.55f, 1.0f));
+		auto move = compositor->CreateVector3KeyFrameAnimation();
+		move->InsertKeyFrame(0.0f, Windows::Foundation::Numerics::float3(0, 0, 0));
+		move->InsertKeyFrame(1.0f, to, ease);
+		move->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
+		move->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+		move->Direction = Windows::UI::Composition::AnimationDirection::Alternate;
+		visual->StartAnimation(L"Translation", move);
+		if (opacityLow < 1.0f) {
+			auto breathe = compositor->CreateScalarKeyFrameAnimation();
+			breathe->InsertKeyFrame(0.0f, 1.0f);
+			breathe->InsertKeyFrame(1.0f, opacityLow, ease);
+			breathe->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 7000000LL };
+			breathe->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+			breathe->Direction = Windows::UI::Composition::AnimationDirection::Alternate;
+			visual->StartAnimation(L"Opacity", breathe);
+		}
+	};
+	using Windows::Foundation::Numerics::float3;
+	drift(AmbientSpot, float3(65, 40, 0), 31, 0.85f);
+
+	// Specks rising and fading, each on its own schedule
+	if (AmbientParticles->Children->Size == 0) {
+		unsigned int seed = 7;
+		auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7FFF; };
+		for (int i = 0; i < 16; ++i) {
+			auto speck = ref new Windows::UI::Xaml::Shapes::Ellipse();
+			const double size = 2.0 + (next() % 30) / 10.0;
+			speck->Width = size;
+			speck->Height = size;
+			speck->Fill = ref new SolidColorBrush(Windows::UI::ColorHelper::FromArgb(200, 95, 151, 255));
+			speck->Opacity = 0;
+			Canvas::SetLeft(speck, AmbientLayer->ActualWidth * (next() % 1000) / 1000.0);
+			Canvas::SetTop(speck, AmbientLayer->ActualHeight * (0.25 + (next() % 650) / 1000.0));
+			AmbientParticles->Children->Append(speck);
+		}
+	}
+	unsigned int index = 0;
+	for (UIElement^ child : AmbientParticles->Children) {
+		ElementCompositionPreview::SetIsTranslationEnabled(child, true);
+		auto visual = ElementCompositionPreview::GetElementVisual(child);
+		auto compositor = visual->Compositor;
+		const int seconds = 11 + static_cast<int>(index % 5) * 2;
+		auto rise = compositor->CreateVector3KeyFrameAnimation();
+		rise->InsertKeyFrame(0.0f, float3(0, 0, 0));
+		rise->InsertKeyFrame(1.0f, float3(static_cast<float>(static_cast<int>(index % 3) - 1) * 18.0f, -110.0f, 0), compositor->CreateLinearEasingFunction());
+		rise->Duration = Windows::Foundation::TimeSpan{ static_cast<long long>(seconds) * 10000000LL };
+		rise->DelayTime = Windows::Foundation::TimeSpan{ static_cast<long long>(index) * 9000000LL };
+		rise->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+		visual->StartAnimation(L"Translation", rise);
+		auto fade = compositor->CreateScalarKeyFrameAnimation();
+		fade->InsertKeyFrame(0.0f, 0.0f);
+		fade->InsertKeyFrame(0.3f, 0.55f);
+		fade->InsertKeyFrame(1.0f, 0.0f);
+		fade->Duration = rise->Duration;
+		fade->DelayTime = rise->DelayTime;
+		fade->IterationBehavior = Windows::UI::Composition::AnimationIterationBehavior::Forever;
+		// Element opacity stays 0 until composition takes over, so nothing pops in
+		safe_cast<UIElement^>(child)->Opacity = 1;
+		visual->Opacity = 0;
+		visual->StartAnimation(L"Opacity", fade);
+		++index;
+	}
+}
+
+void HostSelectorPage::StopAmbient() {
+	using Windows::UI::Xaml::Hosting::ElementCompositionPreview;
+	auto stop = [](UIElement^ element, float opacity) {
+		auto visual = ElementCompositionPreview::GetElementVisual(element);
+		visual->StopAnimation(L"Translation");
+		visual->StopAnimation(L"Opacity");
+		visual->Opacity = opacity;
+	};
+	stop(AmbientSpot, 1.0f);
+	for (UIElement^ child : AmbientParticles->Children) stop(child, 0.0f);
 }

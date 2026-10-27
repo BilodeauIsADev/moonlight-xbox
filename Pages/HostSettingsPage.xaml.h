@@ -7,6 +7,7 @@
 
 #include "Pages\HostSettingsPage.g.h"
 #include "State\ScreenResolution.h"
+#include "Common\AppSettingsControl.xaml.h"
 
 namespace moonlight_xbox_dx
 {
@@ -25,6 +26,7 @@ namespace moonlight_xbox_dx
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableVideoCodecs;
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableFramePacing;
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableAudioBuffers;
+		Windows::Foundation::Collections::IVector<Platform::String^>^ availablePeriodicRefresh;
 		Windows::Foundation::Collections::IVector<int>^ availablePacketSizes;
 		int currentResolutionIndex = 0;
 		int currentAppIndex = 0;
@@ -33,6 +35,9 @@ namespace moonlight_xbox_dx
 		virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 	public:
 		HostSettingsPage();
+		property ApplicationState^ State {
+			ApplicationState^ get() { return GetApplicationState(); }
+		}
 		property MoonlightHost^ Host {
 			MoonlightHost^ get() {
 				return this->host;
@@ -90,6 +95,16 @@ namespace moonlight_xbox_dx
 			}
 		}
 
+		property Windows::Foundation::Collections::IVector<Platform::String^>^ AvailablePeriodicRefresh {
+			Windows::Foundation::Collections::IVector<Platform::String^>^ get() {
+				if (this->availablePeriodicRefresh == nullptr)
+				{
+					this->availablePeriodicRefresh = ref new Platform::Collections::Vector<Platform::String^>();
+				}
+				return this->availablePeriodicRefresh;
+			}
+		}
+
 		property Windows::Foundation::Collections::IVector<Platform::String^>^ AvailableAudioBuffers {
 			Windows::Foundation::Collections::IVector<Platform::String^>^ get() {
 				if (this->availableAudioBuffers == nullptr)
@@ -128,7 +143,8 @@ namespace moonlight_xbox_dx
 
 	private:
 		void SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void HostsNavButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		// Section the tab bar's Down returns to
+		Windows::UI::Xaml::Controls::Button^ m_activeSection;
 		void backButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void ResolutionSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void FPSSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
@@ -137,7 +153,6 @@ namespace moonlight_xbox_dx
 		void FramePacing_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void PacketSizeSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void CodecComboBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
-		void GlobalSettingsOption_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void BitrateInput_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		void OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

@@ -206,13 +206,16 @@
                 </Setter>
             </Style>
 
-            <!-- Top bar tab; the current tab sets Background to OrbitSurfaceStrongBrush -->
+            <!-- Top bar tab; the current tab is a white pill: Background OrbitTabSelectedBrush,
+                 Foreground OrbitTabSelectedTextBrush -->
+            <SolidColorBrush x:Key="OrbitTabSelectedBrush" Color="#F2FFFFFF" />
+            <SolidColorBrush x:Key="OrbitTabSelectedTextBrush" Color="#FF0B0F1C" />
             <Style x:Key="OrbitNavButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
-                <Setter Property="FontSize" Value="16" />
-                <Setter Property="Padding" Value="16,6" />
-                <Setter Property="CornerRadius" Value="17" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Padding" Value="11,3" />
+                <Setter Property="CornerRadius" Value="11" />
                 <Setter Property="UseSystemFocusVisuals" Value="False" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -258,10 +261,6 @@
                                             </VisualTransition>
                                         </VisualStateGroup.Transitions>
                                         <VisualState x:Name="Focused">
-                                            <VisualState.Setters>
-
-                                                <Setter Target="Label.Foreground" Value="#FFFFFFFF" />
-                                            </VisualState.Setters>
                                         <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
                                             </Storyboard>
@@ -270,7 +269,7 @@
                                         <VisualState x:Name="PointerFocused" />
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <Border x:Name="FocusRing" Margin="-4" CornerRadius="21" BorderThickness="3" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" />
+                                <Border x:Name="FocusRing" Margin="-3" CornerRadius="14" BorderThickness="2" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" />
                                 <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
                                     <Grid>
                                         <Border x:Name="Hover" Background="#1FFFFFFF" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" />
@@ -463,7 +462,17 @@
                 </Setter>
             </Style>
 
-            <!-- App posters (96x128 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
+            <!-- Library shelf placeholder poster: a dim tile that pulses softly while apps load -->
+            <Style x:Key="OrbitShelfPlaceholderStyle" TargetType="Grid">
+                <Setter Property="Width" Value="128" />
+                <Setter Property="Height" Value="128" />
+                <Setter Property="Margin" Value="0,0,16,0" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Background" Value="{StaticResource OrbitSurfaceBrush}" />
+                <Setter Property="Opacity" Value="0.5" />
+            </Style>
+
+            <!-- App posters (128x128 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
             <Style x:Key="OrbitPosterItemStyle" TargetType="GridViewItem">
                 <Setter Property="Margin" Value="0,0,16,0" />
                 <Setter Property="Padding" Value="0" />
@@ -505,10 +514,10 @@
                                             <VisualTransition GeneratedDuration="0:0:0.120">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
-                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.160">
+                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.150">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
-                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.160">
+                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.150">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
                                         </VisualStateGroup.Transitions>
@@ -517,8 +526,8 @@
                                         <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
                                                 <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
@@ -527,13 +536,13 @@
                                         <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
                                                 <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#4DFFFFFF" Opacity="0" IsHitTestVisible="False" />
                                 <ContentPresenter x:Name="Body" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" />
                                 <Border x:Name="Ring" VerticalAlignment="Top" Height="136" Margin="-4,-4,-4,0" CornerRadius="10" BorderThickness="2.5" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
                             </Grid>
@@ -542,9 +551,9 @@
                 </Setter>
             </Style>
 
-            <!-- Host cards (160x100 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
+            <!-- PC picker: round white focus ring around the artwork, and a small lift -->
             <Style x:Key="OrbitHostItemStyle" TargetType="GridViewItem">
-                <Setter Property="Margin" Value="0,0,16,0" />
+                <Setter Property="Margin" Value="0,0,14,0" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="UseSystemFocusVisuals" Value="False" />
@@ -553,7 +562,8 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="GridViewItem">
-                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
+                            <!-- Reserve the halo and lift inside the scrollable item's bounds. -->
+                            <Grid Padding="0,16" Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
                                     <CompositeTransform x:Name="LiftTransform" />
                                 </Grid.RenderTransform>
@@ -612,21 +622,167 @@
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <Border x:Name="Glow" VerticalAlignment="Top" Height="118" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <!-- Round focus: a ring and soft halo around the 84 px tile at the top -->
+                                <Ellipse x:Name="Glow" Width="106" Height="106" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-11,0,0" StrokeThickness="5" Stroke="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
                                 <ContentPresenter x:Name="Body" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" />
-                                <Border x:Name="Ring" VerticalAlignment="Top" Height="108" Margin="-4,-4,-4,0" CornerRadius="10" BorderThickness="2.5" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
+                                <Ellipse x:Name="Ring" Width="96" Height="96" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-6,0,0" StrokeThickness="2.5" Stroke="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
 
-            <!-- Controller button glyphs (A, B, X, Y, View, Menu) for footer hints -->
-            <FontFamily x:Key="OrbitGlyphFont">Segoe MDL2 Assets</FontFamily>
-            <Style x:Key="OrbitHintGlyphStyle" TargetType="FontIcon">
-                <Setter Property="FontFamily" Value="{StaticResource OrbitGlyphFont}" />
-                <Setter Property="FontSize" Value="18" />
+            <!-- Hosts screen Add tile: same round tile and focus ring as the PCs -->
+            <Style x:Key="OrbitHostAddButtonStyle" TargetType="Button">
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Width="108" Padding="0,16" Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
+                                <Grid.RenderTransform>
+                                    <CompositeTransform x:Name="LiftTransform" />
+                                </Grid.RenderTransform>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Body" Storyboard.TargetProperty="Opacity" To="0.8" Duration="0" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled" />
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.160">
+                                                <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
+                                            </VisualTransition>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="Focused">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <StackPanel x:Name="Body">
+                                    <Grid Width="84" Height="84" HorizontalAlignment="Center">
+                                        <Ellipse Fill="#14FFFFFF" />
+                                        <FontIcon Glyph="&#xE710;" FontSize="26" Foreground="#E6FFFFFF" />
+                                    </Grid>
+                                    <TextBlock Text="Add" FontSize="13" HorizontalAlignment="Center" Margin="0,10,0,0" Foreground="{StaticResource OrbitTextBrush}" />
+                                </StackPanel>
+                                <Ellipse x:Name="Glow" Width="106" Height="106" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-11,0,0" StrokeThickness="5" Stroke="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <Ellipse x:Name="Ring" Width="96" Height="96" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-6,0,0" StrokeThickness="2.5" Stroke="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Hosts screen first-run checklist steps, shown under the row while no PC exists -->
+            <Style x:Key="OrbitHostChecklistTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
+            </Style>
+
+            <!-- Controller buttons in footer hints, Selene style: dark controller glyphs
+                 from the console's Segoe MDL2 Assets on a light disc. The disc sits just
+                 inside the glyph's own ring, so only the letter shows. Bumpers and
+                 triggers keep the console font's own outlines. -->
+            <SolidColorBrush x:Key="OrbitHintKeyBrush" Color="#E6FFFFFF" />
+            <SolidColorBrush x:Key="OrbitHintKeyInkBrush" Color="#FF0B0F1C" />
+            <Style x:Key="OrbitKeyGlyphStyle" TargetType="ContentControl">
+                <Setter Property="Width" Value="16" />
+                <Setter Property="Height" Value="16" />
+                <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyInkBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <Grid>
+                                <Ellipse Margin="1" Fill="{StaticResource OrbitHintKeyBrush}" />
+                                <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="OrbitKeyAStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Content" Value="&#xF093;" />
+            </Style>
+            <Style x:Key="OrbitKeyBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Content" Value="&#xF094;" />
+            </Style>
+            <Style x:Key="OrbitKeyXStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Content" Value="&#xF096;" />
+            </Style>
+            <Style x:Key="OrbitKeyYStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Content" Value="&#xF095;" />
+            </Style>
+            <!-- Native controller glyphs retain their own button outlines. -->
+            <Style x:Key="OrbitKeyBadgeStyle" TargetType="ContentControl">
+                <Setter Property="Height" Value="16" />
+                <Setter Property="MinWidth" Value="17" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="OrbitKeyViewStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xEECA;" />
+            </Style>
+            <Style x:Key="OrbitKeyMenuStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xEDE3;" />
+            </Style>
+            <Style x:Key="OrbitKeyLBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xF10C;" />
+            </Style>
+            <Style x:Key="OrbitKeyRBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xF10D;" />
+            </Style>
+            <Style x:Key="OrbitKeyLTStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xF10A;" />
+            </Style>
+            <Style x:Key="OrbitKeyRTStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xF10B;" />
+            </Style>
+            <!-- A footer hint that a pointer can click but focus never lands on -->
+            <Style x:Key="OrbitHintButtonStyle" TargetType="Button">
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="AllowFocusOnInteraction" Value="False" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <ContentPresenter Background="{TemplateBinding Background}" Content="{TemplateBinding Content}" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->
@@ -662,18 +818,9 @@
                 <Setter Property="Foreground" Value="{StaticResource OrbitTextBrush}" />
             </Style>
             <Style x:Key="OrbitHintTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="11" />
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
-            </Style>
-            <!-- Controller button badge in the footer hints -->
-            <Style x:Key="OrbitHintBadgeStyle" TargetType="Border">
-                <Setter Property="MinWidth" Value="20" />
-                <Setter Property="Height" Value="20" />
-                <Setter Property="CornerRadius" Value="10" />
-                <Setter Property="BorderThickness" Value="1.5" />
-                <Setter Property="Padding" Value="4,0" />
-                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
             </Style>
 
             <!-- Shared dialog chrome keeps progress, forms, confirmations and errors in Orbit. -->

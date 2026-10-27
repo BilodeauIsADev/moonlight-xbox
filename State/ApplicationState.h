@@ -1,5 +1,6 @@
 #pragma once
 #include "State\MoonlightHost.h"
+#include <map>
 #include <ppltasks.h>
 
 namespace moonlight_xbox_dx {
@@ -15,6 +16,9 @@ namespace moonlight_xbox_dx {
 		Platform::String^ keyboardLayout;
 		bool firstTime;
 		bool alternateCombination;
+		bool navigationSounds = true;
+		bool menuSafeArea = false;
+		int uiScale = 90;
 	internal:
 		Concurrency::task<void> Init();
 		bool AddHost(Platform::String^ hostname);
@@ -23,6 +27,14 @@ namespace moonlight_xbox_dx {
 		std::string autostartInstance = "";
 		bool enableKeyboard = false;
 		bool shouldAutoConnect = false;
+
+		// Per-host, per-app "last played" stamps for the Library shelf
+		// (key "<host identity>:<app id>" -> Unix seconds; absent = never played).
+		std::map<std::string, long long> lastPlayedByApp;
+		void RecordAppPlayed(MoonlightHost^ host, int appId);
+		long long GetLastPlayed(MoonlightHost^ host, int appId);
+		// Most recent launch of any app on this host, or 0
+		long long GetLastPlayedOnHost(MoonlightHost^ host);
 
 		bool WakeHost(MoonlightHost^ host);
 		void Validate_WoL(MoonlightHost^ host);
@@ -60,6 +72,7 @@ namespace moonlight_xbox_dx {
 				this->screenMarginW = value;
 				OnPropertyChanged("ScreenMarginWidth");
 				OnPropertyChanged("ScreenMargin");
+				OnPropertyChanged("CalibrationMargin");
 			}
 		}
 		property int ScreenMarginHeight
@@ -72,6 +85,7 @@ namespace moonlight_xbox_dx {
 				this->screenMarginH = value;
 				OnPropertyChanged("ScreenMarginHeight");
 				OnPropertyChanged("ScreenMargin");
+				OnPropertyChanged("CalibrationMargin");
 			}
 		}
 
@@ -81,6 +95,52 @@ namespace moonlight_xbox_dx {
 			{
 				return { (double)this->screenMarginW,(double)this->screenMarginH,(double)this->screenMarginW,(double)this->screenMarginH };
 			};
+		}
+
+		// Where the settings calibration frame sits inside the page. When the menus already
+		// use the margin, the frame is inset by it and the outline goes at the page edge.
+		property Windows::UI::Xaml::Thickness CalibrationMargin
+		{
+			Windows::UI::Xaml::Thickness get()
+			{
+				if (this->menuSafeArea) return { 0, 0, 0, 0 };
+				return ScreenMargin;
+			};
+		}
+
+		property bool MenuSafeArea
+		{
+			bool get()
+			{
+				return this->menuSafeArea;
+			};
+			void set(bool value) {
+				this->menuSafeArea = value;
+				OnPropertyChanged("MenuSafeArea");
+				OnPropertyChanged("CalibrationMargin");
+			}
+		}
+
+		property bool NavigationSounds
+		{
+			bool get()
+			{
+				return this->navigationSounds;
+			};
+			void set(bool value) {
+				this->navigationSounds = value;
+				OnPropertyChanged("NavigationSounds");
+			}
+		}
+
+		// Menu pages are drawn at this percentage (100, 90 or 80); the stream is not
+		property int UiScale
+		{
+			int get() { return this->uiScale; }
+			void set(int value) {
+				this->uiScale = (value == 100 || value == 90 || value == 80) ? value : 90;
+				OnPropertyChanged("UiScale");
+			}
 		}
 
 		property int MouseSensitivity

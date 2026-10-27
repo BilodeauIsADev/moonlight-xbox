@@ -552,10 +552,25 @@
     <ClInclude Include="Common\OrbitArtworkRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Common\OrbitHostCard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\OrbitNavigation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Common\OrbitStreamUi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\OrbitInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\OrbitRecents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\OrbitClock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\OrbitUiScale.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\DeviceWatcherHelper.h">
@@ -780,6 +795,7 @@
     <Page Include="Pages\AppPage.xaml" />
     <Page Include="Pages\HostSelectorPage.xaml" />
     <Page Include="Pages\HostSettingsPage.xaml" />
+    <Page Include="Common\AppSettingsControl.xaml" />
     <Page Include="Pages\MoonlightSettings.xaml" />
     <Page Include="Pages\StreamPage.xaml" />
     <Page Include="KeyboardControl.xaml" />

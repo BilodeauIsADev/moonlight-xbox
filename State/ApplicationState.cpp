@@ -9,6 +9,7 @@
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include <algorithm>
+#include <ctime>
 #include <sstream>
 
 using namespace Windows::Storage;
@@ -32,6 +33,9 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 			if (stateJson.contains("marginHeight")) this->ScreenMarginHeight = stateJson["marginHeight"];
 			if (stateJson.contains("mouseSensitivity")) this->MouseSensitivity = stateJson["mouseSensitivity"];
 			if (stateJson.contains("alternateCombination")) this->AlternateCombination = stateJson["alternateCombination"].get<bool>();
+			if (stateJson.contains("navigationSounds")) this->NavigationSounds = stateJson["navigationSounds"].get<bool>();
+			if (stateJson.contains("menuSafeArea")) this->MenuSafeArea = stateJson["menuSafeArea"].get<bool>();
+			if (stateJson.contains("uiScale") && stateJson["uiScale"].is_number_integer()) this->UiScale = stateJson["uiScale"].get<int>();
 			for (auto a : stateJson["hosts"]) {
 				MoonlightHost^ h = ref new MoonlightHost(Utils::StringFromStdString(a["hostname"].get<std::string>()));
 				if (a.contains("instance_id")) h->InstanceId = Utils::StringFromStdString(a["instance_id"].get<std::string>());
@@ -44,12 +48,15 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 				if (a.contains("videoCodec")) h->VideoCodec = Utils::StringFromStdString(a["videoCodec"].get<std::string>());
 				if (a.contains("framePacing")) h->FramePacing = Utils::StringFromStdString(a["framePacing"].get<std::string>());
 				if (a.contains("audioBuffer")) h->AudioBuffer = Utils::StringFromStdString(a["audioBuffer"].get<std::string>());
+				if (a.contains("periodicRefresh")) h->PeriodicRefresh = Utils::StringFromStdString(a["periodicRefresh"].get<std::string>());
 				if (a.contains("packetSize")) h->PacketSize = a["packetSize"];
 				if (a.contains("autoStartID")) h->AutostartID = a["autoStartID"];
 				if (a.contains("computername")) h->ComputerName = Utils::StringFromStdString(a["computername"].get<std::string>());
 				if (a.contains("playaudioonpc")) h->PlayAudioOnPC = a["playaudioonpc"].get<bool>();
 				if (a.contains("enable_hdr")) h->EnableHDR = a["enable_hdr"].get<bool>();
 				if (a.contains("enable_sops")) h->EnableSOPS = a["enable_sops"].get<bool>();
+				if (a.contains("enable_intra_refresh")) h->EnableIntraRefresh = a["enable_intra_refresh"].get<bool>();
+				if (a.contains("enable_direct_rendering")) h->EnableDirectRendering = a["enable_direct_rendering"].get<bool>();
 				if (a.contains("enable_stats")) h->EnableStats = a["enable_stats"].get<bool>();
 				if (a.contains("enable_graphs")) h->EnableGraphs = a["enable_graphs"].get<bool>();
 				if (a.contains("serverAddress")) h->ServerAddress = Utils::StringFromStdString(a["serverAddress"].get<std::string>());
@@ -58,6 +65,14 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 				else
 					h->ComputerName = h->LastHostname;
 				this->SavedHosts->Append(h);
+			}
+			if (stateJson.contains("recentlyPlayed")) {
+				auto recent = stateJson["recentlyPlayed"];
+				if (recent.is_object()) {
+					for (auto stamp = recent.begin(); stamp != recent.end(); ++stamp) {
+						if (stamp.value().is_number()) this->lastPlayedByApp[stamp.key()] = stamp.value().get<long long>();
+					}
+				}
 			}
 		}
 			});
@@ -111,6 +126,13 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 		stateJson["enableKeyboard"] = that->EnableKeyboard;
 		stateJson["keyboardLayout"] = Utils::PlatformStringToStdString(that->KeyboardLayout);
 		stateJson["alternateCombination"] = that->AlternateCombination;
+		stateJson["navigationSounds"] = that->NavigationSounds;
+		stateJson["menuSafeArea"] = that->MenuSafeArea;
+		stateJson["uiScale"] = that->UiScale;
+		stateJson["recentlyPlayed"] = nlohmann::json::object();
+		for (auto stamp : that->lastPlayedByApp) {
+			stateJson["recentlyPlayed"][stamp.first] = stamp.second;
+		}
 		for (auto host : that->SavedHosts) {
 			nlohmann::json hostJson;
 			hostJson["hostname"] = Utils::PlatformStringToStdString(host->LastHostname);
@@ -124,11 +146,14 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 			hostJson["videoCodec"] = Utils::PlatformStringToStdString(host->VideoCodec);
 			hostJson["framePacing"] = Utils::PlatformStringToStdString(host->FramePacing);
 			hostJson["audioBuffer"] = Utils::PlatformStringToStdString(host->AudioBuffer);
+			hostJson["periodicRefresh"] = Utils::PlatformStringToStdString(host->PeriodicRefresh);
 			hostJson["packetSize"] = host->PacketSize;
 			hostJson["autoStartID"] = host->AutostartID;
 			hostJson["playaudioonpc"] = host->PlayAudioOnPC;
 			hostJson["enable_hdr"] = host->EnableHDR;
 			hostJson["enable_sops"] = host->EnableSOPS;
+			hostJson["enable_intra_refresh"] = host->EnableIntraRefresh;
+			hostJson["enable_direct_rendering"] = host->EnableDirectRendering;
 			hostJson["enable_stats"] = host->EnableStats;
 			hostJson["enable_graphs"] = host->EnableGraphs;
 			hostJson["serverAddress"] = Utils::PlatformStringToStdString(host->ServerAddress);
@@ -157,6 +182,39 @@ void moonlight_xbox_dx::ApplicationState::RemoveHost(MoonlightHost^ host) {
 		host->Unpair();
 	}
 	UpdateFile();
+}
+
+// Identity used for recently played stamps, mirroring AddHost's host matching.
+static std::string LastPlayedHostKey(moonlight_xbox_dx::MoonlightHost^ host) {
+	auto instanceId = host->InstanceId;
+	if (instanceId != nullptr && !instanceId->IsEmpty()) return moonlight_xbox_dx::Utils::PlatformStringToStdString(instanceId);
+	return moonlight_xbox_dx::Utils::PlatformStringToStdString(host->LastHostname);
+}
+
+void moonlight_xbox_dx::ApplicationState::RecordAppPlayed(MoonlightHost^ host, int appId) {
+	if (host == nullptr) return;
+	lastPlayedByApp[LastPlayedHostKey(host) + ":" + std::to_string(appId)] = static_cast<long long>(time(nullptr));
+	UpdateFile();
+}
+
+long long moonlight_xbox_dx::ApplicationState::GetLastPlayedOnHost(MoonlightHost^ host) {
+	if (host == nullptr) return 0;
+	const std::string prefix = LastPlayedHostKey(host) + ":";
+	long long latest = 0;
+	for (auto& stamp : lastPlayedByApp) {
+		if (stamp.first.compare(0, prefix.size(), prefix) != 0) continue;
+		// The rest must be just the app id: "1.2.3.4:" also prefixes "1.2.3.4:47989:12"
+		const std::string appId = stamp.first.substr(prefix.size());
+		if (appId.empty() || appId.find_first_not_of("0123456789-") != std::string::npos) continue;
+		if (stamp.second > latest) latest = stamp.second;
+	}
+	return latest;
+}
+
+long long moonlight_xbox_dx::ApplicationState::GetLastPlayed(MoonlightHost^ host, int appId) {
+	if (host == nullptr) return 0;
+	auto stamp = lastPlayedByApp.find(LastPlayedHostKey(host) + ":" + std::to_string(appId));
+	return stamp != lastPlayedByApp.end() ? stamp->second : 0;
 }
 
 void moonlight_xbox_dx::ApplicationState::OnPropertyChanged(Platform::String^ propertyName) {

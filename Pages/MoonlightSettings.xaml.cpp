@@ -6,9 +6,8 @@
 #include "pch.h"
 #include "Common/OrbitInput.h"
 #include "MoonlightSettings.xaml.h"
-#include "MoonlightWelcome.xaml.h"
-#include "Utils.hpp"
-#include "Keyboard/KeyboardCommon.h"
+#include "Common/OrbitUiScale.h"
+#include "Common/OrbitClock.h"
 using namespace Windows::UI::Core;
 
 using namespace moonlight_xbox_dx;
@@ -28,39 +27,17 @@ using namespace Windows::UI::Xaml::Navigation;
 
 MoonlightSettings::MoonlightSettings()
 {
-	InitializeComponent();
 	state = GetApplicationState();
-	auto item = ref new ComboBoxItem();
-	item->Content = "Don't autoconnect";
-	item->DataContext = "";
-	HostSelector->Items->Append(item);
-	
+	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
+	AttachClock(ClockText);
+	GeneralSectionButton->XYFocusRight = AppSettings->SectionFocusTarget(0);
+	DisplaySectionButton->XYFocusRight = AppSettings->SectionFocusTarget(1);
+	InputSectionButton->XYFocusRight = AppSettings->SectionFocusTarget(2);
+	AppSettings->ShowSection(0, GeneralSectionButton, CalibrationFrame);
 	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
-	auto iid = Utils::StringFromStdString(state->autostartInstance);
-	for (int i = 0; i < state->SavedHosts->Size;i++) {
-		auto host = state->SavedHosts->GetAt(i);
-		auto item = ref new ComboBoxItem();
-		item->Content = host->LastHostname;
-		item->DataContext = host->InstanceId;
-		HostSelector->Items->Append(item);
-		if (host->InstanceId->Equals(iid)) {
-			HostSelector->SelectedIndex = i+1;
-		}
-	}
-	int k = 0;
-	for (auto l : keyboardLayouts) {
-		auto item = ref new ComboBoxItem();
-		auto s = Utils::StringFromStdString(l.first);
-		item->Content = s;
-		item->DataContext = s;
-		KeyboardLayoutSelector->Items->Append(item);
-		if (state->KeyboardLayout->Equals(s)) {
-			KeyboardLayoutSelector->SelectedIndex = k;
-		}
-		k++;
-	}
-	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &MoonlightSettings::OnLoaded);
-	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &MoonlightSettings::OnUnloaded);
+	Loaded += ref new RoutedEventHandler(this, &MoonlightSettings::OnLoaded);
+	Unloaded += ref new RoutedEventHandler(this, &MoonlightSettings::OnUnloaded);
 }
 
 void MoonlightSettings::backButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -70,15 +47,6 @@ void MoonlightSettings::backButton_Click(Platform::Object^ sender, Windows::UI::
 		while (Frame->BackStackDepth > 1) Frame->BackStack->RemoveAtEnd();
 		Frame->GoBack();
 	}
-}
-
-void MoonlightSettings::HostSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
-{
-	ComboBoxItem^ item = (ComboBoxItem^)this->HostSelector->SelectedItem;
-
-	auto s = Utils::PlatformStringToStdString(item->DataContext->ToString());
-	state->autostartInstance = s;
-
 }
 
 void MoonlightSettings::OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackRequestedEventArgs^ args)
@@ -92,19 +60,6 @@ void MoonlightSettings::OnBackRequested(Platform::Object^ e, Windows::UI::Core::
 
 }
 
-void MoonlightSettings::WelcomeButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(MoonlightWelcome::typeid));
-}
-
-void MoonlightSettings::LayoutSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
-{
-	ComboBoxItem^ item = (ComboBoxItem^)this->KeyboardLayoutSelector->SelectedItem;
-
-	auto s = item->DataContext->ToString();
-	state->KeyboardLayout = s;
-}
-
 void MoonlightSettings::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
@@ -112,21 +67,18 @@ void MoonlightSettings::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::Ro
 	GeneralSectionButton->Focus(Windows::UI::Xaml::FocusState::Programmatic);
 }
 
-
 void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	auto selected = dynamic_cast<Button^>(sender);
 	if (selected == nullptr) return;
+	m_activeSection = selected;
 	Button^ buttons[] = { GeneralSectionButton, DisplaySectionButton, InputSectionButton };
-	StackPanel^ panels[] = { GeneralPanel, DisplayPanel, InputPanel };
 	Platform::String^ titles[] = { L"General", L"Display", L"Input" };
 	for (int i = 0; i < 3; i++) {
 		if (buttons[i] == selected) {
-			bool changed = panels[i]->Visibility != Windows::UI::Xaml::Visibility::Visible;
 			for (int j = 0; j < 3; j++) {
-				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 				if (i == j) {
-					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
+					buttons[j]->Background = safe_cast<Brush^>(Resources->Lookup("SettingsSectionSelectedBrush"));
 					buttons[j]->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitTextBrush"));
 				} else {
 					buttons[j]->ClearValue(Control::BackgroundProperty);
@@ -134,7 +86,7 @@ void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows
 				}
 			}
 			SectionTitle->Text = titles[i];
-			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
+			AppSettings->ShowSection(i, selected, CalibrationFrame);
 			break;
 		}
 	}
@@ -148,4 +100,5 @@ void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::
 
 void MoonlightSettings::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	if (OrbitInput::HandleBumpers(e, 2, backButton, nullptr, settingsNavButton)) return;
+	if (OrbitInput::HandleTabBarVertical(e, { backButton, settingsNavButton }, [this]() -> Windows::UI::Xaml::Controls::Control^ { return m_activeSection; })) return;
 }

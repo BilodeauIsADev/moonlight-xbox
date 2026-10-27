@@ -349,11 +349,26 @@ int MoonlightClient::StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res
 	callbacks.rumble = connection_rumble;
 	callbacks.rumbleTriggers = connection_trigger_rumble;
 
-	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate");
+	// "Off" or "10 seconds"
+	int refreshSeconds = 0;
+	if (sConfig->periodicRefresh != nullptr && sConfig->periodicRefresh != "Off") {
+		try {
+			refreshSeconds = std::stoi(sConfig->periodicRefresh->Data());
+		}
+		catch (const std::exception &) {
+			Utils::Log("Invalid periodic refresh setting, leaving it off\n");
+		}
+	}
+	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate", sConfig->enableDirectRendering, refreshSeconds);
 	PyroWaveDecoder::instance().CompleteInitialization(res, &config);
-	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder();
+	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder(sConfig->enableIntraRefresh);
 
 	AUDIO_RENDERER_CALLBACKS aCallbacks = AudioPlayer::getDecoder();
+	if (!sConfig->enableIntraRefresh && config.audioConfiguration == AUDIO_CONFIGURATION_STEREO) {
+		// moonlight-common-c only picks 10 ms stereo packets for Xbox when
+		// CAPABILITY_INTRA_REFRESH is set. Keep them when intra refresh is off.
+		aCallbacks.capabilities |= CAPABILITY_SLOW_OPUS_DECODER;
+	}
 
 	int k = LiStartConnection(&serverData.serverInfo, &config, &callbacks, &rCallbacks, &aCallbacks, NULL, 0, NULL, 0);
 	if (k != 0) {
@@ -435,6 +450,7 @@ void connection_terminated(int status) {
 	Utils::Log(message);
 
 	if (connectedInstance) {
+		connectedInstance->ReportTerminationStatus(status);
 		connectedInstance->SetConnectionTerminated();
 	}
 }
@@ -490,6 +506,16 @@ bool MoonlightClient::IsConnectionTerminated() {
 
 void MoonlightClient::SetConnectionTerminated() {
 	m_streamSession.Terminate();
+}
+
+void MoonlightClient::ReportTerminationStatus(int status) {
+	// Stored before the terminated flag so readers that observed termination
+	// always see the matching status.
+	m_terminationStatus.store(status, std::memory_order_release);
+}
+
+int MoonlightClient::GetTerminationStatus() {
+	return m_terminationStatus.load(std::memory_order_acquire);
 }
 
 bool MoonlightClient::IsHDR() {

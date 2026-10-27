@@ -454,8 +454,13 @@
     <ClInclude Include="Common\OrbitMotion.h" />
     <ClInclude Include="tests\OrbitUiSmokeTests.h" />
     <ClInclude Include="Common\OrbitArtworkRequest.h" />
+    <ClInclude Include="Common\OrbitHostCard.h" />
     <ClInclude Include="Common\OrbitNavigation.h" />
+    <ClInclude Include="Common\OrbitStreamUi.h" />
     <ClInclude Include="Common\OrbitInput.h" />
+    <ClInclude Include="Common\OrbitRecents.h" />
+    <ClInclude Include="Common\OrbitClock.h" />
+    <ClInclude Include="Common\OrbitUiScale.h" />
     <ClInclude Include="Common\DeviceWatcherHelper.h" />
     <ClInclude Include="Common\imconfig.moonlight.h" />
     <ClInclude Include="Common\TextConsole.h" />
@@ -494,6 +499,9 @@
     <ClInclude Include="Streaming\ShaderStructures.h" />
     <ClInclude Include="Pages\HostSettingsPage.xaml.h">
       <DependentUpon>Pages\HostSettingsPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="Common\AppSettingsControl.xaml.h">
+      <DependentUpon>Common\AppSettingsControl.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="Pages\MoonlightSettings.xaml.h">
       <DependentUpon>Pages\MoonlightSettings.xaml</DependentUpon>
@@ -666,6 +674,9 @@
     <ClCompile Include="Streaming\VideoRenderer.cpp" />
     <ClCompile Include="Pages\HostSettingsPage.xaml.cpp">
       <DependentUpon>Pages\HostSettingsPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="Common\AppSettingsControl.xaml.cpp">
+      <DependentUpon>Common\AppSettingsControl.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="Pages\MoonlightSettings.xaml.cpp">
       <DependentUpon>Pages\MoonlightSettings.xaml</DependentUpon>
@@ -855,6 +866,7 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Pages\StreamPage.xaml" />
+    <Page Include="Common\AppSettingsControl.xaml" />
     <Page Include="Common\ModalDialog.xaml" />
   </ItemGroup>
   <ItemGroup>

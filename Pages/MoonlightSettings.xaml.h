@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Pages\MoonlightSettings.g.h"
+#include "Common\AppSettingsControl.xaml.h"
 
 namespace moonlight_xbox_dx
 {
@@ -19,6 +20,8 @@ namespace moonlight_xbox_dx
 		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		ApplicationState^ state;
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
+		// Section the tab bar's Down returns to
+		Windows::UI::Xaml::Controls::Button^ m_activeSection;
 	public:
 		MoonlightSettings();
 		property ApplicationState^ State {
@@ -31,9 +34,6 @@ namespace moonlight_xbox_dx
 	private:
 		void SectionButton_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void backButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void HostSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
-		void WelcomeButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void LayoutSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 	};

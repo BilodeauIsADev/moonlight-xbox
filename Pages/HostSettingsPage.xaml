@@ -36,301 +36,350 @@
             <Setter Property="FocusVisualSecondaryThickness" Value="0"/>
         </Style>
     </Page.Resources>
-    <Grid local:OrbitMotion.Kind="Page">
-        <Grid Margin="60,36,60,36">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid Margin="0,0,0,26">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                    <Image Source="ms-appx:///Assets/LunalightMark.png" Width="22" Height="22" />
-                    <TextBlock Text="Lunalight" FontSize="17" VerticalAlignment="Center" Foreground="{StaticResource OrbitTextBrush}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
-                    <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="HostsNavButton_Click"/>
-                    <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="backButton_Click"/>
-                    <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
-                </StackPanel>
-            </Grid>
-            <Grid Grid.Row="1" ColumnSpacing="28">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="176"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Spacing="4">
-                    <StackPanel Spacing="3" Margin="0,0,0,18">
-                        <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" FontSize="10" Text="STREAM SETTINGS"/>
-                        <TextBlock Text="{x:Bind Host.ComputerName}" FontSize="15" Foreground="{StaticResource OrbitTextBrush}" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{x:Bind Host.LastHostname}" FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+    <Grid>
+    <!-- Interface size: AttachUiScale sizes the content, the Viewbox scales it to fit -->
+    <Viewbox Stretch="Fill">
+        <Grid x:Name="ScaledRoot" local:OrbitMotion.Kind="Page">
+            <Grid Margin="32,20,32,18">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <!-- Top bar: tabs centred between the bumpers, clock on the right -->
+                <Grid Margin="0,-2,0,22">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
+                        <ContentControl Style="{StaticResource OrbitKeyLBStyle}" Margin="0,0,6,0" />
+                        <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Click="backButton_Click" />
+                        <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitTabSelectedBrush}" Foreground="{StaticResource OrbitTabSelectedTextBrush}" />
+                        <ContentControl Style="{StaticResource OrbitKeyRBStyle}" Margin="6,0,0,0" />
                     </StackPanel>
-                    <Button x:Name="VideoSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Video" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind ResolutionSelector}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
-                    <Button x:Name="AudioSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Audio" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AudioConfigSelector}"/>
-                    <Button x:Name="OverlaySectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Overlay &amp; stats" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind EnableStatsCheckbox}"/>
-                    <Button x:Name="GeneralSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="General" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AutoStartSelector}"/>
-                    <Button x:Name="GlobalSettingsOption" Style="{StaticResource SettingsSectionButtonStyle}" Content="App settings" Click="GlobalSettingsOption_Click" Margin="0,12,0,0"/>
-                </StackPanel>
-                <Grid Grid.Column="1">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock x:Name="SectionTitle" Style="{StaticResource OrbitTitleTextStyle}" FontSize="30" LineHeight="36" Text="Video" Margin="6,0,0,12"/>
-                    <ScrollViewer x:Name="ContentScroll" Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" IsTabStop="False" Padding="6,6,10,6">
-                        <Grid>
-                            <StackPanel x:Name="VideoPanel" Spacing="8" Visibility="Visible">
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Resolution" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox x:Name="ResolutionSelector" SelectionChanged="ResolutionSelector_SelectionChanged" SelectedIndex="{x:Bind CurrentResolutionIndex,Mode=TwoWay}" ItemsSource="{x:Bind AvailableResolutions}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Resolution">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate x:DataType="local:ScreenResolution">
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="{x:Bind Width}"/>
-                                                            <TextBlock Text="x"/>
-                                                            <TextBlock Text="{x:Bind Height}"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Frame rate" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox x:Name="FPSSelector" SelectionChanged="FPSSelector_SelectionChanged" SelectedItem="{x:Bind Host.FPS,Mode=OneWay}" ItemsSource="{x:Bind AvailableFPS}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Frame rate"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Bitrate" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextSecondaryBrush}" HorizontalAlignment="Right">
-                                                    <Run Text="{x:Bind Host.Bitrate, Mode=OneWay}"/>
-                                                    <Run Text=" Kbps"/>
-                                                </TextBlock>
-                                                <Slider Value="{x:Bind Host.Bitrate}" x:DefaultBindMode="TwoWay" Minimum="5000" Maximum="800000" SmallChange="10000" TickFrequency="50000" StepFrequency="50000" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Bitrate in Kbps"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Video codec" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                            <TextBlock Name="CodecDesc" Style="{StaticResource SettingsDescriptionStyle}">H.264 is limited to 1080p60 SDR.</TextBlock>
-                                            <TextBlock Name="CodecDescPyroWave" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Wired only, 500Mbps+ recommended. Host NIC should be set to 1Gbps.</TextBlock>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox Name="CodecComboBox" ItemsSource="{x:Bind AvailableVideoCodecs}" SelectedItem="{x:Bind Host.VideoCodec,Mode=OneWay}" SelectionChanged="CodecComboBox_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Video codec"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Enable HDR" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                            <TextBlock Name="EnableHDRCheckboxDesc" Style="{StaticResource SettingsDescriptionStyle}">If checked, streams 10-bit HDR/SDR matching the host. Unchecked streams 8-bit SDR.</TextBlock>
-                                            <TextBlock Name="HDR4KNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">HDR requires Xbox system resolution set to 4K.</TextBlock>
-                                            <TextBlock Name="HDRNotAvailNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">HDR is disabled or not supported by your display. Check Xbox Video Modes.</TextBlock>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <CheckBox Name="EnableHDRCheckbox" IsChecked="{x:Bind Host.EnableHDR,Mode=TwoWay}" HorizontalAlignment="Right" MinWidth="0" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Enable HDR"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Optimize host resolution" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ToggleSwitch Name="EnableSOPSCheckbox" IsOn="{x:Bind Host.EnableSOPS,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Optimize host resolution"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Frame pacing" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                            <TextBlock Name="FramePacingImmediateDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox Series. Lowest latency. Renders frames at the incoming frame rate.</TextBlock>
-                                            <TextBlock Name="FramePacingDisplayLockedDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox One. Locks rendering frame rate to refresh rate and evenly spaces frames.</TextBlock>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox Name="FramePacingComboBox" ItemsSource="{x:Bind AvailableFramePacing}" SelectedItem="{x:Bind Host.FramePacing,Mode=TwoWay}" SelectionChanged="FramePacing_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Frame pacing"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Packet size" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                            <TextBlock Name="PacketSize1392Desc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Larger packets can reduce reassembly time.</TextBlock>
-                                            <TextBlock Name="PacketSize1024Desc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Standard packet size.</TextBlock>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox x:Name="PacketSizeSelector" ItemsSource="{x:Bind AvailablePacketSizes}" SelectedItem="{x:Bind Host.PacketSize,Mode=OneWay}" SelectionChanged="PacketSizeSelector_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Packet size"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel x:Name="AudioPanel" Spacing="8" Visibility="Collapsed">
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Audio configuration" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox ItemsSource="{x:Bind AvailableAudioConfigs}" SelectedItem="{x:Bind Host.AudioConfig,Mode=TwoWay}" x:Name="AudioConfigSelector" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Audio configuration"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Play audio on host PC" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ToggleSwitch IsOn="{x:Bind Host.PlayAudioOnPC, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Play audio on host PC"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Audio buffer" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox Name="AudioBuffersComboBox" ItemsSource="{x:Bind AvailableAudioBuffers}" SelectedItem="{x:Bind Host.AudioBuffer,Mode=TwoWay}" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Audio buffer"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel x:Name="OverlayPanel" Spacing="8" Visibility="Collapsed">
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Show performance stats" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ToggleSwitch x:Name="EnableStatsCheckbox" IsOn="{x:Bind Host.EnableStats, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind OverlaySectionButton}" AutomationProperties.Name="Show performance stats"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Show performance graphs" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                            <TextBlock Name="XboxOneGraphsNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Graphs are unavailable on Xbox One when system resolution is set to 4K.</TextBlock>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <CheckBox x:Name="EnableGraphsCheckbox" IsEnabled="{x:Bind Host.EnableStats, Mode=OneWay}" IsChecked="{x:Bind Host.EnableGraphs, Mode=TwoWay}" HorizontalAlignment="Right" MinWidth="0" XYFocusLeft="{x:Bind OverlaySectionButton}" AutomationProperties.Name="Show performance graphs"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel x:Name="GeneralPanel" Spacing="8" Visibility="Collapsed">
-                                <Border Style="{StaticResource SettingsRowStyle}">
-                                    <Grid ColumnSpacing="16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center" Spacing="3">
-                                            <TextBlock Text="Autostart app" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                        </StackPanel>
-                                        <Grid Grid.Column="1" VerticalAlignment="Center">
-                                            <ComboBox SelectedIndex="{x:Bind CurrentAppIndex,Mode=TwoWay}" Name="AutoStartSelector" SelectionChanged="AutoStartSelector_SelectionChanged" XYFocusLeft="{x:Bind GeneralSectionButton}" AutomationProperties.Name="Autostart app"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
+                    <TextBlock x:Name="ClockText" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource OrbitTextBrush}" />
                 </Grid>
+                <Grid Grid.Row="1" ColumnSpacing="28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="176"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <StackPanel Spacing="3" Margin="0,0,0,18">
+                            <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" FontSize="10" Text="STREAM SETTINGS"/>
+                            <TextBlock Text="{x:Bind Host.ComputerName}" FontSize="15" Foreground="{StaticResource OrbitTextBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{x:Bind Host.LastHostname}" FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button x:Name="VideoSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Video" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind ResolutionSelector}" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
+                        <Button x:Name="AudioSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Audio" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AudioConfigSelector}"/>
+                        <Button x:Name="OverlaySectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Overlay &amp; stats" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind EnableStatsCheckbox}"/>
+                        <Button x:Name="GeneralSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="General" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AutoStartSelector}"/>
+                        <Button x:Name="GlobalSettingsOption" Style="{StaticResource SettingsSectionButtonStyle}" Content="App settings" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" Margin="0,12,0,0"/>
+                    </StackPanel>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="SectionTitle" Style="{StaticResource OrbitTitleTextStyle}" FontSize="30" LineHeight="36" Text="Video" Margin="6,0,0,12"/>
+                        <ScrollViewer x:Name="ContentScroll" Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" IsTabStop="False" Padding="6,6,10,6">
+                            <Grid>
+                                <StackPanel x:Name="VideoPanel" Spacing="8" Visibility="Visible">
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Resolution" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox x:Name="ResolutionSelector" SelectionChanged="ResolutionSelector_SelectionChanged" SelectedIndex="{x:Bind CurrentResolutionIndex,Mode=TwoWay}" ItemsSource="{x:Bind AvailableResolutions}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Resolution">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="local:ScreenResolution">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{x:Bind Width}"/>
+                                                                <TextBlock Text="x"/>
+                                                                <TextBlock Text="{x:Bind Height}"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Frame rate" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox x:Name="FPSSelector" SelectionChanged="FPSSelector_SelectionChanged" SelectedItem="{x:Bind Host.FPS,Mode=OneWay}" ItemsSource="{x:Bind AvailableFPS}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Frame rate"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Bitrate" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextSecondaryBrush}" HorizontalAlignment="Right">
+                                                        <Run Text="{x:Bind Host.Bitrate, Mode=OneWay}"/>
+                                                        <Run Text=" Kbps"/>
+                                                    </TextBlock>
+                                                    <Slider Value="{x:Bind Host.Bitrate}" x:DefaultBindMode="TwoWay" Minimum="5000" Maximum="800000" SmallChange="10000" TickFrequency="50000" StepFrequency="50000" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Bitrate in Kbps"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Video codec" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Name="CodecDesc" Style="{StaticResource SettingsDescriptionStyle}">H.264 is limited to 1080p60 SDR.</TextBlock>
+                                                <TextBlock Name="CodecDescPyroWave" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Wired only, 500Mbps+ recommended. Host NIC should be set to 1Gbps.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox Name="CodecComboBox" ItemsSource="{x:Bind AvailableVideoCodecs}" SelectedItem="{x:Bind Host.VideoCodec,Mode=OneWay}" SelectionChanged="CodecComboBox_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Video codec"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Enable HDR" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Name="EnableHDRCheckboxDesc" Style="{StaticResource SettingsDescriptionStyle}">If checked, streams 10-bit HDR/SDR matching the host. Unchecked streams 8-bit SDR.</TextBlock>
+                                                <TextBlock Name="HDR4KNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">HDR requires Xbox system resolution set to 4K.</TextBlock>
+                                                <TextBlock Name="HDRNotAvailNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">HDR is disabled or not supported by your display. Check Xbox Video Modes.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <CheckBox Name="EnableHDRCheckbox" IsChecked="{x:Bind Host.EnableHDR,Mode=TwoWay}" HorizontalAlignment="Right" MinWidth="0" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Enable HDR"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Optimize host resolution" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch Name="EnableSOPSCheckbox" IsOn="{x:Bind Host.EnableSOPS,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Optimize host resolution"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Intra refresh" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Repairs stream errors gradually instead of with large keyframes. Recommended on.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch IsOn="{x:Bind Host.EnableIntraRefresh,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Intra refresh"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Periodic refresh" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Requests a full keyframe on a timer to clear artifacts that build up in still scenes. Each refresh may cause a brief hitch.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox Name="PeriodicRefreshComboBox" ItemsSource="{x:Bind AvailablePeriodicRefresh}" SelectedItem="{x:Bind Host.PeriodicRefresh,Mode=TwoWay}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Periodic refresh"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Direct decoder rendering" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Skips a copy of each frame. Turn off to use the older copy path.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch IsOn="{x:Bind Host.EnableDirectRendering,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Direct decoder rendering"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Frame pacing" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Name="FramePacingImmediateDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox Series. Lowest latency. Renders frames at the incoming frame rate.</TextBlock>
+                                                <TextBlock Name="FramePacingDisplayLockedDesc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Best for Xbox One. Locks rendering frame rate to refresh rate and evenly spaces frames.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox Name="FramePacingComboBox" ItemsSource="{x:Bind AvailableFramePacing}" SelectedItem="{x:Bind Host.FramePacing,Mode=TwoWay}" SelectionChanged="FramePacing_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Frame pacing"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Packet size" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Name="PacketSize1392Desc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Larger packets can reduce reassembly time.</TextBlock>
+                                                <TextBlock Name="PacketSize1024Desc" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Standard packet size.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox x:Name="PacketSizeSelector" ItemsSource="{x:Bind AvailablePacketSizes}" SelectedItem="{x:Bind Host.PacketSize,Mode=OneWay}" SelectionChanged="PacketSizeSelector_SelectionChanged" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Packet size"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel x:Name="AudioPanel" Spacing="8" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Audio configuration" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox ItemsSource="{x:Bind AvailableAudioConfigs}" SelectedItem="{x:Bind Host.AudioConfig,Mode=TwoWay}" x:Name="AudioConfigSelector" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Audio configuration"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Play audio on host PC" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch IsOn="{x:Bind Host.PlayAudioOnPC, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Play audio on host PC"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Audio buffer" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox Name="AudioBuffersComboBox" ItemsSource="{x:Bind AvailableAudioBuffers}" SelectedItem="{x:Bind Host.AudioBuffer,Mode=TwoWay}" XYFocusLeft="{x:Bind AudioSectionButton}" AutomationProperties.Name="Audio buffer"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel x:Name="OverlayPanel" Spacing="8" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Show performance stats" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch x:Name="EnableStatsCheckbox" IsOn="{x:Bind Host.EnableStats, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind OverlaySectionButton}" AutomationProperties.Name="Show performance stats"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Show performance graphs" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Name="XboxOneGraphsNote" Visibility="Collapsed" Style="{StaticResource SettingsDescriptionStyle}">Graphs are unavailable on Xbox One when system resolution is set to 4K.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <CheckBox x:Name="EnableGraphsCheckbox" IsEnabled="{x:Bind Host.EnableStats, Mode=OneWay}" IsChecked="{x:Bind Host.EnableGraphs, Mode=TwoWay}" HorizontalAlignment="Right" MinWidth="0" XYFocusLeft="{x:Bind OverlaySectionButton}" AutomationProperties.Name="Show performance graphs"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel x:Name="GeneralPanel" Spacing="8" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Autostart app" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox SelectedIndex="{x:Bind CurrentAppIndex,Mode=TwoWay}" Name="AutoStartSelector" SelectionChanged="AutoStartSelector_SelectionChanged" XYFocusLeft="{x:Bind GeneralSectionButton}" AutomationProperties.Name="Autostart app"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                        <local:AppSettingsControl x:Name="AppSettingsPanel" Grid.Row="1" Visibility="Collapsed"/>
+                    </Grid>
+                </Grid>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="18" Margin="0,18,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ContentControl Style="{StaticResource OrbitKeyAStyle}" />
+                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <ContentControl Style="{StaticResource OrbitKeyBStyle}" />
+                        <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back"/>
+                    </StackPanel>
+                </StackPanel>
             </Grid>
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,18,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold"/>
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33"/>
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF094;" Foreground="#FFFF5555"/>
-                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back"/>
-                </StackPanel>
-            </StackPanel>
+        </Grid>
+    </Viewbox>
+        <Grid x:Name="CalibrationFrame" Margin="{x:Bind State.CalibrationMargin,Mode=OneWay}" IsHitTestVisible="False" Visibility="Collapsed">
+            <Border BorderBrush="#99FFFFFF" BorderThickness="2" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,6,0,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,6,6,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,0,0,6" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,0,6,6" />
         </Grid>
     </Grid>
 </Page>

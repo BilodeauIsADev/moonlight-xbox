@@ -170,8 +170,10 @@ namespace moonlight_xbox_dx {
 		return true;
 	}
 
-    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate) {
+    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate, bool directRendering, int refreshSeconds) {
 		this->m_deviceResources = res;
+		this->m_DirectRendering = directRendering;
+		this->m_RefreshSeconds = refreshSeconds;
 		this->fps = config->fps;
 		Pacer::instance().init(res, config->fps, res->GetRefreshRate(), framePacingImmediate);
 	}
@@ -190,6 +192,7 @@ namespace moonlight_xbox_dx {
 		this->m_LastFrameNumber = 0;
 		this->ffmpeg_buffer_size = 0;
 		this->m_StreamEpochQpc = 0;
+		this->m_FramesSinceIdr = 0;
 
 		// Increase log level until the first frame is decoded
 		av_log_set_level(AV_LOG_VERBOSE);
@@ -242,8 +245,12 @@ namespace moonlight_xbox_dx {
 
 		decoder_ctx->hw_device_ctx = hw_device_ctx; // transfer ownership
 		decoder_ctx->pix_fmt = AV_PIX_FMT_D3D11;
-		// get_format lets us allocate a frame pool we can sample directly (no per-frame copy)
-		decoder_ctx->get_format = ff_get_format;
+		// get_format lets us allocate a frame pool we can sample directly (no per-frame copy).
+		// Without it ffmpeg allocates its default decoder-only pool and the renderer copies.
+		if (m_DirectRendering) {
+			decoder_ctx->get_format = ff_get_format;
+		}
+		Utils::Logf("Video rendering: %s\n", m_DirectRendering ? "direct from decoder surfaces" : "copy");
 		decoder_ctx->sw_pix_fmt = (videoFormat & VIDEO_FORMAT_MASK_10BIT) ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
 		decoder_ctx->pkt_timebase.num = 1;
 		decoder_ctx->pkt_timebase.den = 90000;
@@ -351,6 +358,16 @@ namespace moonlight_xbox_dx {
 			double ptsMs = QpcToMs(QpcNow() - m_StreamEpochQpc);
 			decodeUnit->rtpTimestamp = (uint32_t)(ptsMs * 90.0);
 			decodeUnit->presentationTimeUs = (uint64_t)(ptsMs * 1000.0);
+		}
+
+		// The Xbox HEVC decoder slowly accumulates errors on still content
+		// (upstream #117, #190) with no packet loss to trigger recovery, so
+		// optionally ask for a fresh IDR on a timer.
+		if (decodeUnit->frameType == FRAME_TYPE_IDR) {
+			m_FramesSinceIdr = 0;
+		} else if (m_RefreshSeconds > 0 && ++m_FramesSinceIdr >= fps * m_RefreshSeconds) {
+			m_FramesSinceIdr = 0;
+			LiRequestIdrFrame();
 		}
 
 		// track stats for a variety of things we can track at the same time
@@ -463,13 +480,19 @@ namespace moonlight_xbox_dx {
 		return FFMpegDecoder::instance().SubmitDecodeUnit(decodeUnit);
 	}
 
-	DECODER_RENDERER_CALLBACKS FFMpegDecoder::getDecoder() {
+	DECODER_RENDERER_CALLBACKS FFMpegDecoder::getDecoder(bool intraRefresh) {
 		DECODER_RENDERER_CALLBACKS decoder_callbacks_sdl;
 		LiInitializeVideoCallbacks(&decoder_callbacks_sdl);
 		decoder_callbacks_sdl.setup = initCallback;
 		decoder_callbacks_sdl.cleanup = cleanupCallback;
 		decoder_callbacks_sdl.submitDecodeUnit = submitDecodeUnit;
-		decoder_callbacks_sdl.capabilities = CAPABILITY_DIRECT_SUBMIT | CAPABILITY_INTRA_REFRESH;
+		decoder_callbacks_sdl.capabilities = CAPABILITY_DIRECT_SUBMIT;
+		// Intra refresh repairs the picture in a column that sweeps across the
+		// screen, so after a decode error the damage can stay visible for seconds
+		// in still scenes. Without it the host sends a full IDR frame instead.
+		if (intraRefresh) {
+			decoder_callbacks_sdl.capabilities |= CAPABILITY_INTRA_REFRESH;
+		}
 		return decoder_callbacks_sdl;
 	}
 }

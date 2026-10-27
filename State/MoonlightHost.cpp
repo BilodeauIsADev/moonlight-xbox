@@ -2,7 +2,11 @@
 #include "pch.h"
 // clang-format on
 #include "MoonlightHost.h"
+#include "Common\OrbitArtworkRequest.h"
 #include "State\MoonlightClient.h"
+#include "State\ApplicationState.h"
+#include "Common\OrbitRecents.h"
+#include <algorithm>
 
 namespace moonlight_xbox_dx {
 	MoonlightHost::MoonlightHost(Platform::String^ host) {
@@ -33,6 +37,8 @@ namespace moonlight_xbox_dx {
 		CurrentlyRunningAppId = source->CurrentlyRunningAppId;
 		Connected = source->Connected;
 		Loading = false;
+		// Runs on the dispatcher (see AddHost), so the artwork cache can be read here.
+		UpdateRunningAppInfo();
 	}
 
 	void MoonlightHost::UpdateHostInfo(bool showLoading) {
@@ -67,10 +73,25 @@ namespace moonlight_xbox_dx {
 		auto apps = client->GetApplications();
 		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([this, apps]() {
 			Apps->Clear();
-			for (auto a : apps) {
+			// GetApplications orders alphabetically; lift recently played games
+			// to the front, running app first, and let the stable sort keep the
+			// alphabetical order for never-played apps (see OrbitRecents).
+			auto state = GetApplicationState();
+			auto sorted = apps;
+			std::stable_sort(sorted.begin(), sorted.end(), [this, state](MoonlightApp^ lhs, MoonlightApp^ rhs) {
+				OrbitRecents::AppOrderKey left;
+				OrbitRecents::AppOrderKey right;
+				left.running = lhs->Id == CurrentlyRunningAppId;
+				right.running = rhs->Id == CurrentlyRunningAppId;
+				left.lastPlayed = state->GetLastPlayed(this, lhs->Id);
+				right.lastPlayed = state->GetLastPlayed(this, rhs->Id);
+				return OrbitRecents::AppOrderBefore(left, right);
+			});
+			for (auto a : sorted) {
 				if (a->Id == CurrentlyRunningAppId) a->CurrentlyRunning = true;
 				Apps->Append(a);
 			}
+			UpdateRunningAppInfo();
 			}));
 	}
 
@@ -91,11 +112,47 @@ namespace moonlight_xbox_dx {
 					bool shouldRun = (existing->Id == runningId);
 					if (existing->CurrentlyRunning != shouldRun) existing->CurrentlyRunning = shouldRun;
 				}
+				UpdateRunningAppInfo();
 				}));
 	}
 
 	void MoonlightHost::Unpair() {
 		client->Unpair();
+	}
+
+	// Resolves what the host is currently playing, for the card artwork and
+	// "Playing <game>" line. Call it from UI-thread paths only: it touches the
+	// app list. When the list hasn't been fetched (the Hosts screen never does,
+	// to avoid extra network calls) the cached cover MoonlightClient loads for
+	// the same app id is reused if it is already on disk.
+	void MoonlightHost::UpdateRunningAppInfo() {
+		Platform::String^ name = nullptr;
+		Platform::String^ imagePath = nullptr;
+		if (CurrentlyRunningAppId > 0) {
+			for (unsigned int i = 0; i < Apps->Size; ++i) {
+				auto app = Apps->GetAt(i);
+				if (app->Id == CurrentlyRunningAppId) {
+					if (app->Name != nullptr && !app->Name->IsEmpty()) name = app->Name;
+					// Same binding as the AppPage shelf (MoonlightApp::ImagePath).
+					imagePath = app->ImagePath;
+					break;
+				}
+			}
+			if (imagePath == nullptr) {
+				// No app list on this screen: reuse the cover cached for the app id,
+				// only when it is already on disk (no network fetch here).
+				auto folder = Windows::Storage::ApplicationData::Current->LocalFolder->Path;
+				auto path = folder + L"\\images\\" + ref new Platform::String(std::to_wstring(CurrentlyRunningAppId).c_str()) + L".png";
+				// Same existence check MoonlightClient uses before its asset download.
+				if (GetFileAttributes(path->Data()) != INVALID_FILE_ATTRIBUTES) {
+					// Reuse the artwork mapping AppPage applies to cache paths.
+					imagePath = ref new Platform::String(OrbitArtworkUri(path->Data(), folder->Data()).c_str());
+				}
+			}
+		}
+		Platform::String^ playing = (name != nullptr) ? (L"Playing " + name) : nullptr;
+		if (playing != playingText) PlayingText = playing;
+		if (imagePath != playingImageUri) PlayingImageUri = imagePath;
 	}
 
 	void MoonlightHost::OnPropertyChanged(Platform::String^ propertyName) {

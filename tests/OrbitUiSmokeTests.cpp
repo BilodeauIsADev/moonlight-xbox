@@ -28,6 +28,7 @@ unsigned int waits;
 DispatcherTimer^ timer;
 Frame^ frame;
 uint64_t progressToken;
+int settingsBackStackDepth;
 
 // Flush each checkpoint before interacting with XAML so an asynchronous crash
 // still leaves its triggering step in LocalState. Never log host or pairing data.
@@ -50,6 +51,11 @@ void Record(const std::wstring& text, bool reset = false) {
 template<typename T> T^ Named(String^ name) {
 	auto page = dynamic_cast<FrameworkElement^>(frame->Content);
 	auto result = page != nullptr ? dynamic_cast<T^>(page->FindName(name)) : nullptr;
+	if (result == nullptr && page != nullptr) {
+		auto settings = dynamic_cast<AppSettingsControl^>(page->FindName("AppSettings"));
+		if (settings == nullptr) settings = dynamic_cast<AppSettingsControl^>(page->FindName("AppSettingsPanel"));
+		if (settings != nullptr) result = dynamic_cast<T^>(settings->FindName(name));
+	}
 	if (result == nullptr) throw ref new FailureException("UI test control missing: " + name);
 	return result;
 }
@@ -61,6 +67,24 @@ void Invoke(String^ name) {
 	auto provider = dynamic_cast<IInvokeProvider^>(peer->GetPattern(PatternInterface::Invoke));
 	if (provider == nullptr) throw ref new FailureException("Button does not expose Invoke");
 	provider->Invoke();
+}
+
+void BrowseLibrary() {
+	for (Platform::Object^ item : Named<GridView>("HostsGrid")->Items) {
+		auto host = dynamic_cast<MoonlightHost^>(item);
+		if (host == nullptr || !host->Connected || !host->Paired) continue;
+		// Exercise the picker destination without launching a configured autostart game.
+		GetApplicationState()->shouldAutoConnect = false;
+		if (!frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host))
+			throw ref new FailureException("Library navigation failed");
+		return;
+	}
+	throw ref new FailureException("No paired online PC in the picker");
+}
+
+void CheckClock() {
+	if (Named<TextBlock>("ClockText")->Text->IsEmpty())
+		throw ref new FailureException("Top bar clock is empty");
 }
 
 void Action(const wchar_t* name, std::function<void()> action) {
@@ -121,11 +145,19 @@ void BuildSteps() {
 	} });
 	Action(L"Cleanup unanimated control", []() { OrbitMotion::Stop(ref new Grid()); });
 	Action(L"Missing visual state request", []() {
-		if (VisualStateManager::GoToState(Named<Button>("hostsNavButton"), "OrbitMissingState", true))
+		if (VisualStateManager::GoToState(Named<Button>("AddHostCard"), "OrbitMissingState", true))
 			throw ref new FailureException("Missing visual state unexpectedly succeeded");
+	});
+	Action(L"Focus Add PC", []() { Named<Button>("AddHostCard")->Focus(FocusState::Keyboard); });
+	Action(L"Add PC hints", []() {
+		if (Named<TextBlock>("OpenHintText")->Text != L"Add PC"
+			|| Named<StackPanel>("HostOptionsHint")->Visibility != Visibility::Collapsed
+			|| Named<StackPanel>("WakeHint")->Visibility != Visibility::Collapsed)
+			throw ref new FailureException("Picker hints do not match Add PC");
 	});
 	Action(L"Open app settings", []() { Invoke("settingsNavButton"); });
 	Page<MoonlightSettings>(L"App settings loaded");
+	Action(L"App settings clock", CheckClock);
 	Dropdown(L"HostSelector");
 	Section(L"DisplaySectionButton", L"DisplayPanel");
 	Section(L"InputSectionButton", L"InputPanel");
@@ -147,10 +179,14 @@ void BuildSteps() {
 	});
 	Action(L"Hide progress dialog", []() { ModalDialog::HideDialogByToken(progressToken); });
 	Menu();
-	Action(L"Open Library", []() { Invoke("libraryNavButton"); });
+	Action(L"Open Library from picker", BrowseLibrary);
 	Page<AppPage>(L"Library loaded");
+	Action(L"Library clock", CheckClock);
 	steps.push_back({ L"Game list populated", []() { return Named<GridView>("HostsGrid")->Items->Size > 0; } });
-	steps.push_back({ L"Hero artwork presented", []() {
+	steps.push_back({ L"Hero artwork or empty background presented", []() {
+		auto page = safe_cast<AppPage^>(frame->Content);
+		if (page->SelectedApp == nullptr || page->SelectedApp->BackgroundPath == nullptr)
+			return Named<Grid>("HeroArtLayers")->Children->Size == 0;
 		for (UIElement^ child : Named<Grid>("HeroArtLayers")->Children) if (child->Opacity > 0) return true;
 		return false;
 	} });
@@ -167,6 +203,7 @@ void BuildSteps() {
 	Menu();
 	Action(L"Open host settings", []() { Invoke("settingsNavButton"); });
 	Page<HostSettingsPage>(L"Host settings loaded");
+	Action(L"PC settings clock", CheckClock);
 	Dropdown(L"ResolutionSelector");
 	Dropdown(L"FPSSelector");
 	Dropdown(L"PacketSizeSelector");
@@ -177,14 +214,47 @@ void BuildSteps() {
 	Section(L"OverlaySectionButton", L"OverlayPanel");
 	Section(L"GeneralSectionButton", L"GeneralPanel");
 	Dropdown(L"AutoStartSelector");
+	Action(L"Record settings navigation depth", []() { settingsBackStackDepth = frame->BackStackDepth; });
+	Section(L"GlobalSettingsOption", L"AppSettingsPanel");
+	Page<HostSettingsPage>(L"App settings stay on host settings page");
+	Action(L"Inline app settings groups and focus", []() {
+		if (frame->BackStackDepth != settingsBackStackDepth || Named<TextBlock>("SectionTitle")->Text != L"App settings")
+			throw ref new FailureException("App settings navigated away from the current section");
+		auto settings = Named<AppSettingsControl>("AppSettingsPanel");
+		for (auto name : { L"GeneralPanel", L"DisplayPanel", L"InputPanel" }) {
+			if (safe_cast<FrameworkElement^>(settings->FindName(ref new String(name)))->Visibility != Visibility::Visible)
+				throw ref new FailureException("Inline app settings group is hidden");
+		}
+		for (auto name : { L"HostSelector", L"UiScaleSelector", L"KeyboardLayoutSelector" }) {
+			auto control = safe_cast<Control^>(settings->FindName(ref new String(name)));
+			if (control->XYFocusLeft != Named<Button>("GlobalSettingsOption"))
+				throw ref new FailureException("Inline app settings focus does not return to its section");
+		}
+	});
+	Dropdown(L"HostSelector");
+	Dropdown(L"UiScaleSelector");
+	Action(L"Inline display calibration visible", []() {
+		if (Named<Grid>("CalibrationFrame")->Visibility != Visibility::Visible)
+			throw ref new FailureException("Inline display settings did not show calibration");
+	});
+	Dropdown(L"KeyboardLayoutSelector");
+	Action(L"Inline input calibration hidden", []() {
+		if (Named<Grid>("CalibrationFrame")->Visibility != Visibility::Collapsed)
+			throw ref new FailureException("Calibration remained over input settings");
+	});
+	Section(L"VideoSectionButton", L"VideoPanel");
+	Action(L"Inline app settings close as a section", []() {
+		if (Named<AppSettingsControl>("AppSettingsPanel")->Visibility != Visibility::Collapsed)
+			throw ref new FailureException("App settings remained over the video settings");
+	});
 	Action(L"Return to Library", []() { Invoke("backButton"); });
 	Page<AppPage>(L"Library after host settings unload");
-	Action(L"Return to Hosts", []() { Invoke("hostsNavButton"); });
+	Action(L"Return to Hosts", []() { frame->GoBack(); });
 	Page<HostSelectorPage>(L"Hosts after Library unload");
 	for (int i = 0; i < 3; ++i) {
-		Action(L"Repeat Library navigation", []() { Invoke("libraryNavButton"); });
+		Action(L"Repeat Library from picker", BrowseLibrary);
 		Page<AppPage>(L"Repeated Library loaded");
-		Action(L"Repeat Hosts navigation", []() { Invoke("hostsNavButton"); });
+		Action(L"Repeat Hosts navigation", []() { frame->GoBack(); });
 		Page<HostSelectorPage>(L"Repeated Hosts loaded");
 		Action(L"Repeat settings navigation", []() { Invoke("settingsNavButton"); });
 		Page<MoonlightSettings>(L"Repeated settings loaded");

@@ -2,6 +2,9 @@
 
 #include "OrbitNavigation.h"
 
+#include <functional>
+#include <initializer_list>
+
 namespace moonlight_xbox_dx {
 namespace OrbitInput {
 
@@ -40,6 +43,37 @@ inline bool HandleBumpers(Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e, int a
 	auto invoke = dynamic_cast<Windows::UI::Xaml::Automation::Provider::IInvokeProvider^>(
 		peer->GetPattern(Windows::UI::Xaml::Automation::Peers::PatternInterface::Invoke));
 	if (invoke != nullptr) invoke->Invoke();
+	return true;
+}
+
+// Called during PreviewKeyDown. XY focus from the centred tab bar picks a
+// neighbouring tab for Up and Down, so send Down into the page and keep Up here.
+inline bool HandleTabBarVertical(Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e,
+	std::initializer_list<Windows::UI::Xaml::Controls::Button^> tabs,
+	const std::function<Windows::UI::Xaml::Controls::Control^()>& below) {
+	using namespace Windows::System;
+	bool down = false;
+	switch (e->Key) {
+	case VirtualKey::GamepadDPadDown: case VirtualKey::GamepadLeftThumbstickDown: case VirtualKey::Down:
+		down = true;
+		break;
+	case VirtualKey::GamepadDPadUp: case VirtualKey::GamepadLeftThumbstickUp: case VirtualKey::Up:
+		break;
+	default:
+		return false;
+	}
+	if (HasOpenPopup()) return false;
+	auto focused = Windows::UI::Xaml::Input::FocusManager::GetFocusedElement();
+	bool onTab = false;
+	for (auto tab : tabs) {
+		if (tab != nullptr && focused == tab) onTab = true;
+	}
+	if (!onTab) return false;
+	e->Handled = true;
+	if (!down) return true;
+	// Resolved only now: finding the target can scroll and realize the shelf
+	auto target = below ? below() : nullptr;
+	if (target != nullptr) target->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 	return true;
 }
 

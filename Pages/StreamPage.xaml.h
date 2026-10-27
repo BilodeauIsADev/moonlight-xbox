@@ -88,6 +88,11 @@ namespace moonlight_xbox_dx
 		void OpenControlCenter();
 		// Fades out the loading screen once the first frame is ready.
 		void HideLoadingScreen();
+		// Failure and end-of-session screens, driven from the render thread via DISPATCH_UI.
+		void ShowStartFailure(int error, Platform::String^ rawMessage);
+		void ShowSessionSummary(long long durationSeconds);
+		// True while Quit game waits for the host to close the app
+		bool IsClosingApp() { return m_closingApp; }
 
 		// Loading screen
 		property Platform::String^ LoadingArtPath {
@@ -162,6 +167,25 @@ namespace moonlight_xbox_dx
 		Platform::String^ m_loadingArtPath;
 		Platform::String^ m_loadingTitle;
 		bool m_loadingOutroHooked = false;
+
+		// Loading screen: shared by the first load and Retry
+		void ResetLoadingVisuals();
+		void StartConnection();
+		void RestartConnection();
+		void LeaveFailedStream();
+		void RetryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void BackToLibraryButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		bool m_startFailureShown = false;
+
+		// End-of-session card
+		void DismissSessionSummary();
+		void OnSummaryTimerTick(Platform::Object^ sender, Platform::Object^ e);
+		void StartSummaryCountdown();
+		void ShowClosingCard();
+		void FinishClosingApp();
+		Windows::UI::Xaml::DispatcherTimer^ m_summaryTimer;
+		bool m_sessionEnded = false;
+		bool m_closingApp = false;
 
 		// Control center (the in-stream menu)
 		void Tile_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

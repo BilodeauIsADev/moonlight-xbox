@@ -17,11 +17,14 @@ namespace moonlight_xbox_dx
 		property Platform::String^ videoCodec;
 		property Platform::String^ framePacing;
 		property Platform::String^ audioBuffer;
+		property Platform::String^ periodicRefresh;
 		property int packetSize;
 		property bool enableHDR;
 		property bool playAudioOnPC;
 		property bool enableVsync;
 		property bool enableSOPS;
+		property bool enableIntraRefresh;
+		property bool enableDirectRendering;
 		property bool enableStats;
 		property bool enableGraphs;
 	};

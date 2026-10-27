@@ -38,6 +38,12 @@
         <Storyboard x:Key="LoadingOutro">
             <DoubleAnimation Storyboard.TargetName="ProgressView" Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:0.45" />
         </Storyboard>
+        <Storyboard x:Key="SummaryIntro">
+            <DoubleAnimation Storyboard.TargetName="SummaryArt" Storyboard.TargetProperty="Opacity" From="0" To="0.75" Duration="0:0:0.9" />
+            <DoubleAnimation Storyboard.TargetName="SummaryTextTransform" Storyboard.TargetProperty="Y" From="18" To="0" BeginTime="0:0:0.25" Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
         <Style x:Key="ControlCenterCardStyle" TargetType="Border">
             <Setter Property="Width" Value="300" />
             <Setter Property="HorizontalAlignment" Value="Left" />
@@ -395,11 +401,11 @@
                 <!-- Controller hints -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Spacing="20" Margin="0,0,0,10">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
+                        <ContentControl Style="{StaticResource OrbitKeyAStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF094;" Foreground="#FFFF5555" />
+                        <ContentControl Style="{StaticResource OrbitKeyBStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back to game" />
                     </StackPanel>
                 </StackPanel>
@@ -418,13 +424,41 @@
                 <StackPanel.RenderTransform>
                     <TranslateTransform x:Name="LoadingTextTransform" />
                 </StackPanel.RenderTransform>
-                <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="STARTING STREAM" />
+                <TextBlock x:Name="LoadingEyebrow" Style="{StaticResource OrbitEyebrowTextStyle}" Text="STARTING STREAM" />
                 <TextBlock x:Name="LoadingTitleText" Style="{StaticResource OrbitTitleTextStyle}" FontSize="44" LineHeight="48" Margin="0,6,0,0" Text="{x:Bind LoadingTitle, Mode=OneWay}" />
                 <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,18,0,0">
                     <muxc:ProgressRing x:Name="MainProgressRing" Width="22" Height="22" IsActive="True" Foreground="{StaticResource OrbitTextBrush}" />
                     <TextBlock x:Name="StatusText" FontSize="16" VerticalAlignment="Center" Text="Connecting..." />
                 </StackPanel>
                 <TextBlock x:Name="StepText" FontSize="13" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="" Margin="34,4,0,0" />
+                <StackPanel x:Name="FailureActions" Orientation="Horizontal" Spacing="12" Margin="0,20,0,0" Visibility="Collapsed">
+                    <Button x:Name="RetryButton" Content="Retry" Style="{StaticResource OrbitPillButtonStyle}" Click="RetryButton_Click" />
+                    <Button x:Name="BackToLibraryButton" Content="Back to library" Style="{StaticResource OrbitSecondaryPillButtonStyle}" Click="BackToLibraryButton_Click" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+        <!-- End-of-session card: the same artwork treatment as the loading screen,
+             shown briefly before returning to the library -->
+        <Grid x:Name="SessionSummaryCard" Background="{StaticResource OrbitBackgroundBrush}" Visibility="Collapsed">
+            <Image x:Name="SummaryArt" Source="{x:Bind LoadingArtPath, Mode=OneWay}" Stretch="UniformToFill" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.75" />
+            <Rectangle Fill="{StaticResource OrbitHeroLeftFadeBrush}" />
+            <Rectangle Fill="{StaticResource OrbitHeroBottomFadeBrush}" />
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="64,0,64,48" MaxWidth="620">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform x:Name="SummaryTextTransform" />
+                </StackPanel.RenderTransform>
+                <TextBlock x:Name="SummaryEyebrow" Style="{StaticResource OrbitEyebrowTextStyle}" Text="SESSION ENDED" />
+                <TextBlock Style="{StaticResource OrbitTitleTextStyle}" FontSize="44" LineHeight="48" Margin="0,6,0,0" Text="{x:Bind LoadingTitle, Mode=OneWay}" />
+                <!-- Quit game: progress while the host closes it, replaced by the stats when done -->
+                <StackPanel x:Name="SummaryClosingPanel" Orientation="Horizontal" Spacing="12" Margin="0,18,0,0" Visibility="Collapsed">
+                    <muxc:ProgressRing x:Name="SummaryClosingRing" Width="22" Height="22" IsActive="False" Foreground="{StaticResource OrbitTextBrush}" />
+                    <TextBlock FontSize="16" VerticalAlignment="Center" Text="Waiting for the PC to close it..." />
+                </StackPanel>
+                <StackPanel x:Name="SummaryStatsPanel" Orientation="Horizontal" Margin="0,14,0,0">
+                    <TextBlock x:Name="SummaryDurationText" FontSize="16" />
+                    <TextBlock x:Name="SummaryLatencyText" FontSize="16" Margin="16,0,0,0" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
+                    <TextBlock x:Name="SummaryDropsText" FontSize="16" Margin="16,0,0,0" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Grid>
