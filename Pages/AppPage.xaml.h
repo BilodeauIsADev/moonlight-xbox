@@ -38,6 +38,19 @@ namespace moonlight_xbox_dx
 		Windows::Foundation::EventRegistrationToken m_back_cookie;
 		std::atomic<bool> continueAppFetch{ false };
 		std::atomic<bool> wasConnected{ false };
+		// The stream summary (resolution/fps/codec) shown next to "Last played"
+		Platform::String^ m_streamSummary;
+		bool m_letterJumpOpen = false;
+		void ShowShelfLoading(bool show);
+		void StartShelfPulse();
+		void StopShelfPulse();
+		void UpdateHeroMetadata();
+		void UpdateEmptyShelfState();
+		void StartAppPolling();
+		void ToggleLetterJump();
+		void OpenLetterJump();
+		void CloseLetterJump();
+		void JumpToLetter(wchar_t letter);
 	protected:
 		virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 		virtual void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;

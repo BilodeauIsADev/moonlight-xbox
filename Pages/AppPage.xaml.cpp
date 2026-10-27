@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Common/OrbitInput.h"
 #include "Common/OrbitMotion.h"
+#include "Common/OrbitRecents.h"
 #include "AppPage.Xaml.h"
 #include "Common\ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -10,13 +11,16 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <cwctype>
 #include <vector>
+#include <windowsnumerics.h>
 
 using namespace moonlight_xbox_dx;
 using namespace Platform;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
+using namespace Windows::Foundation::Numerics;
 using namespace Windows::UI::Core;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
@@ -42,6 +46,12 @@ static MoonlightApp^ GetAppById(MoonlightHost^ host, int appId) {
 	}
 
 	return nullptr;
+}
+
+static TimeSpan ShelfPulseTime(int milliseconds) {
+	TimeSpan time;
+	time.Duration = static_cast<long long>(milliseconds) * 10000;
+	return time;
 }
 
 AppPage::AppPage()
@@ -70,6 +80,8 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 		if (SelectedApp == nullptr || app->CurrentlyRunning) SelectedApp = app;
 	}
 
+	// The stream summary belongs to this navigation's host; rebuild it
+	m_streamSummary = nullptr;
 	if (host->Resolution != nullptr) {
 		Platform::String^ sep = ref new Platform::String(L" \u00B7 ");
 		Platform::String^ summary = L"Streams at " + Utils::StringFromStdString(std::to_string(host->Resolution->Width)) + L"\u00D7" +
@@ -77,16 +89,54 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 			Utils::StringFromStdString(std::to_string(host->FPS)) + L" FPS";
 		if (host->VideoCodec != nullptr) summary = summary + sep + host->VideoCodec;
 		if (host->EnableHDR) summary = summary + sep + L"HDR";
-		StreamSummaryText->Text = summary;
+		m_streamSummary = summary;
 	}
-
+	UpdateHeroMetadata();
 	host->UpdateHostInfo(true);
-	host->UpdateApps();
 
-	// Start background polling for app running state and connectivity
+	// Host info and the app list arrive over the network; fetch them off the
+	// UI thread so the shelf can show pulsing placeholders meanwhile.
+	ShowShelfLoading(host->Apps->Size == 0);
 	continueAppFetch.store(true);
 	wasConnected.store(host->Connected);
 
+	Platform::WeakReference weakThis(this);
+	create_task([weakThis]() {
+		auto that = weakThis.Resolve<AppPage>();
+		if (that == nullptr) return;
+		that->host->UpdateApps();
+	}).then([weakThis](concurrency::task<void> previous) {
+		try {
+			previous.get();
+		} catch (const std::exception &e) {
+			Utils::Logf("[AppPage] Failed to refresh host and app list. Exception: %s\n", e.what());
+		} catch (...) {
+			Utils::Log("[AppPage] Failed to refresh host and app list. Unknown exception.\n");
+		}
+		auto that = weakThis.Resolve<AppPage>();
+		if (that == nullptr) return;
+		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([weakThis]() {
+			auto inner = weakThis.Resolve<AppPage>();
+			// The page may have connected (autostart) or navigated away already
+			if (inner == nullptr || !inner->continueAppFetch.load()) return;
+			inner->ShowShelfLoading(false);
+			inner->UpdateEmptyShelfState();
+			inner->StartAppPolling();
+		}));
+	});
+
+	if (host->AutostartID >= 0 && GetApplicationState()->shouldAutoConnect) {
+		GetApplicationState()->shouldAutoConnect = false;
+		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
+			Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([this]() {
+				this->Connect(host->AutostartID);
+			}));
+	}
+	GetApplicationState()->shouldAutoConnect = false;
+}
+
+void AppPage::StartAppPolling() {
+	// Start background polling for app running state and connectivity
 	Platform::WeakReference weakThis(this);
 	create_task([weakThis]() {
 		while (true) {
@@ -143,20 +193,12 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 			Sleep(3000);
 		}
 	});
-
-	if (host->AutostartID >= 0 && GetApplicationState()->shouldAutoConnect) {
-		GetApplicationState()->shouldAutoConnect = false;
-		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
-			Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([this]() {
-				this->Connect(host->AutostartID);
-			}));
-	}
-	GetApplicationState()->shouldAutoConnect = false;
 }
 
 void AppPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {
 	StopHeroMotion();
 	continueAppFetch.store(false);
+	CloseLetterJump();
 
 	auto observableApps = host != nullptr ? dynamic_cast<IObservableVector<MoonlightApp^>^>(host->Apps) : nullptr;
 	if (observableApps != nullptr) {
@@ -230,6 +272,9 @@ void AppPage::StartOrResume(MoonlightApp^ app) {
 void AppPage::Connect(int appId) {
 
 	continueAppFetch.store(false);
+
+	// Remember the launch so the shelf can put recently played apps first
+	GetApplicationState()->RecordAppPlayed(host, appId);
 
 	MoonlightApp^ app = GetAppById(host, appId);
 
@@ -457,6 +502,11 @@ void AppPage::OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackReques
 	// UWP on Xbox One triggers a back request whenever the B
 	// button is pressed which can result in the app being
 	// suspended if unhandled
+	if (m_letterJumpOpen) {
+		CloseLetterJump();
+		args->Handled = true;
+		return;
+	}
 	if (this->Frame->CanGoBack) {
 		this->Frame->GoBack();
 		args->Handled = true;
@@ -484,6 +534,18 @@ void AppPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEven
 }
 
 void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	// The View button opens the jump-to-letter picker on long shelves; Y keeps
+	// opening settings (see the footer hints).
+	if (!OrbitInput::HasOpenPopup() && e->Key == Windows::System::VirtualKey::GamepadView) {
+		ToggleLetterJump();
+		e->Handled = true;
+		return;
+	}
+	if (m_letterJumpOpen && (e->Key == Windows::System::VirtualKey::GamepadB || e->Key == Windows::System::VirtualKey::GoBack)) {
+		CloseLetterJump();
+		e->Handled = true;
+		return;
+	}
 	if (OrbitInput::HandleBumpers(e, 1, hostsNavButton, libraryNavButton, settingsNavButton)) return;
 	OrbitInput::HandleShelfTriggers(e, HostsGrid, SelectedApp);
 }
@@ -495,6 +557,7 @@ void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
 	}
 	m_artworkRequest.Invalidate();
 	ClearPendingArtwork();
+	UpdateHeroMetadata();
 	if (SelectedApp == nullptr) return;
 	m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
 	if (m_heroActive) {
@@ -505,6 +568,135 @@ void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
 
 void AppPage::OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e) {
 	if (sender == SelectedApp && e->PropertyName == L"ImagePath") LoadHeroArtwork(SelectedApp->ImagePath);
+}
+
+void AppPage::ShowShelfLoading(bool show) {
+	if (show) {
+		ShelfLoadingPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+		StartShelfPulse();
+		return;
+	}
+	ShelfLoadingPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	StopShelfPulse();
+}
+
+// Pulsing placeholder posters, animated on the compositor to stay cheap
+void AppPage::StartShelfPulse() {
+	if (!OrbitMotion::Enabled()) return;
+	unsigned int tile = 0;
+	for (auto placeholder : ShelfLoadingPanel->Children) {
+		auto visual = ElementCompositionPreview::GetElementVisual(placeholder);
+		auto compositor = visual->Compositor;
+		auto pulse = compositor->CreateScalarKeyFrameAnimation();
+		pulse->InsertKeyFrame(0.0f, 0.35f);
+		pulse->InsertKeyFrame(0.55f, 0.8f, compositor->CreateCubicBezierEasingFunction(float2(0.16f, 1.0f), float2(0.3f, 1.0f)));
+		pulse->InsertKeyFrame(1.0f, 0.35f);
+		pulse->Duration = ShelfPulseTime(1400);
+		pulse->DelayTime = ShelfPulseTime(160 * static_cast<int>(tile++));
+		pulse->IterationCount = 1000000;
+		visual->StartAnimation("Opacity", pulse);
+	}
+}
+
+void AppPage::StopShelfPulse() {
+	for (auto placeholder : ShelfLoadingPanel->Children) OrbitMotion::Stop(placeholder);
+}
+
+// "Last played ..." next to the stream summary under the hero title
+void AppPage::UpdateHeroMetadata() {
+	Platform::String^ lastPlayed = Utils::StringFromStdString(OrbitRecents::RelativeTimeLabel(
+		host != nullptr && SelectedApp != nullptr
+			? GetApplicationState()->GetLastPlayed(host, SelectedApp->Id) : 0,
+		time(nullptr)));
+	Platform::String^ metadata = L"Last played " + lastPlayed;
+	if (m_streamSummary != nullptr) metadata = metadata + L" \u00B7 " + m_streamSummary;
+	StreamSummaryText->Text = metadata;
+}
+
+void AppPage::UpdateEmptyShelfState() {
+	const bool empty = host != nullptr && host->Apps->Size == 0;
+	ShelfEmptyPanel->Visibility = empty ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+	// With nothing to focus on the shelf, land on the Hosts tab instead
+	if (empty) hostsNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+}
+
+void AppPage::ToggleLetterJump() {
+	if (m_letterJumpOpen) CloseLetterJump();
+	else OpenLetterJump();
+}
+
+void AppPage::OpenLetterJump() {
+	// Only worth it once the shelf is long enough to page through
+	if (host == nullptr || host->Apps->Size <= 20) return;
+	if (m_letterJumpOpen) return;
+
+	// One button per letter that exists in the list, A-Z first then #
+	bool seen[26] = {};
+	std::vector<wchar_t> letters;
+	for (unsigned int i = 0; i < host->Apps->Size; ++i) {
+		auto app = host->Apps->GetAt(i);
+		if (app == nullptr) continue;
+		const wchar_t letter = static_cast<wchar_t>(OrbitRecents::JumpLetter(Utils::PlatformStringToStdString(app->Name)));
+		if (letter == '#') { if (std::find(letters.begin(), letters.end(), '#') == letters.end()) letters.push_back(letter); continue; }
+		const int bucket = letter - 'A';
+		if (bucket < 0 || bucket >= 26 || seen[bucket]) continue;
+		seen[bucket] = true;
+		letters.push_back(letter);
+	}
+	std::sort(letters.begin(), letters.end(), [](wchar_t a, wchar_t b) {
+		const int left = a == '#' ? 26 : a - 'A';
+		const int right = b == '#' ? 26 : b - 'A';
+		return left < right;
+	});
+	Platform::WeakReference weakThis(this);
+	for (wchar_t letter : letters) {
+		auto button = ref new Button();
+		auto styleKey = ref new String(L"OrbitCircleButtonStyle");
+		if (Application::Current->Resources->HasKey(styleKey)) {
+			button->Style = safe_cast<Windows::UI::Xaml::Style^>(Application::Current->Resources->Lookup(styleKey));
+		}
+		button->Content = ref new String(std::wstring(1, letter).c_str());
+		button->Click += ref new RoutedEventHandler([weakThis, letter](Platform::Object^, RoutedEventArgs^) {
+			auto page = weakThis.Resolve<AppPage>();
+			if (page != nullptr) page->JumpToLetter(letter);
+		});
+		LetterJumpRow->Children->Append(button);
+	}
+	LetterJumpPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	m_letterJumpOpen = true;
+	if (LetterJumpRow->Children->Size > 0) {
+		auto first = dynamic_cast<Button^>(LetterJumpRow->Children->GetAt(0));
+		if (first != nullptr) first->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+	}
+}
+
+void AppPage::CloseLetterJump() {
+	if (!m_letterJumpOpen) return;
+	m_letterJumpOpen = false;
+	LetterJumpPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	// Hand focus back to the poster the picker was opened from
+	GridViewItem^ container = nullptr;
+	if (SelectedApp != nullptr && HostsGrid != nullptr) {
+		container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(SelectedApp));
+	}
+	if (container != nullptr) container->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+	else hostsNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+}
+
+void AppPage::JumpToLetter(wchar_t letter) {
+	CloseLetterJump();
+	if (host == nullptr) return;
+	for (unsigned int i = 0; i < host->Apps->Size; ++i) {
+		auto app = host->Apps->GetAt(i);
+		if (app == nullptr) continue;
+		if (static_cast<wchar_t>(OrbitRecents::JumpLetter(Utils::PlatformStringToStdString(app->Name))) != letter) continue;
+		// Realize the target before focusing it, like HandleShelfTriggers does
+		HostsGrid->ScrollIntoView(app, Windows::UI::Xaml::Controls::ScrollIntoViewAlignment::Leading);
+		HostsGrid->UpdateLayout();
+		auto container = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromItem(app));
+		if (container != nullptr) container->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+		break;
+	}
 }
 
 void AppPage::LoadHeroArtwork(Platform::String^ path) {

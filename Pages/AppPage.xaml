@@ -105,6 +105,15 @@
                 <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Margin="56,0,0,0">
                     <Run Text="On " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
                 </TextBlock>
+                <!-- Placeholder posters with a soft pulse while the app list loads -->
+                <StackPanel x:Name="ShelfLoadingPanel" Orientation="Horizontal" Margin="56,14,56,10" Visibility="Collapsed">
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                    <Grid Style="{StaticResource OrbitShelfPlaceholderStyle}" />
+                </StackPanel>
                 <GridView x:Name="HostsGrid" ItemsSource="{x:Bind Host.Apps}" IsRightTapEnabled="True" IsItemClickEnabled="True" SelectionMode="None"
                           ItemClick="AppsGrid_ItemClick" RightTapped="AppsGrid_RightTapped" GotFocus="AppsGrid_GotFocus" TabIndex="1"
                           Padding="56,14,56,10"
@@ -130,7 +139,21 @@
                         </DataTemplate>
                     </GridView.ItemTemplate>
                 </GridView>
+                <!-- Shown when the host reports no apps at all -->
+                <StackPanel x:Name="ShelfEmptyPanel" Margin="56,14,56,10" Visibility="Collapsed">
+                    <TextBlock Style="{StaticResource OrbitShelfTitleTextStyle}" Text="No apps on this host" />
+                    <TextBlock Text="Add games in Sunshine's Applications page, then come back."
+                               FontSize="14" Margin="0,6,0,0" TextWrapping="Wrap" MaxWidth="470" HorizontalAlignment="Left"
+                               Foreground="{StaticResource OrbitTextSecondaryBrush}" />
+                </StackPanel>
             </StackPanel>
+
+            <!-- Jump-to-letter picker (View button), floating above the shelf -->
+            <Border x:Name="LetterJumpPanel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,12" Padding="12,8" CornerRadius="10" Visibility="Collapsed"
+                    Background="{StaticResource OrbitPanelBrush}" BorderBrush="{StaticResource OrbitOverlayBorderBrush}" BorderThickness="1">
+                <StackPanel x:Name="LetterJumpRow" Orientation="Horizontal" Spacing="4" />
+            </Border>
 
             <!-- Controller hints -->
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">

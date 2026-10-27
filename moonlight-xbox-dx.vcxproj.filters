@@ -558,6 +558,9 @@
     <ClInclude Include="Common\OrbitInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Common\OrbitRecents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\DeviceWatcherHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -9,6 +9,7 @@
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include <algorithm>
+#include <ctime>
 #include <sstream>
 
 using namespace Windows::Storage;
@@ -58,6 +59,14 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 				else
 					h->ComputerName = h->LastHostname;
 				this->SavedHosts->Append(h);
+			}
+			if (stateJson.contains("recentlyPlayed")) {
+				auto recent = stateJson["recentlyPlayed"];
+				if (recent.is_object()) {
+					for (auto stamp = recent.begin(); stamp != recent.end(); ++stamp) {
+						if (stamp.value().is_number()) this->lastPlayedByApp[stamp.key()] = stamp.value().get<long long>();
+					}
+				}
 			}
 		}
 			});
@@ -111,6 +120,10 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 		stateJson["enableKeyboard"] = that->EnableKeyboard;
 		stateJson["keyboardLayout"] = Utils::PlatformStringToStdString(that->KeyboardLayout);
 		stateJson["alternateCombination"] = that->AlternateCombination;
+		stateJson["recentlyPlayed"] = nlohmann::json::object();
+		for (auto stamp : that->lastPlayedByApp) {
+			stateJson["recentlyPlayed"][stamp.first] = stamp.second;
+		}
 		for (auto host : that->SavedHosts) {
 			nlohmann::json hostJson;
 			hostJson["hostname"] = Utils::PlatformStringToStdString(host->LastHostname);
@@ -157,6 +170,25 @@ void moonlight_xbox_dx::ApplicationState::RemoveHost(MoonlightHost^ host) {
 		host->Unpair();
 	}
 	UpdateFile();
+}
+
+// Identity used for recently played stamps, mirroring AddHost's host matching.
+static std::string LastPlayedHostKey(MoonlightHost^ host) {
+	auto instanceId = host->InstanceId;
+	if (instanceId != nullptr && !instanceId->IsEmpty()) return Utils::PlatformStringToStdString(instanceId);
+	return Utils::PlatformStringToStdString(host->LastHostname);
+}
+
+void moonlight_xbox_dx::ApplicationState::RecordAppPlayed(MoonlightHost^ host, int appId) {
+	if (host == nullptr) return;
+	lastPlayedByApp[LastPlayedHostKey(host) + ":" + std::to_string(appId)] = static_cast<long long>(time(nullptr));
+	UpdateFile();
+}
+
+long long moonlight_xbox_dx::ApplicationState::GetLastPlayed(MoonlightHost^ host, int appId) {
+	if (host == nullptr) return 0;
+	auto stamp = lastPlayedByApp.find(LastPlayedHostKey(host) + ":" + std::to_string(appId));
+	return stamp != lastPlayedByApp.end() ? stamp->second : 0;
 }
 
 void moonlight_xbox_dx::ApplicationState::OnPropertyChanged(Platform::String^ propertyName) {

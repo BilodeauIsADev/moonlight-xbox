@@ -36,6 +36,15 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitArtworkTests.cpp -o /tmp/orbit-a
 /tmp/orbit-artwork-tests
 ```
 
+The recents tests cover the Library shelf's relative "last played" labels, the
+recently played ordering (running app first, most recent next, never-played
+keeping their alphabetical arrival order), and jump-to-letter bucketing:
+
+```sh
+c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitRecentsTests.cpp -o /tmp/orbit-recents-tests
+/tmp/orbit-recents-tests
+```
+
 The UWP event routing and visuals need a Windows or Xbox build. Check these paths
 with a controller at the console's supported display sizes:
 
