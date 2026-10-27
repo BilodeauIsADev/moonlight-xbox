@@ -170,8 +170,9 @@ namespace moonlight_xbox_dx {
 		return true;
 	}
 
-    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate) {
+    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate, bool directRendering) {
 		this->m_deviceResources = res;
+		this->m_DirectRendering = directRendering;
 		this->fps = config->fps;
 		Pacer::instance().init(res, config->fps, res->GetRefreshRate(), framePacingImmediate);
 	}
@@ -242,8 +243,12 @@ namespace moonlight_xbox_dx {
 
 		decoder_ctx->hw_device_ctx = hw_device_ctx; // transfer ownership
 		decoder_ctx->pix_fmt = AV_PIX_FMT_D3D11;
-		// get_format lets us allocate a frame pool we can sample directly (no per-frame copy)
-		decoder_ctx->get_format = ff_get_format;
+		// get_format lets us allocate a frame pool we can sample directly (no per-frame copy).
+		// Without it ffmpeg allocates its default decoder-only pool and the renderer copies.
+		if (m_DirectRendering) {
+			decoder_ctx->get_format = ff_get_format;
+		}
+		Utils::Logf("Video rendering: %s\n", m_DirectRendering ? "direct from decoder surfaces" : "copy");
 		decoder_ctx->sw_pix_fmt = (videoFormat & VIDEO_FORMAT_MASK_10BIT) ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
 		decoder_ctx->pkt_timebase.num = 1;
 		decoder_ctx->pkt_timebase.den = 90000;

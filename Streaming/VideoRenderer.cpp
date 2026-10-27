@@ -154,11 +154,19 @@ bool VideoRenderer::Render(AVFrame *frame) {
 		ID3D11ShaderResourceView *frameSrvs[] = { set->srv[0].Get(), set->srv[1].Get(), set->srv[2].Get() };
 		ctx->PSSetShaderResources(0, 3, frameSrvs);
 	} else {
-		// Sample the decoder's array texture straight into the YUV->RGB shader.
 		// frame->data[1] is the slice of the decoder's array texture holding this frame.
 		UINT slice = (UINT)(intptr_t)frame->data[1];
-		const std::array<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>, 2>* frameSrvPair =
-			getDirectSampleSrvs(ffmpegTexture, slice, ffmpegDesc);
+		const std::array<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>, 2>* frameSrvPair = nullptr;
+		if (configuration->enableDirectRendering) {
+			// Sample the decoder's array texture straight into the YUV->RGB shader
+			frameSrvPair = getDirectSampleSrvs(ffmpegTexture, slice, ffmpegDesc);
+		} else {
+			// Copy the frame out of the decoder pool first, as before direct sampling
+			if (!setupCopyTexture(ffmpegDesc)) return false;
+			ctx->CopySubresourceRegion1(m_CopyTexture.Get(), 0, 0, 0, 0,
+			                            ffmpegTexture, slice, nullptr, D3D11_COPY_DISCARD);
+			frameSrvPair = &m_CopySrvs;
+		}
 		if (!frameSrvPair) {
 			// SRV creation failed; nothing we can render this frame
 			return false;
@@ -350,6 +358,57 @@ void VideoRenderer::ReleaseDeviceDependentResources()
 
 	// Drop SRVs over decoder surfaces; the pool is owned by ffmpeg and is going away.
 	m_DirectSampleSrvs.clear();
+	m_CopySrvs = {};
+	m_CopyTexture.Reset();
+}
+
+// Single-slice texture matching the decoder's surfaces, recreated when they change
+bool VideoRenderer::setupCopyTexture(const D3D11_TEXTURE2D_DESC& frameDesc)
+{
+	if (m_CopyTexture) {
+		D3D11_TEXTURE2D_DESC current;
+		m_CopyTexture->GetDesc(&current);
+		if (current.Width == frameDesc.Width && current.Height == frameDesc.Height && current.Format == frameDesc.Format) {
+			return true;
+		}
+		m_CopySrvs = {};
+		m_CopyTexture.Reset();
+	}
+
+	D3D11_TEXTURE2D_DESC texDesc = {};
+	texDesc.Width = frameDesc.Width;
+	texDesc.Height = frameDesc.Height;
+	texDesc.MipLevels = 1;
+	texDesc.ArraySize = 1;
+	texDesc.Format = frameDesc.Format;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.Usage = D3D11_USAGE_DEFAULT;
+	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	auto* dev = m_deviceResources->GetD3DDevice();
+	HRESULT hr = dev->CreateTexture2D(&texDesc, nullptr, &m_CopyTexture);
+	if (FAILED(hr)) {
+		Utils::Logf("Copy texture creation failed (0x%08X)\n", (unsigned)hr);
+		return false;
+	}
+
+	// The YUV shader reads a Texture2DArray, so view the single slice as an array
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Texture2DArray.MipLevels = 1;
+	srvDesc.Texture2DArray.ArraySize = 1;
+	auto formats = getPlaneSRVFormats(frameDesc.Format);
+	for (size_t plane = 0; plane < formats.size() && plane < 2; plane++) {
+		srvDesc.Format = formats[plane];
+		hr = dev->CreateShaderResourceView(m_CopyTexture.Get(), &srvDesc, &m_CopySrvs[plane]);
+		if (FAILED(hr)) {
+			Utils::Logf("Copy texture SRV creation failed (plane %zu, 0x%08X)\n", plane, (unsigned)hr);
+			m_CopySrvs = {};
+			m_CopyTexture.Reset();
+			return false;
+		}
+	}
+	return true;
 }
 
 void VideoRenderer::scaleSourceToDestinationSurface(IRECT* src, IRECT* dst)

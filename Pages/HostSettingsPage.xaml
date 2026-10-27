@@ -195,10 +195,25 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center" Spacing="3">
                                                 <TextBlock Text="Intra refresh" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Avoids large keyframes, but stream errors can linger in still scenes. Leave off unless you see stutter.</TextBlock>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Repairs stream errors gradually instead of with large keyframes. Recommended on.</TextBlock>
                                             </StackPanel>
                                             <Grid Grid.Column="1" VerticalAlignment="Center">
                                                 <ToggleSwitch IsOn="{x:Bind Host.EnableIntraRefresh,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Intra refresh"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Direct decoder rendering" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Skips a copy of each frame. Faster, but can corrupt the picture on some consoles.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ToggleSwitch IsOn="{x:Bind Host.EnableDirectRendering,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Direct decoder rendering"/>
                                             </Grid>
                                         </Grid>
                                     </Border>

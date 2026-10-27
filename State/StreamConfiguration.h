@@ -23,6 +23,7 @@ namespace moonlight_xbox_dx
 		property bool enableVsync;
 		property bool enableSOPS;
 		property bool enableIntraRefresh;
+		property bool enableDirectRendering;
 		property bool enableStats;
 		property bool enableGraphs;
 	};

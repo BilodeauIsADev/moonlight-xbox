@@ -336,6 +336,7 @@ void AppPage::Connect(int appId) {
 	config->enableHDR = host->EnableHDR;
 	config->enableSOPS = host->EnableSOPS;
 	config->enableIntraRefresh = host->EnableIntraRefresh;
+	config->enableDirectRendering = host->EnableDirectRendering;
 	config->framePacing = host->FramePacing;
 	config->audioBuffer = host->AudioBuffer;
 	config->packetSize = host->PacketSize;

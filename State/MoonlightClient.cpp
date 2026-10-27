@@ -349,7 +349,7 @@ int MoonlightClient::StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res
 	callbacks.rumble = connection_rumble;
 	callbacks.rumbleTriggers = connection_trigger_rumble;
 
-	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate");
+	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate", sConfig->enableDirectRendering);
 	PyroWaveDecoder::instance().CompleteInitialization(res, &config);
 	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder(sConfig->enableIntraRefresh);
 

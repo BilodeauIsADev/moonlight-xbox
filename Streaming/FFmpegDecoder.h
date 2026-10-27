@@ -43,7 +43,7 @@ class FFMpegDecoder {
 	static FFMpegDecoder &instance();
 
 	bool CheckFFMpegVersion();
-	void CompleteInitialization(const std::shared_ptr<DX::DeviceResources> &res, STREAM_CONFIGURATION *config, bool framePacingImmediate);
+	void CompleteInitialization(const std::shared_ptr<DX::DeviceResources> &res, STREAM_CONFIGURATION *config, bool framePacingImmediate, bool directRendering);
 	int Init(int videoFormat, int width, int height, int redrawRate, void *context, int drFlags);
 	void Cleanup();
 	int SubmitDecodeUnit(PDECODE_UNIT decodeUnit);
@@ -108,6 +108,8 @@ class FFMpegDecoder {
 	std::shared_ptr<DX::DeviceResources> m_deviceResources;
 	int m_LastFrameNumber;
 	int64_t m_StreamEpochQpc;
+	// The renderer samples decoder surfaces directly instead of copying them
+	bool m_DirectRendering = false;
 
 	// m_CaptureState is atomic so the decode thread can skip the capture path with
 	// a single relaxed load, but every *change* to it happens under

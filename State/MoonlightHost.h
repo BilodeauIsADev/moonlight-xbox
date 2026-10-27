@@ -38,7 +38,8 @@ namespace moonlight_xbox_dx {
 		int packetSize = 1392;
 		bool enableHDR = false;
 		bool enableSOPS = false;
-		bool enableIntraRefresh = false;
+		bool enableIntraRefresh = true;
+		bool enableDirectRendering = false;
 		bool enableStats = false;
 		bool enableGraphs = true;
 		Windows::Foundation::Collections::IVector<MoonlightApp^>^ apps;
@@ -496,6 +497,16 @@ namespace moonlight_xbox_dx {
 			void set(bool value) {
 				this->enableIntraRefresh = value;
 				OnPropertyChanged("EnableIntraRefresh");
+			}
+		}
+
+		property bool EnableDirectRendering {
+			bool get() {
+				return this->enableDirectRendering;
+			}
+			void set(bool value) {
+				this->enableDirectRendering = value;
+				OnPropertyChanged("EnableDirectRendering");
 			}
 		}
 
