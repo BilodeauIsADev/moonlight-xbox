@@ -24,12 +24,13 @@ namespace moonlight_xbox_dx
 		MoonlightApp^ currentApp;
 		MoonlightApp^ selectedApp;
 		OrbitArtworkRequest m_artworkRequest;
-		Windows::UI::Xaml::Media::ImageSource^ m_pendingArtwork;
+		Windows::UI::Xaml::Controls::Image^ m_pendingArtwork;
 		Windows::Foundation::EventRegistrationToken m_selectedAppChangedToken{};
 		bool m_heroActive = false;
 		void OnSelectedAppChanged(MoonlightApp^ previous);
 		void OnSelectedAppPropertyChanged(Platform::Object^ sender, Windows::UI::Xaml::Data::PropertyChangedEventArgs^ e);
 		void LoadHeroArtwork(Platform::String^ path);
+		void ClearPendingArtwork();
 		void PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request);
 		void HeroArtworkFailed(uint64_t request);
 		void StopHeroMotion();

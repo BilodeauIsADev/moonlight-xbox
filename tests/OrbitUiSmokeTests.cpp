@@ -150,6 +150,10 @@ void BuildSteps() {
 	Action(L"Open Library", []() { Invoke("libraryNavButton"); });
 	Page<AppPage>(L"Library loaded");
 	steps.push_back({ L"Game list populated", []() { return Named<GridView>("HostsGrid")->Items->Size > 0; } });
+	steps.push_back({ L"Hero artwork presented", []() {
+		for (UIElement^ child : Named<Grid>("HeroArtLayers")->Children) if (child->Opacity > 0) return true;
+		return false;
+	} });
 	Action(L"Browse artwork rapidly", []() {
 		auto shelf = Named<GridView>("HostsGrid");
 		for (unsigned int i = 0; i < shelf->Items->Size && i < 8; ++i) {

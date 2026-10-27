@@ -494,7 +494,7 @@ void AppPage::OnSelectedAppChanged(MoonlightApp^ previous) {
 		m_selectedAppChangedToken.Value = 0;
 	}
 	m_artworkRequest.Invalidate();
-	m_pendingArtwork = nullptr;
+	ClearPendingArtwork();
 	if (SelectedApp == nullptr) return;
 	m_selectedAppChangedToken = SelectedApp->PropertyChanged += ref new Windows::UI::Xaml::Data::PropertyChangedEventHandler(this, &AppPage::OnSelectedAppPropertyChanged);
 	if (m_heroActive) {
@@ -511,7 +511,20 @@ void AppPage::LoadHeroArtwork(Platform::String^ path) {
 	if (!m_heroActive || path == nullptr) return;
 	uint64_t request;
 	if (!m_artworkRequest.Begin(path->Data(), request)) return;
+	ClearPendingArtwork();
 	Platform::WeakReference weakThis(this);
+	auto prepareImage = [this](Windows::UI::Xaml::Media::ImageSource^ source) {
+		auto image = ref new Image();
+		image->Source = source;
+		image->Stretch = Windows::UI::Xaml::Media::Stretch::UniformToFill;
+		image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Top;
+		image->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Center;
+		image->Opacity = 0;
+		m_pendingArtwork = image;
+		// XAML image loading needs a live Image consumer. Keep the old artwork
+		// visible beneath this pending image until its decode completes.
+		HeroArtLayers->Children->Append(image);
+	};
 	try {
 		auto address = OrbitArtworkUri(path->Data(), Windows::Storage::ApplicationData::Current->LocalFolder->Path->Data());
 		auto uri = ref new Windows::Foundation::Uri(ref new Platform::String(address.c_str()));
@@ -519,7 +532,6 @@ void AppPage::LoadHeroArtwork(Platform::String^ path) {
 		std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
 		if (extension.size() >= 4 && extension.substr(extension.size() - 4) == L".svg") {
 			auto source = ref new Windows::UI::Xaml::Media::Imaging::SvgImageSource();
-			m_pendingArtwork = source;
 			source->RasterizePixelWidth = 680;
 			source->Opened += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Xaml::Media::Imaging::SvgImageSource^, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^>(
 				[weakThis, request](Windows::UI::Xaml::Media::Imaging::SvgImageSource^ sender, Windows::UI::Xaml::Media::Imaging::SvgImageSourceOpenedEventArgs^) {
@@ -531,10 +543,10 @@ void AppPage::LoadHeroArtwork(Platform::String^ path) {
 					auto page = weakThis.Resolve<AppPage>();
 					if (page != nullptr) page->HeroArtworkFailed(request);
 				});
+			prepareImage(source);
 			source->UriSource = uri;
 		} else {
 			auto source = ref new Windows::UI::Xaml::Media::Imaging::BitmapImage();
-			m_pendingArtwork = source;
 			source->DecodePixelWidth = 680;
 			source->ImageOpened += ref new RoutedEventHandler([weakThis, request](Platform::Object^ sender, RoutedEventArgs^) {
 				auto page = weakThis.Resolve<AppPage>();
@@ -544,6 +556,7 @@ void AppPage::LoadHeroArtwork(Platform::String^ path) {
 				auto page = weakThis.Resolve<AppPage>();
 				if (page != nullptr) page->HeroArtworkFailed(request);
 			});
+			prepareImage(source);
 			source->UriSource = uri;
 		}
 	} catch (Platform::Exception^) {
@@ -553,25 +566,30 @@ void AppPage::LoadHeroArtwork(Platform::String^ path) {
 
 void AppPage::PresentHeroArtwork(Windows::UI::Xaml::Media::ImageSource^ source, uint64_t request) {
 	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
-	m_pendingArtwork = nullptr;
-	auto image = ref new Image();
-	image->Source = source;
-	image->Stretch = Windows::UI::Xaml::Media::Stretch::UniformToFill;
-	image->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Top;
-	image->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Center;
+	auto image = m_pendingArtwork;
+	if (image == nullptr || image->Source != source) return;
+	ClearPendingArtwork();
+	image->Opacity = 1;
 	OrbitMotion::FadeArtwork(HeroArtLayers, image);
+}
+
+void AppPage::ClearPendingArtwork() {
+	if (m_pendingArtwork == nullptr) return;
+	unsigned int index;
+	if (HeroArtLayers->Children->IndexOf(m_pendingArtwork, &index)) HeroArtLayers->Children->RemoveAt(index);
+	m_pendingArtwork = nullptr;
 }
 
 void AppPage::HeroArtworkFailed(uint64_t request) {
 	if (!m_heroActive || !m_artworkRequest.IsCurrent(request)) return;
-	m_pendingArtwork = nullptr;
+	ClearPendingArtwork();
 	LoadHeroArtwork(L"ms-appx:///Assets/gamepad.svg");
 }
 
 void AppPage::StopHeroMotion() {
 	m_heroActive = false;
 	m_artworkRequest.Invalidate();
-	m_pendingArtwork = nullptr;
+	ClearPendingArtwork();
 	if (SelectedApp != nullptr && m_selectedAppChangedToken.Value != 0) {
 		SelectedApp->PropertyChanged -= m_selectedAppChangedToken;
 		m_selectedAppChangedToken.Value = 0;
