@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <atomic>
+#include <chrono>
 #include "Common\StepTimer.h"
 #include "State\GamepadState.h"
 #include "Streaming\VideoRenderer.h"
@@ -39,6 +40,13 @@ namespace moonlight_xbox_dx
 		void SendWinAltB();
 		bool ToggleLogs();
 		bool ToggleStats();
+		// The page marks a local quit/disconnect so the render loop can tell it
+		// apart from an unexpected drop when the end-of-session card is decided.
+		void MarkSessionEndedByUser();
+		// Retry on the loading screen tears the old attempt down without the
+		// usual navigate-back.
+		void SetSilentTeardown(bool silent);
+		bool IsRenderLoopExited();
 
 		bool mouseMode = false;
 
@@ -62,6 +70,13 @@ namespace moonlight_xbox_dx
 
 		// Rendering loop timer.
 		DX::StepTimer m_timer;
+
+		// Session bookkeeping for the end-of-session card and the retry teardown
+		std::atomic<bool> m_streamAborted{false};
+		std::atomic<bool> m_sessionEndedByUser{false};
+		std::atomic<bool> m_silentTeardown{false};
+		std::atomic<bool> m_renderLoopExited{false};
+		std::chrono::steady_clock::time_point m_sessionStart;
 
 		// Track current input pointer position.
 		float m_pointerLocationX;

@@ -555,6 +555,9 @@
     <ClInclude Include="Common\OrbitNavigation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Common\OrbitStreamUi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\OrbitInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>

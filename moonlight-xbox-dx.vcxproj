@@ -455,6 +455,7 @@
     <ClInclude Include="tests\OrbitUiSmokeTests.h" />
     <ClInclude Include="Common\OrbitArtworkRequest.h" />
     <ClInclude Include="Common\OrbitNavigation.h" />
+    <ClInclude Include="Common\OrbitStreamUi.h" />
     <ClInclude Include="Common\OrbitInput.h" />
     <ClInclude Include="Common\DeviceWatcherHelper.h" />
     <ClInclude Include="Common\imconfig.moonlight.h" />
