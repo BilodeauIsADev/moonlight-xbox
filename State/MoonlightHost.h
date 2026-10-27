@@ -35,6 +35,7 @@ namespace moonlight_xbox_dx {
 		Platform::String^ audioConfig = "Stereo";
 		Platform::String^ framePacing = "";
 		Platform::String^ audioBuffer = "30 ms";
+		Platform::String^ periodicRefresh = "Off";
 		int packetSize = 1392;
 		bool enableHDR = false;
 		bool enableSOPS = false;
@@ -426,6 +427,17 @@ namespace moonlight_xbox_dx {
 				if (framePacing == value) return;
 				this->framePacing = value;
 				OnPropertyChanged("FramePacing");
+			}
+		}
+
+		property Platform::String^ PeriodicRefresh {
+			Platform::String^ get() {
+				return this->periodicRefresh;
+			}
+			void set(Platform::String^ value) {
+				if (periodicRefresh == value) return;
+				this->periodicRefresh = value;
+				OnPropertyChanged("PeriodicRefresh");
 			}
 		}
 

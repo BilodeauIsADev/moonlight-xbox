@@ -339,6 +339,7 @@ void AppPage::Connect(int appId) {
 	config->enableDirectRendering = host->EnableDirectRendering;
 	config->framePacing = host->FramePacing;
 	config->audioBuffer = host->AudioBuffer;
+	config->periodicRefresh = host->PeriodicRefresh;
 	config->packetSize = host->PacketSize;
 	config->enableStats = host->EnableStats;
 	config->enableGraphs = host->EnableGraphs;

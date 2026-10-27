@@ -209,6 +209,21 @@
                                                 <ColumnDefinition Width="220"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center" Spacing="3">
+                                                <TextBlock Text="Periodic refresh" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Requests a full keyframe on a timer to clear artifacts that build up in still scenes. Each refresh may cause a brief hitch.</TextBlock>
+                                            </StackPanel>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <ComboBox Name="PeriodicRefreshComboBox" ItemsSource="{x:Bind AvailablePeriodicRefresh}" SelectedItem="{x:Bind Host.PeriodicRefresh,Mode=TwoWay}" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Periodic refresh"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingsRowStyle}">
+                                        <Grid ColumnSpacing="16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="220"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center" Spacing="3">
                                                 <TextBlock Text="Direct decoder rendering" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
                                                 <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Skips a copy of each frame. Turn off to use the older copy path.</TextBlock>
                                             </StackPanel>

@@ -48,6 +48,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 				if (a.contains("videoCodec")) h->VideoCodec = Utils::StringFromStdString(a["videoCodec"].get<std::string>());
 				if (a.contains("framePacing")) h->FramePacing = Utils::StringFromStdString(a["framePacing"].get<std::string>());
 				if (a.contains("audioBuffer")) h->AudioBuffer = Utils::StringFromStdString(a["audioBuffer"].get<std::string>());
+				if (a.contains("periodicRefresh")) h->PeriodicRefresh = Utils::StringFromStdString(a["periodicRefresh"].get<std::string>());
 				if (a.contains("packetSize")) h->PacketSize = a["packetSize"];
 				if (a.contains("autoStartID")) h->AutostartID = a["autoStartID"];
 				if (a.contains("computername")) h->ComputerName = Utils::StringFromStdString(a["computername"].get<std::string>());
@@ -145,6 +146,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 			hostJson["videoCodec"] = Utils::PlatformStringToStdString(host->VideoCodec);
 			hostJson["framePacing"] = Utils::PlatformStringToStdString(host->FramePacing);
 			hostJson["audioBuffer"] = Utils::PlatformStringToStdString(host->AudioBuffer);
+			hostJson["periodicRefresh"] = Utils::PlatformStringToStdString(host->PeriodicRefresh);
 			hostJson["packetSize"] = host->PacketSize;
 			hostJson["autoStartID"] = host->AutostartID;
 			hostJson["playaudioonpc"] = host->PlayAudioOnPC;

@@ -170,9 +170,10 @@ namespace moonlight_xbox_dx {
 		return true;
 	}
 
-    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate, bool directRendering) {
+    void FFMpegDecoder::CompleteInitialization(const std::shared_ptr<DX::DeviceResources>& res, STREAM_CONFIGURATION *config, bool framePacingImmediate, bool directRendering, int refreshSeconds) {
 		this->m_deviceResources = res;
 		this->m_DirectRendering = directRendering;
+		this->m_RefreshSeconds = refreshSeconds;
 		this->fps = config->fps;
 		Pacer::instance().init(res, config->fps, res->GetRefreshRate(), framePacingImmediate);
 	}
@@ -191,6 +192,7 @@ namespace moonlight_xbox_dx {
 		this->m_LastFrameNumber = 0;
 		this->ffmpeg_buffer_size = 0;
 		this->m_StreamEpochQpc = 0;
+		this->m_FramesSinceIdr = 0;
 
 		// Increase log level until the first frame is decoded
 		av_log_set_level(AV_LOG_VERBOSE);
@@ -356,6 +358,16 @@ namespace moonlight_xbox_dx {
 			double ptsMs = QpcToMs(QpcNow() - m_StreamEpochQpc);
 			decodeUnit->rtpTimestamp = (uint32_t)(ptsMs * 90.0);
 			decodeUnit->presentationTimeUs = (uint64_t)(ptsMs * 1000.0);
+		}
+
+		// The Xbox HEVC decoder slowly accumulates errors on still content
+		// (upstream #117, #190) with no packet loss to trigger recovery, so
+		// optionally ask for a fresh IDR on a timer.
+		if (decodeUnit->frameType == FRAME_TYPE_IDR) {
+			m_FramesSinceIdr = 0;
+		} else if (m_RefreshSeconds > 0 && ++m_FramesSinceIdr >= fps * m_RefreshSeconds) {
+			m_FramesSinceIdr = 0;
+			LiRequestIdrFrame();
 		}
 
 		// track stats for a variety of things we can track at the same time

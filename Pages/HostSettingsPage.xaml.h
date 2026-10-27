@@ -26,6 +26,7 @@ namespace moonlight_xbox_dx
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableVideoCodecs;
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableFramePacing;
 		Windows::Foundation::Collections::IVector<Platform::String^>^ availableAudioBuffers;
+		Windows::Foundation::Collections::IVector<Platform::String^>^ availablePeriodicRefresh;
 		Windows::Foundation::Collections::IVector<int>^ availablePacketSizes;
 		int currentResolutionIndex = 0;
 		int currentAppIndex = 0;
@@ -91,6 +92,16 @@ namespace moonlight_xbox_dx
 					this->availableFramePacing = ref new Platform::Collections::Vector<Platform::String^>();
 				}
 				return this->availableFramePacing;
+			}
+		}
+
+		property Windows::Foundation::Collections::IVector<Platform::String^>^ AvailablePeriodicRefresh {
+			Windows::Foundation::Collections::IVector<Platform::String^>^ get() {
+				if (this->availablePeriodicRefresh == nullptr)
+				{
+					this->availablePeriodicRefresh = ref new Platform::Collections::Vector<Platform::String^>();
+				}
+				return this->availablePeriodicRefresh;
 			}
 		}
 

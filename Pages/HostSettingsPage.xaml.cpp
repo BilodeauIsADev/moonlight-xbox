@@ -121,6 +121,19 @@ void HostSettingsPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEv
 		}
 	}
 
+	// Periodic refresh options
+	AvailablePeriodicRefresh->Append("Off");
+	AvailablePeriodicRefresh->Append("5 seconds");
+	AvailablePeriodicRefresh->Append("10 seconds");
+	AvailablePeriodicRefresh->Append("30 seconds");
+	AvailablePeriodicRefresh->Append("60 seconds");
+	for (int i = 0; i < AvailablePeriodicRefresh->Size; i++) {
+		if (host->PeriodicRefresh == AvailablePeriodicRefresh->GetAt(i)) {
+			PeriodicRefreshComboBox->SelectedIndex = i;
+			break;
+		}
+	}
+
 	// Audio Buffer options
 	AvailableAudioBuffers->Append("10 ms");
 	AvailableAudioBuffers->Append("20 ms");

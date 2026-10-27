@@ -349,7 +349,17 @@ int MoonlightClient::StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res
 	callbacks.rumble = connection_rumble;
 	callbacks.rumbleTriggers = connection_trigger_rumble;
 
-	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate", sConfig->enableDirectRendering);
+	// "Off" or "10 seconds"
+	int refreshSeconds = 0;
+	if (sConfig->periodicRefresh != nullptr && sConfig->periodicRefresh != "Off") {
+		try {
+			refreshSeconds = std::stoi(sConfig->periodicRefresh->Data());
+		}
+		catch (const std::exception &) {
+			Utils::Log("Invalid periodic refresh setting, leaving it off\n");
+		}
+	}
+	FFMpegDecoder::instance().CompleteInitialization(res, &config, sConfig->framePacing == "Immediate", sConfig->enableDirectRendering, refreshSeconds);
 	PyroWaveDecoder::instance().CompleteInitialization(res, &config);
 	DECODER_RENDERER_CALLBACKS rCallbacks = FFMpegDecoder::getDecoder(sConfig->enableIntraRefresh);
 
