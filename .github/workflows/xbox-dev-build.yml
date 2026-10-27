@@ -103,6 +103,16 @@ jobs:
           "MOONLIGHT_CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
           "MOONLIGHT_PACKAGE_VERSION=$($manifest.Package.Identity.Version)" >> $env:GITHUB_ENV
 
+      - name: Write SteamGridDB key
+        shell: pwsh
+        env:
+          STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
+        run: |
+          # Without the secret the app falls back to the host's box art.
+          if ($env:STEAMGRIDDB_API_KEY) {
+            Set-Content SteamGridDbKey.h "#define STEAMGRIDDB_API_KEY L`"$env:STEAMGRIDDB_API_KEY`""
+          }
+
       - name: Build signed x64 sideload package
         shell: pwsh
         run: |
