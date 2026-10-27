@@ -463,7 +463,17 @@
                 </Setter>
             </Style>
 
-            <!-- App posters (96x128 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
+            <!-- Library shelf placeholder poster: a dim tile that pulses softly while apps load -->
+            <Style x:Key="OrbitShelfPlaceholderStyle" TargetType="Grid">
+                <Setter Property="Width" Value="128" />
+                <Setter Property="Height" Value="128" />
+                <Setter Property="Margin" Value="0,0,16,0" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Background" Value="{StaticResource OrbitSurfaceBrush}" />
+                <Setter Property="Opacity" Value="0.5" />
+            </Style>
+
+            <!-- App posters (128x128 art): rounded white ring with a soft glow around the artwork only, and a small lift -->
             <Style x:Key="OrbitPosterItemStyle" TargetType="GridViewItem">
                 <Setter Property="Margin" Value="0,0,16,0" />
                 <Setter Property="Padding" Value="0" />
@@ -505,10 +515,10 @@
                                             <VisualTransition GeneratedDuration="0:0:0.120">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
-                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.160">
+                                            <VisualTransition To="Focused" GeneratedDuration="0:0:0.150">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
-                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.160">
+                                            <VisualTransition To="PointerFocused" GeneratedDuration="0:0:0.150">
                                                 <VisualTransition.GeneratedEasingFunction><CubicEase EasingMode="EaseOut" /></VisualTransition.GeneratedEasingFunction>
                                             </VisualTransition>
                                         </VisualStateGroup.Transitions>
@@ -517,8 +527,8 @@
                                         <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
                                                 <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Unfocused" />
@@ -527,13 +537,13 @@
                                         <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
                                                 <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0" />
-                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleX" To="1.06" Duration="0" />
+                                                <DoubleAnimation Storyboard.TargetName="LiftTransform" Storyboard.TargetProperty="ScaleY" To="1.06" Duration="0" />
                                             </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#38FFFFFF" Opacity="0" IsHitTestVisible="False" />
+                                <Border x:Name="Glow" VerticalAlignment="Top" Height="146" Margin="-9,-9,-9,0" CornerRadius="15" BorderThickness="5" BorderBrush="#4DFFFFFF" Opacity="0" IsHitTestVisible="False" />
                                 <ContentPresenter x:Name="Body" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" />
                                 <Border x:Name="Ring" VerticalAlignment="Top" Height="136" Margin="-4,-4,-4,0" CornerRadius="10" BorderThickness="2.5" BorderBrush="{StaticResource OrbitFocusBrush}" Opacity="0" IsHitTestVisible="False" />
                             </Grid>

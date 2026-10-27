@@ -4,6 +4,9 @@
 #include "MoonlightHost.h"
 #include "Common\OrbitArtworkRequest.h"
 #include "State\MoonlightClient.h"
+#include "State\ApplicationState.h"
+#include "Common\OrbitRecents.h"
+#include <algorithm>
 
 namespace moonlight_xbox_dx {
 	MoonlightHost::MoonlightHost(Platform::String^ host) {
@@ -70,7 +73,21 @@ namespace moonlight_xbox_dx {
 		auto apps = client->GetApplications();
 		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::High, ref new Windows::UI::Core::DispatchedHandler([this, apps]() {
 			Apps->Clear();
-			for (auto a : apps) {
+			// GetApplications orders alphabetically; lift recently played games
+			// to the front, running app first, and let the stable sort keep the
+			// alphabetical order for never-played apps (see OrbitRecents).
+			auto state = GetApplicationState();
+			auto sorted = apps;
+			std::stable_sort(sorted.begin(), sorted.end(), [this, state](MoonlightApp^ lhs, MoonlightApp^ rhs) {
+				OrbitRecents::AppOrderKey left;
+				OrbitRecents::AppOrderKey right;
+				left.running = lhs->Id == CurrentlyRunningAppId;
+				right.running = rhs->Id == CurrentlyRunningAppId;
+				left.lastPlayed = state->GetLastPlayed(this, lhs->Id);
+				right.lastPlayed = state->GetLastPlayed(this, rhs->Id);
+				return OrbitRecents::AppOrderBefore(left, right);
+			});
+			for (auto a : sorted) {
 				if (a->Id == CurrentlyRunningAppId) a->CurrentlyRunning = true;
 				Apps->Append(a);
 			}
