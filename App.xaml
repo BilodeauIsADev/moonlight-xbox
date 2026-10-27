@@ -699,7 +699,7 @@
             <!-- Controller buttons in footer hints, Selene style: dark controller glyphs
                  from the console's Segoe MDL2 Assets on a light disc. The disc sits just
                  inside the glyph's own ring, so only the letter shows. Bumpers and
-                 triggers are small light badges, as on the console. -->
+                 triggers keep the console font's own outlines. -->
             <SolidColorBrush x:Key="OrbitHintKeyBrush" Color="#E6FFFFFF" />
             <SolidColorBrush x:Key="OrbitHintKeyInkBrush" Color="#FF0B0F1C" />
             <Style x:Key="OrbitKeyGlyphStyle" TargetType="ContentControl">
@@ -742,35 +742,34 @@
                 <Setter Property="FontSize" Value="8" />
                 <Setter Property="Content" Value="&#xEDE3;" />
             </Style>
+            <!-- Native shoulder and trigger glyphs retain their own button outlines. -->
             <Style x:Key="OrbitKeyBadgeStyle" TargetType="ContentControl">
-                <Setter Property="Height" Value="11" />
+                <Setter Property="Height" Value="16" />
                 <Setter Property="MinWidth" Value="17" />
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="FontSize" Value="7" />
-                <Setter Property="FontWeight" Value="Bold" />
-                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyInkBrush}" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ContentControl">
-                            <Border CornerRadius="3" Padding="3,0" Background="{StaticResource OrbitHintKeyBrush}">
-                                <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
+                            <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
             <Style x:Key="OrbitKeyLBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
-                <Setter Property="Content" Value="LB" />
+                <Setter Property="Content" Value="&#xF10C;" />
             </Style>
             <Style x:Key="OrbitKeyRBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
-                <Setter Property="Content" Value="RB" />
+                <Setter Property="Content" Value="&#xF10D;" />
             </Style>
             <Style x:Key="OrbitKeyLTStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
-                <Setter Property="Content" Value="LT" />
+                <Setter Property="Content" Value="&#xF10A;" />
             </Style>
             <Style x:Key="OrbitKeyRTStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
-                <Setter Property="Content" Value="RT" />
+                <Setter Property="Content" Value="&#xF10B;" />
             </Style>
             <!-- A footer hint that a pointer can click but focus never lands on -->
             <Style x:Key="OrbitHintButtonStyle" TargetType="Button">
