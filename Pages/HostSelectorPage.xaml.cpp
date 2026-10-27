@@ -565,6 +565,8 @@ void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^
 			concurrency::create_task(concurrency::create_async([host]() {
 				int consecutiveSuccess = 0;
 				for (int i = 0; i < 60; ++i) {
+					// One polling tick per second; shown alongside the waking spinner.
+					host->WolPollingSeconds = i + 1;
 					try {
 						host->UpdateHostInfo(false);
 						if (host->Connected) {
@@ -591,6 +593,9 @@ void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^
 					}
 					Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([host]() {
 						host->WolPolling = false;
+						// Polling gave up without ever reaching the host: dim the card
+						// until the next wake attempt clears the timeout.
+						if (!host->Connected) host->WakeTimedOut = true;
 						}));
 					});
 		}
@@ -765,7 +770,19 @@ void HostSelectorPage::TryFocusInitialHost() {
 }
 
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {
+	UpdateFirstRunGuide();
 	TryFocusInitialHost();
+}
+
+// The checklist lives next to Add host until any host exists; discovery may add
+// one at any time, so re-evaluate whatever the shelf looks like each layout pass.
+void HostSelectorPage::UpdateFirstRunGuide() {
+	auto visible = state->SavedHosts->Size == 0
+		? Windows::UI::Xaml::Visibility::Visible
+		: Windows::UI::Xaml::Visibility::Collapsed;
+	if (FirstRunChecklist->Visibility != visible) {
+		FirstRunChecklist->Visibility = visible;
+	}
 }
 
 void HostSelectorPage::Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e) {

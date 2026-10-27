@@ -36,6 +36,15 @@ c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitArtworkTests.cpp -o /tmp/orbit-a
 /tmp/orbit-artwork-tests
 ```
 
+The host card tests cover the per-PC accent palette (stable mapping, palette
+bounds, no duplicate colours) and the waiting-state copy for Checking, waking
+countdown, wake timeout, offline, and online:
+
+```sh
+c++ -std=c++17 -Wall -Wextra -Werror tests/OrbitHostCardTests.cpp -o /tmp/orbit-host-card-tests
+/tmp/orbit-host-card-tests
+```
+
 The UWP event routing and visuals need a Windows or Xbox build. Check these paths
 with a controller at the console's supported display sizes:
 

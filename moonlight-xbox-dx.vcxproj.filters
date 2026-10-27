@@ -552,6 +552,9 @@
     <ClInclude Include="Common\OrbitArtworkRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Common\OrbitHostCard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Common\OrbitNavigation.h">
       <Filter>Header Files</Filter>
     </ClInclude>

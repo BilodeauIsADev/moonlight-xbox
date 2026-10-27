@@ -96,6 +96,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <!-- Capped so a long host list scrolls instead of pushing "Add host" off the TV-safe area -->
             <GridView IsRightTapEnabled="True" RightTapped="HostsGrid_RightTapped" x:Name="HostsGrid" ItemsSource="{x:Bind State.SavedHosts}"
@@ -113,13 +114,11 @@
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="local:MoonlightHost" x:DefaultBindMode="OneWay">
                         <StackPanel Width="160">
-                            <Grid Width="160" Height="100" CornerRadius="8">
-                                <Grid.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#FF1D2533" Offset="0" />
-                                        <GradientStop Color="#FF0B0F16" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Grid.Background>
+                            <!-- Accent gradient from the host's name so each PC gets its own card colour -->
+                            <Grid Width="160" Height="100" CornerRadius="8" Background="{x:Bind CardBackground}">
+                                <!-- When the host reports a running game, its cached artwork fills the card -->
+                                <Image Source="{x:Bind PlayingImageUri}" Stretch="UniformToFill" Visibility="{x:Bind PlayingArtworkVisibility}" />
+                                <Grid Background="#B3000000" Visibility="{x:Bind PlayingArtworkVisibility}" />
                                 <FontIcon Glyph="&#xE7F4;" FontSize="38" Foreground="#E6FFFFFF" />
                                 <FontIcon Glyph="&#xE72E;" FontSize="16" Foreground="{StaticResource OrbitWarningBrush}" Visibility="{x:Bind NotPaired}"
                                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0" />
@@ -129,14 +128,16 @@
                                 <Grid Visibility="{x:Bind LoadingVisibility}" Background="#80000000">
                                     <muxc:ProgressRing IsActive="True" Width="28" Height="28" />
                                 </Grid>
+                                <!-- Wake gave up: dim the card, no spinner -->
+                                <Grid Visibility="{x:Bind TimedOutVisibility}" Background="#66000000" />
                             </Grid>
                             <TextBlock Text="{x:Bind ComputerName}" FontSize="14" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind PlayingText}" FontSize="11" Foreground="{StaticResource OrbitRunningBrush}" Margin="0,1,0,0" Visibility="{x:Bind PlayingVisibility}" TextTrimming="CharacterEllipsis" />
                             <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,2,0,0">
                                 <Ellipse Width="6" Height="6" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind Connected}" />
                                 <Ellipse Width="6" Height="6" Fill="#FF888888" VerticalAlignment="Center" Visibility="{x:Bind NotConnected}" />
-                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Online" Visibility="{x:Bind Connected}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="{x:Bind CardStatusText}" TextTrimming="CharacterEllipsis" />
                                 <TextBlock FontSize="12" Foreground="{StaticResource OrbitWarningBrush}" Text="· Not paired" Visibility="{x:Bind NotPaired}" />
-                                <TextBlock FontSize="12" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Offline · X to wake" Visibility="{x:Bind NotConnected}" />
                             </StackPanel>
                         </StackPanel>
                     </DataTemplate>
@@ -155,6 +156,20 @@
                     <TextBlock Text="Enter an IP or hostname" FontSize="12" Margin="0,2,0,0" Foreground="{StaticResource OrbitTextTertiaryBrush}" />
                 </StackPanel>
             </Button>
+
+            <!-- First-run checklist: visible while no host has been found, hidden as soon as one appears
+                 (managed from Page_LayoutUpdated so it also covers hosts added by discovery). -->
+            <StackPanel x:Name="FirstRunChecklist" Grid.Column="2" Orientation="Horizontal" Spacing="36" Margin="44,14,0,0" VerticalAlignment="Top" Visibility="Collapsed">
+                <StackPanel Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource OrbitHostChecklistTextStyle}" Text="1  Install Sunshine on your PC" />
+                    <TextBlock Style="{StaticResource OrbitHostChecklistTextStyle}" Text="2  Connect both to the same network" />
+                    <TextBlock Style="{StaticResource OrbitHostChecklistTextStyle}" Text="3  Pair using the PIN shown here" />
+                </StackPanel>
+                <StackPanel Spacing="6">
+                    <Image Source="ms-appx:///Assets/qrSunshine.svg" Width="96" Height="96" />
+                    <TextBlock FontSize="12" HorizontalAlignment="Center" Foreground="{StaticResource OrbitTextTertiaryBrush}" Text="Get Sunshine" />
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
         <!-- Controller hints -->

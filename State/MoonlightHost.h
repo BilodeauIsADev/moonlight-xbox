@@ -4,6 +4,7 @@
 #include "pch.h"
 // clang-format on
 #include "State\MoonlightClient.h"
+#include "Common\OrbitHostCard.h"
 #include "State\ScreenResolution.h"
 namespace moonlight_xbox_dx {
 
@@ -18,11 +19,15 @@ namespace moonlight_xbox_dx {
 		bool connected;
 		bool loading = true;
 		bool wolPolling = false;
+		int wolPollingSeconds = 0;
+		bool wakeTimedOut = false;
 		bool playAudioOnPC = false;
 		MoonlightClient* client = nullptr;
 		int currentlyRunningAppId;
 		int bitrate = 20000;
 		ScreenResolution^ resolution;
+		Platform::String^ playingText;
+		Platform::String^ playingImageUri;
 		int fps = 60;
 		int autostartID = -1;
 		Platform::String^ videoCodec = "H.265";
@@ -49,6 +54,7 @@ namespace moonlight_xbox_dx {
 		void Unpair();
 		void UpdateApps();
 		void UpdateAppRunningStates();
+		void UpdateRunningAppInfo();
 		property Platform::String^ InstanceId {
 			Platform::String^ get() {
 				return this->instanceId;
@@ -65,6 +71,8 @@ namespace moonlight_xbox_dx {
 			void set(Platform::String^ value) {
 				this->lastHostname = value;
 				OnPropertyChanged("LastHostname");
+				OnPropertyChanged("AccentArgb");
+				OnPropertyChanged("CardBackground");
 			}
 		}
 
@@ -75,6 +83,8 @@ namespace moonlight_xbox_dx {
 			void set(Platform::String^ value) {
 				this->computerName = value;
 				OnPropertyChanged("ComputerName");
+				OnPropertyChanged("AccentArgb");
+				OnPropertyChanged("CardBackground");
 			}
 		}
 
@@ -117,9 +127,14 @@ namespace moonlight_xbox_dx {
 			}
 			void set(bool value) {
 				this->connected = value;
+				if (value) {
+					// Coming online also clears any stale wake timeout (and its dim overlay).
+					this->WakeTimedOut = false;
+				}
 				OnPropertyChanged("Connected");
 				OnPropertyChanged("NotConnected");
 				OnPropertyChanged("NotPaired");
+				OnPropertyChanged("CardStatusText");
 			}
 		}
 
@@ -143,6 +158,7 @@ namespace moonlight_xbox_dx {
 				this->loading = value;
 				OnPropertyChanged("Loading");
 				OnPropertyChanged("LoadingVisibility");
+				OnPropertyChanged("CardStatusText");
 				OnPropertyChanged("Connected");
 				OnPropertyChanged("NotConnected");
 				OnPropertyChanged("NotPaired");
@@ -162,14 +178,93 @@ namespace moonlight_xbox_dx {
 			}
 			void set(bool value) {
 				this->wolPolling = value;
+				if (value) {
+					// A fresh wake attempt resets both the countdown and the stale timeout.
+					this->wolPollingSeconds = 0;
+					this->WakeTimedOut = false;
+				}
 				OnPropertyChanged("WolPolling");
 				OnPropertyChanged("WolPollingVisibility");
+				OnPropertyChanged("CardStatusText");
 			}
 		}
 
 		property Windows::UI::Xaml::Visibility WolPollingVisibility {
 			Windows::UI::Xaml::Visibility get() {
 				return this->wolPolling ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+			}
+		}
+
+		// Seconds since the wake attempt started, bumped by the polling loop.
+		property int WolPollingSeconds {
+			int get() {
+				return this->wolPollingSeconds;
+			}
+			void set(int value) {
+				this->wolPollingSeconds = value;
+				OnPropertyChanged("WolPollingSeconds");
+				OnPropertyChanged("CardStatusText");
+			}
+		}
+
+		// WoL polling gave up with the host still unreachable.
+		property bool WakeTimedOut {
+			bool get() {
+				return this->wakeTimedOut;
+			}
+			void set(bool value) {
+				if (this->wakeTimedOut == value) return;
+				this->wakeTimedOut = value;
+				OnPropertyChanged("WakeTimedOut");
+				OnPropertyChanged("TimedOutVisibility");
+				OnPropertyChanged("CardStatusText");
+			}
+		}
+
+		property Windows::UI::Xaml::Visibility TimedOutVisibility {
+			Windows::UI::Xaml::Visibility get() {
+				return this->wakeTimedOut ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+			}
+		}
+
+		property Platform::String^ CardStatusText {
+			Platform::String^ get() {
+				OrbitHostCard::HostCardStatus status;
+				if (loading) status = OrbitHostCard::HostCardStatus::Probing;
+				else if (wolPolling) status = OrbitHostCard::HostCardStatus::Waking;
+				else if (wakeTimedOut) status = OrbitHostCard::HostCardStatus::WakeTimedOut;
+				else if (connected) status = OrbitHostCard::HostCardStatus::Online;
+				else status = OrbitHostCard::HostCardStatus::Offline;
+				return ref new Platform::String(OrbitHostCard::StatusText(status, wolPollingSeconds).c_str());
+			}
+		}
+
+		// 0xAARRGGBB accent from the host's name (ComputerName, else the address it was added with).
+		property int AccentArgb {
+			int get() {
+				Platform::String^ name = (computerName != nullptr && !computerName->IsEmpty()) ? computerName : lastHostname;
+				return (int)OrbitHostCard::AccentArgb(name != nullptr ? name->Data() : L"");
+			}
+		}
+
+		// Card gradient: the name-derived accent fading into the same dark end as before.
+		property Windows::UI::Xaml::Media::Brush^ CardBackground {
+			Windows::UI::Xaml::Media::Brush^ get() {
+				unsigned int argb = (unsigned int)this->AccentArgb;
+				auto accent = Windows::UI::ColorHelper::FromArgb(
+					(unsigned char)(argb >> 24), (unsigned char)(argb >> 16), (unsigned char)(argb >> 8), (unsigned char)(argb & 0xFFu));
+				auto brush = ref new Windows::UI::Xaml::Media::LinearGradientBrush();
+				brush->StartPoint = Windows::Foundation::Point(0.0, 0.0);
+				brush->EndPoint = Windows::Foundation::Point(1.0, 1.0);
+				auto first = ref new Windows::UI::Xaml::Media::GradientStop();
+				first->Color = accent;
+				first->Offset = 0.0;
+				auto last = ref new Windows::UI::Xaml::Media::GradientStop();
+				last->Color = Windows::UI::ColorHelper::FromArgb((unsigned char)0xFF, (unsigned char)0x0B, (unsigned char)0x0F, (unsigned char)0x16);
+				last->Offset = 1.0;
+				brush->GradientStops->Append(first);
+				brush->GradientStops->Append(last);
+				return brush;
 			}
 		}
 
@@ -180,6 +275,43 @@ namespace moonlight_xbox_dx {
 			void set(int value) {
 				this->currentlyRunningAppId = value;
 				OnPropertyChanged("CurrentlyRunningAppId");
+			}
+		}
+
+		// "Playing <game>" copy kept under the card's host name; null when the
+		// running app's name is not known on this screen (no app list was fetched here).
+		property Platform::String^ PlayingText {
+			Platform::String^ get() {
+				return this->playingText;
+			}
+			void set(Platform::String^ value) {
+				this->playingText = value;
+				OnPropertyChanged("PlayingText");
+				OnPropertyChanged("PlayingVisibility");
+			}
+		}
+
+		property Windows::UI::Xaml::Visibility PlayingVisibility {
+			Windows::UI::Xaml::Visibility get() {
+				return this->playingText != nullptr ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+			}
+		}
+
+		// Resolved app-data URI for the running game's cached artwork, or null.
+		property Platform::String^ PlayingImageUri {
+			Platform::String^ get() {
+				return this->playingImageUri;
+			}
+			void set(Platform::String^ value) {
+				this->playingImageUri = value;
+				OnPropertyChanged("PlayingImageUri");
+				OnPropertyChanged("PlayingArtworkVisibility");
+			}
+		}
+
+		property Windows::UI::Xaml::Visibility PlayingArtworkVisibility {
+			Windows::UI::Xaml::Visibility get() {
+				return this->playingImageUri != nullptr ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			}
 		}
 

@@ -12,6 +12,10 @@ add_executable(orbit_artwork_tests OrbitArtworkTests.cpp)
 target_compile_features(orbit_artwork_tests PRIVATE cxx_std_17)
 add_test(NAME orbit_artwork COMMAND orbit_artwork_tests)
 
+add_executable(orbit_host_card_tests OrbitHostCardTests.cpp)
+target_compile_features(orbit_host_card_tests PRIVATE cxx_std_17)
+add_test(NAME orbit_host_card COMMAND orbit_host_card_tests)
+
 add_executable(stream_session_tests StreamSessionTests.cpp)
 target_compile_features(stream_session_tests PRIVATE cxx_std_17)
 target_link_libraries(stream_session_tests PRIVATE Threads::Threads)
