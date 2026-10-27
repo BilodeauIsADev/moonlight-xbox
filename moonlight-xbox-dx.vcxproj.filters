@@ -795,6 +795,7 @@
     <Page Include="Pages\AppPage.xaml" />
     <Page Include="Pages\HostSelectorPage.xaml" />
     <Page Include="Pages\HostSettingsPage.xaml" />
+    <Page Include="Common\AppSettingsControl.xaml" />
     <Page Include="Pages\MoonlightSettings.xaml" />
     <Page Include="Pages\StreamPage.xaml" />
     <Page Include="KeyboardControl.xaml" />

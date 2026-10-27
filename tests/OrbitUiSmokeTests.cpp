@@ -28,6 +28,7 @@ unsigned int waits;
 DispatcherTimer^ timer;
 Frame^ frame;
 uint64_t progressToken;
+int settingsBackStackDepth;
 
 // Flush each checkpoint before interacting with XAML so an asynchronous crash
 // still leaves its triggering step in LocalState. Never log host or pairing data.
@@ -50,6 +51,11 @@ void Record(const std::wstring& text, bool reset = false) {
 template<typename T> T^ Named(String^ name) {
 	auto page = dynamic_cast<FrameworkElement^>(frame->Content);
 	auto result = page != nullptr ? dynamic_cast<T^>(page->FindName(name)) : nullptr;
+	if (result == nullptr && page != nullptr) {
+		auto settings = dynamic_cast<AppSettingsControl^>(page->FindName("AppSettings"));
+		if (settings == nullptr) settings = dynamic_cast<AppSettingsControl^>(page->FindName("AppSettingsPanel"));
+		if (settings != nullptr) result = dynamic_cast<T^>(settings->FindName(name));
+	}
 	if (result == nullptr) throw ref new FailureException("UI test control missing: " + name);
 	return result;
 }
@@ -208,6 +214,39 @@ void BuildSteps() {
 	Section(L"OverlaySectionButton", L"OverlayPanel");
 	Section(L"GeneralSectionButton", L"GeneralPanel");
 	Dropdown(L"AutoStartSelector");
+	Action(L"Record settings navigation depth", []() { settingsBackStackDepth = frame->BackStackDepth; });
+	Section(L"GlobalSettingsOption", L"AppSettingsPanel");
+	Page<HostSettingsPage>(L"App settings stay on host settings page");
+	Action(L"Inline app settings groups and focus", []() {
+		if (frame->BackStackDepth != settingsBackStackDepth || Named<TextBlock>("SectionTitle")->Text != L"App settings")
+			throw ref new FailureException("App settings navigated away from the current section");
+		auto settings = Named<AppSettingsControl>("AppSettingsPanel");
+		for (auto name : { L"GeneralPanel", L"DisplayPanel", L"InputPanel" }) {
+			if (safe_cast<FrameworkElement^>(settings->FindName(ref new String(name)))->Visibility != Visibility::Visible)
+				throw ref new FailureException("Inline app settings group is hidden");
+		}
+		for (auto name : { L"HostSelector", L"UiScaleSelector", L"KeyboardLayoutSelector" }) {
+			auto control = safe_cast<Control^>(settings->FindName(ref new String(name)));
+			if (control->XYFocusLeft != Named<Button>("GlobalSettingsOption"))
+				throw ref new FailureException("Inline app settings focus does not return to its section");
+		}
+	});
+	Dropdown(L"HostSelector");
+	Dropdown(L"UiScaleSelector");
+	Action(L"Inline display calibration visible", []() {
+		if (Named<Grid>("CalibrationFrame")->Visibility != Visibility::Visible)
+			throw ref new FailureException("Inline display settings did not show calibration");
+	});
+	Dropdown(L"KeyboardLayoutSelector");
+	Action(L"Inline input calibration hidden", []() {
+		if (Named<Grid>("CalibrationFrame")->Visibility != Visibility::Collapsed)
+			throw ref new FailureException("Calibration remained over input settings");
+	});
+	Section(L"VideoSectionButton", L"VideoPanel");
+	Action(L"Inline app settings close as a section", []() {
+		if (Named<AppSettingsControl>("AppSettingsPanel")->Visibility != Visibility::Collapsed)
+			throw ref new FailureException("App settings remained over the video settings");
+	});
 	Action(L"Return to Library", []() { Invoke("backButton"); });
 	Page<AppPage>(L"Library after host settings unload");
 	Action(L"Return to Hosts", []() { Invoke("hostsNavButton"); });

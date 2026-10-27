@@ -562,7 +562,8 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="GridViewItem">
-                            <Grid Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
+                            <!-- Reserve the halo and lift inside the scrollable item's bounds. -->
+                            <Grid Padding="0,16" Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
                                     <CompositeTransform x:Name="LiftTransform" />
                                 </Grid.RenderTransform>
@@ -638,7 +639,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid Width="108" Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
+                            <Grid Width="108" Padding="0,16" Background="Transparent" RenderTransformOrigin="0.5,0.35" local:OrbitMotion.Kind="Card" VisualStateManager.CustomVisualStateManager="{StaticResource OrbitVisualStateManager}">
                                 <Grid.RenderTransform>
                                     <CompositeTransform x:Name="LiftTransform" />
                                 </Grid.RenderTransform>
@@ -733,16 +734,7 @@
             <Style x:Key="OrbitKeyYStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
                 <Setter Property="Content" Value="&#xF095;" />
             </Style>
-            <!-- View and Menu: their glyphs have no ring, so draw them smaller on the disc -->
-            <Style x:Key="OrbitKeyViewStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
-                <Setter Property="FontSize" Value="8" />
-                <Setter Property="Content" Value="&#xEECA;" />
-            </Style>
-            <Style x:Key="OrbitKeyMenuStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
-                <Setter Property="FontSize" Value="8" />
-                <Setter Property="Content" Value="&#xEDE3;" />
-            </Style>
-            <!-- Native shoulder and trigger glyphs retain their own button outlines. -->
+            <!-- Native controller glyphs retain their own button outlines. -->
             <Style x:Key="OrbitKeyBadgeStyle" TargetType="ContentControl">
                 <Setter Property="Height" Value="16" />
                 <Setter Property="MinWidth" Value="17" />
@@ -758,6 +750,12 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+            <Style x:Key="OrbitKeyViewStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xEECA;" />
+            </Style>
+            <Style x:Key="OrbitKeyMenuStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
+                <Setter Property="Content" Value="&#xEDE3;" />
             </Style>
             <Style x:Key="OrbitKeyLBStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyBadgeStyle}">
                 <Setter Property="Content" Value="&#xF10C;" />

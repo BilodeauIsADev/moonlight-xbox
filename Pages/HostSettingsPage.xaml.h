@@ -7,6 +7,7 @@
 
 #include "Pages\HostSettingsPage.g.h"
 #include "State\ScreenResolution.h"
+#include "Common\AppSettingsControl.xaml.h"
 
 namespace moonlight_xbox_dx
 {
@@ -33,6 +34,9 @@ namespace moonlight_xbox_dx
 		virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 	public:
 		HostSettingsPage();
+		property ApplicationState^ State {
+			ApplicationState^ get() { return GetApplicationState(); }
+		}
 		property MoonlightHost^ Host {
 			MoonlightHost^ get() {
 				return this->host;
@@ -137,7 +141,6 @@ namespace moonlight_xbox_dx
 		void FramePacing_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void PacketSizeSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
 		void CodecComboBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
-		void GlobalSettingsOption_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void BitrateInput_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		void OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);

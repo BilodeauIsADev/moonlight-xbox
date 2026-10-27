@@ -36,6 +36,7 @@
             <Setter Property="FocusVisualSecondaryThickness" Value="0"/>
         </Style>
     </Page.Resources>
+    <Grid>
     <!-- Interface size: AttachUiScale sizes the content, the Viewbox scales it to fit -->
     <Viewbox Stretch="Fill">
         <Grid x:Name="ScaledRoot" local:OrbitMotion.Kind="Page">
@@ -71,7 +72,7 @@
                         <Button x:Name="AudioSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Audio" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AudioConfigSelector}"/>
                         <Button x:Name="OverlaySectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Overlay &amp; stats" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind EnableStatsCheckbox}"/>
                         <Button x:Name="GeneralSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="General" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind AutoStartSelector}"/>
-                        <Button x:Name="GlobalSettingsOption" Style="{StaticResource SettingsSectionButtonStyle}" Content="App settings" Click="GlobalSettingsOption_Click" Margin="0,12,0,0"/>
+                        <Button x:Name="GlobalSettingsOption" Style="{StaticResource SettingsSectionButtonStyle}" Content="App settings" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" Margin="0,12,0,0"/>
                     </StackPanel>
                     <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
@@ -313,6 +314,7 @@
                                 </StackPanel>
                             </Grid>
                         </ScrollViewer>
+                        <local:AppSettingsControl x:Name="AppSettingsPanel" Grid.Row="1" Visibility="Collapsed"/>
                     </Grid>
                 </Grid>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="18" Margin="0,18,0,0">
@@ -328,4 +330,12 @@
             </Grid>
         </Grid>
     </Viewbox>
+        <Grid x:Name="CalibrationFrame" Margin="{x:Bind State.CalibrationMargin,Mode=OneWay}" IsHitTestVisible="False" Visibility="Collapsed">
+            <Border BorderBrush="#99FFFFFF" BorderThickness="2" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,6,0,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,6,6,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,0,0,6" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,0,6,6" />
+        </Grid>
+    </Grid>
 </Page>

@@ -78,6 +78,12 @@ with a controller at the console's supported display sizes:
   tabs in the displayed order. Check the selected white pill and regional clock
   on Library, Settings, and PC settings. LT / RT page the library and stop at
   either end.
+- In PC settings, focus or select App settings. General, Display, and Input
+  options appear in the same page. Left returns to App settings in the section
+  list, and selecting Video returns to the PC's stream options. Check that the
+  calibration outline appears only while adjusting display options, and that B
+  returns directly to the Library. App options must also save when leaving via
+  Hosts or LB / RB.
 - Open a dropdown or dialog and use the controller. Page navigation must leave
   the popup in control, and B must close it normally.
 - Open Add host, retry a failed address, pair a host, view host details, test a

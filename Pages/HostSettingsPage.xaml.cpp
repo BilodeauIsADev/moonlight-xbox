@@ -8,7 +8,6 @@
 #include "HostSettingsPage.xaml.h"
 #include "Common/OrbitUiScale.h"
 #include "Common/OrbitClock.h"
-#include "MoonlightSettings.xaml.h"
 #include "Utils.hpp"
 #include <gamingdeviceinformation.h>
 #include <Limelight.h> // SCM_* server codec support bits
@@ -36,6 +35,8 @@ HostSettingsPage::HostSettingsPage()
 	InitializeComponent();
 	AttachUiScale(this, ScaledRoot);
 	AttachClock(ClockText);
+	AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
+	GlobalSettingsOption->XYFocusRight = AppSettingsPanel->SectionFocusTarget(0);
 	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnLoaded);
 	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnUnloaded);
@@ -276,12 +277,6 @@ void HostSettingsPage::PacketSizeSelector_SelectionChanged(Platform::Object^ sen
 	host->PacketSize = selectedPacketSize;
 }
 
-void HostSettingsPage::GlobalSettingsOption_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(MoonlightSettings::typeid));
-}
-
-
 void HostSettingsPage::BitrateInput_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e)
 {
 	if (e->Key == Windows::System::VirtualKey::Enter) {
@@ -321,13 +316,13 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 {
 	auto selected = dynamic_cast<Button^>(sender);
 	if (selected == nullptr) return;
-	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton };
-	StackPanel^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel };
-	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General" };
-	for (int i = 0; i < 4; i++) {
+	Button^ buttons[] = { VideoSectionButton, AudioSectionButton, OverlaySectionButton, GeneralSectionButton, GlobalSettingsOption };
+	FrameworkElement^ panels[] = { VideoPanel, AudioPanel, OverlayPanel, GeneralPanel, AppSettingsPanel };
+	Platform::String^ titles[] = { L"Video", L"Audio", L"Overlay & stats", L"General", L"App settings" };
+	for (int i = 0; i < 5; i++) {
 		if (buttons[i] == selected) {
 			bool changed = panels[i]->Visibility != Windows::UI::Xaml::Visibility::Visible;
-			for (int j = 0; j < 4; j++) {
+			for (int j = 0; j < 5; j++) {
 				panels[j]->Visibility = i == j ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 				if (i == j) {
 					buttons[j]->Background = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitSurfaceStrongBrush"));
@@ -338,6 +333,9 @@ void HostSettingsPage::SectionButton_GotFocus(Platform::Object^ sender, Windows:
 				}
 			}
 			SectionTitle->Text = titles[i];
+			ContentScroll->Visibility = selected == GlobalSettingsOption ? Visibility::Collapsed : Visibility::Visible;
+			CalibrationFrame->Visibility = Visibility::Collapsed;
+			if (selected == GlobalSettingsOption) AppSettingsPanel->ShowSection(-1, GlobalSettingsOption, CalibrationFrame);
 			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 			break;
 		}
