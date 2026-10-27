@@ -134,6 +134,7 @@ void MoonlightSettings::SectionButton_GotFocus(Platform::Object^ sender, Windows
 				}
 			}
 			SectionTitle->Text = titles[i];
+			CalibrationFrame->Visibility = panels[i] == DisplayPanel ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			if (changed) ContentScroll->ChangeView(nullptr, 0.0, nullptr);
 			break;
 		}

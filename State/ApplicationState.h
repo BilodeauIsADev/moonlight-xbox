@@ -15,6 +15,8 @@ namespace moonlight_xbox_dx {
 		Platform::String^ keyboardLayout;
 		bool firstTime;
 		bool alternateCombination;
+		bool navigationSounds = true;
+		bool menuSafeArea = false;
 	internal:
 		Concurrency::task<void> Init();
 		bool AddHost(Platform::String^ hostname);
@@ -60,6 +62,7 @@ namespace moonlight_xbox_dx {
 				this->screenMarginW = value;
 				OnPropertyChanged("ScreenMarginWidth");
 				OnPropertyChanged("ScreenMargin");
+				OnPropertyChanged("CalibrationMargin");
 			}
 		}
 		property int ScreenMarginHeight
@@ -72,6 +75,7 @@ namespace moonlight_xbox_dx {
 				this->screenMarginH = value;
 				OnPropertyChanged("ScreenMarginHeight");
 				OnPropertyChanged("ScreenMargin");
+				OnPropertyChanged("CalibrationMargin");
 			}
 		}
 
@@ -81,6 +85,42 @@ namespace moonlight_xbox_dx {
 			{
 				return { (double)this->screenMarginW,(double)this->screenMarginH,(double)this->screenMarginW,(double)this->screenMarginH };
 			};
+		}
+
+		// Where the settings calibration frame sits inside the page. When the menus already
+		// use the margin, the frame is inset by it and the outline goes at the page edge.
+		property Windows::UI::Xaml::Thickness CalibrationMargin
+		{
+			Windows::UI::Xaml::Thickness get()
+			{
+				if (this->menuSafeArea) return { 0, 0, 0, 0 };
+				return ScreenMargin;
+			};
+		}
+
+		property bool MenuSafeArea
+		{
+			bool get()
+			{
+				return this->menuSafeArea;
+			};
+			void set(bool value) {
+				this->menuSafeArea = value;
+				OnPropertyChanged("MenuSafeArea");
+				OnPropertyChanged("CalibrationMargin");
+			}
+		}
+
+		property bool NavigationSounds
+		{
+			bool get()
+			{
+				return this->navigationSounds;
+			};
+			void set(bool value) {
+				this->navigationSounds = value;
+				OnPropertyChanged("NavigationSounds");
+			}
 		}
 
 		property int MouseSensitivity

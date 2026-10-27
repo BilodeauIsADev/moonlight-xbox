@@ -23,6 +23,8 @@ namespace moonlight_xbox_dx
 		void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ e);
 		void OnResuming(Platform::Object ^sender, Platform::Object ^args);
 		void OnNavigationFailed(Platform::Object ^sender, Windows::UI::Xaml::Navigation::NavigationFailedEventArgs ^e);
+		void ApplyUiPreferences();
+		Windows::UI::Xaml::Controls::Frame^ m_rootFrame;
 		HostSelectorPage^ m_menuPage;
 		Windows::System::Display::DisplayRequest^ displayRequest;
 	};

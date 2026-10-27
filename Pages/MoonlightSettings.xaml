@@ -107,9 +107,24 @@
                                         </Grid>
                                     </Grid>
                                 </Border>
+                                <Border Style="{StaticResource SettingsRowStyle}">
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Spacing="3">
+                                            <TextBlock Text="Navigation sounds" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Text="Play the console's sounds when moving focus and selecting."/>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="NavigationSoundsToggle" IsOn="{x:Bind State.NavigationSounds,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind GeneralSectionButton}" AutomationProperties.Name="Navigation sounds"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                             <StackPanel x:Name="DisplayPanel" Spacing="8" Visibility="Collapsed">
-                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Margin="0,0,0,8" Text="Change these parameters until you can see a green border around the screen"/>
+                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Margin="0,0,0,8" Text="Your TV may crop the edges of the picture. Adjust the margins until the whole white outline and its corner marks are visible."/>
                                 <Border Style="{StaticResource SettingsRowStyle}">
                                     <Grid ColumnSpacing="16">
                                         <Grid.ColumnDefinitions>
@@ -135,6 +150,21 @@
                                         </StackPanel>
                                         <Grid Grid.Column="1" VerticalAlignment="Center">
                                             <Slider Value="{x:Bind State.ScreenMarginWidth}" x:DefaultBindMode="TwoWay" Minimum="0" Maximum="100" StepFrequency="1" XYFocusLeft="{x:Bind DisplaySectionButton}" AutomationProperties.Name="Screen margin width"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource SettingsRowStyle}">
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Spacing="3">
+                                            <TextBlock Text="Use for menus too" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
+                                            <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Text="Also inset the Hosts, Library and Settings screens. The stream always uses the margin."/>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="MenuSafeAreaToggle" IsOn="{x:Bind State.MenuSafeArea,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind DisplaySectionButton}" AutomationProperties.Name="Use the screen margin for menus"/>
                                         </Grid>
                                     </Grid>
                                 </Border>
@@ -202,6 +232,13 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
-        <Border BorderBrush="Green" BorderThickness="2" Margin="{x:Bind State.ScreenMargin,Mode=OneWay}" IsHitTestVisible="False"/>
+        <!-- Display area calibration, shown while the Display section is open -->
+        <Grid x:Name="CalibrationFrame" Margin="{x:Bind State.CalibrationMargin,Mode=OneWay}" IsHitTestVisible="False" Visibility="Collapsed">
+            <Border BorderBrush="#99FFFFFF" BorderThickness="2" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,6,0,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Top" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,6,6,0" />
+            <Border Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="6,0,0,6" />
+            <Border Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Bottom" BorderBrush="{StaticResource OrbitFocusBrush}" BorderThickness="0,0,6,6" />
+        </Grid>
     </Grid>
 </Page>

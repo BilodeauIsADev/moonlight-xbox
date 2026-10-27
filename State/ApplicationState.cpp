@@ -32,6 +32,8 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 			if (stateJson.contains("marginHeight")) this->ScreenMarginHeight = stateJson["marginHeight"];
 			if (stateJson.contains("mouseSensitivity")) this->MouseSensitivity = stateJson["mouseSensitivity"];
 			if (stateJson.contains("alternateCombination")) this->AlternateCombination = stateJson["alternateCombination"].get<bool>();
+			if (stateJson.contains("navigationSounds")) this->NavigationSounds = stateJson["navigationSounds"].get<bool>();
+			if (stateJson.contains("menuSafeArea")) this->MenuSafeArea = stateJson["menuSafeArea"].get<bool>();
 			for (auto a : stateJson["hosts"]) {
 				MoonlightHost^ h = ref new MoonlightHost(Utils::StringFromStdString(a["hostname"].get<std::string>()));
 				if (a.contains("instance_id")) h->InstanceId = Utils::StringFromStdString(a["instance_id"].get<std::string>());
@@ -111,6 +113,8 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 		stateJson["enableKeyboard"] = that->EnableKeyboard;
 		stateJson["keyboardLayout"] = Utils::PlatformStringToStdString(that->KeyboardLayout);
 		stateJson["alternateCombination"] = that->AlternateCombination;
+		stateJson["navigationSounds"] = that->NavigationSounds;
+		stateJson["menuSafeArea"] = that->MenuSafeArea;
 		for (auto host : that->SavedHosts) {
 			nlohmann::json hostJson;
 			hostJson["hostname"] = Utils::PlatformStringToStdString(host->LastHostname);

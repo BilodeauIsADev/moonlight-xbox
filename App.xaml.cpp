@@ -71,6 +71,11 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 		rootFrame = ref new Frame();
 
 		rootFrame->NavigationFailed += ref new Windows::UI::Xaml::Navigation::NavigationFailedEventHandler(this, &App::OnNavigationFailed);
+		// The menu safe area changes with the page: the stream applies the margin to its own swap chain.
+		rootFrame->Navigated += ref new NavigatedEventHandler([this](Object^, NavigationEventArgs^) {
+			ApplyUiPreferences();
+		});
+		rootFrame->Background = ref new SolidColorBrush(Windows::UI::Colors::Black);
 
 		// Place the frame in the current Window
 		Window::Current->Content = rootFrame;
@@ -92,6 +97,12 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 	Window::Current->Activate();
 	//Start the state
 	auto state = GetApplicationState();
+	if (m_rootFrame == nullptr) state->PropertyChanged += ref new PropertyChangedEventHandler([this](Object^, PropertyChangedEventArgs^ args) {
+		auto name = args->PropertyName;
+		if (name == L"NavigationSounds" || name == L"MenuSafeArea" || name == L"ScreenMargin") ApplyUiPreferences();
+	});
+	m_rootFrame = rootFrame;
+	ApplyUiPreferences();
 	auto that = this;
 	state->Init().then([that](){
 		that->m_menuPage->OnStateLoaded();
@@ -101,6 +112,19 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
 	RunOrbitUiSmokeTests(e->Arguments);
 #endif
 }
+void App::ApplyUiPreferences()
+{
+	auto state = GetApplicationState();
+	ElementSoundPlayer::State = state->NavigationSounds ? ElementSoundPlayerState::On : ElementSoundPlayerState::Off;
+	if (m_rootFrame == nullptr) return;
+	bool streaming = m_rootFrame->CurrentSourcePageType.Name == L"moonlight_xbox_dx.StreamPage";
+	if (state->MenuSafeArea && !streaming) {
+		m_rootFrame->Margin = state->ScreenMargin;
+	} else {
+		m_rootFrame->Margin = Thickness{ 0, 0, 0, 0 };
+	}
+}
+
 /// <summary>
 /// Invoked when application execution is being suspended.  Application state is saved
 /// without knowing whether the application will be terminated or resumed with the contents
