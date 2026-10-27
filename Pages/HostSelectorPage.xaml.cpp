@@ -389,7 +389,9 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 // The focused host can come online (or go to sleep) without focus moving, so
 // this also runs on every layout pass.
 void HostSelectorPage::UpdateWakeHint() {
-	auto visible = focusedHost != nullptr && !focusedHost->Connected && !focusedHost->WolPolling
+	// Only while that card is the focused element: X does nothing anywhere else
+	const bool onCard = focusedHostItem != nullptr && FocusManager::GetFocusedElement() == focusedHostItem;
+	auto visible = onCard && focusedHost != nullptr && !focusedHost->Connected && !focusedHost->WolPolling
 		? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 	if (WakeHint->Visibility != visible) WakeHint->Visibility = visible;
 }
@@ -900,6 +902,10 @@ void HostSelectorPage::HeroOptionsButton_Click(Platform::Object^ sender, Windows
 }
 
 // ---- Ambient background ----------------------------------------------------
+
+void HostSelectorPage::Page_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	UpdateWakeHint();
+}
 
 void HostSelectorPage::Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
 	StartAmbient();

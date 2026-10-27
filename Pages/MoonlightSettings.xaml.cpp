@@ -159,6 +159,20 @@ void MoonlightSettings::HookCards() {
 			});
 		}
 	}
+	// Focus anywhere else on the page (tabs, section list) turns the highlight off.
+	// Dropdown items live in a popup outside the page, so leave it on meanwhile.
+	this->GotFocus += ref new RoutedEventHandler([weakThis](Platform::Object^, RoutedEventArgs^ e) {
+		auto page = weakThis.Resolve<MoonlightSettings>();
+		if (page == nullptr || OrbitInput::HasOpenPopup()) return;
+		StackPanel^ panels[] = { page->GeneralPanel, page->DisplayPanel, page->InputPanel };
+		for (auto node = dynamic_cast<DependencyObject^>(e->OriginalSource); node != nullptr; node = VisualTreeHelper::GetParent(node)) {
+			auto parent = VisualTreeHelper::GetParent(node);
+			for (auto panel : panels) {
+				if (parent == panel && dynamic_cast<Border^>(node) != nullptr) return;
+			}
+		}
+		page->HighlightCard(nullptr);
+	});
 }
 
 void MoonlightSettings::HighlightCard(Border^ card) {

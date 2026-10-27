@@ -965,6 +965,10 @@ void moonlight_xbox_dxMain::SetSilentTeardown(bool silent) {
 	m_silentTeardown.store(silent, std::memory_order_release);
 }
 
+bool moonlight_xbox_dxMain::IsRenderLoopStarted() {
+	return m_renderLoopWorker != nullptr;
+}
+
 bool moonlight_xbox_dxMain::IsRenderLoopExited() {
 	return m_renderLoopExited.load(std::memory_order_acquire);
 }

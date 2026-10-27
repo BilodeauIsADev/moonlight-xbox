@@ -30,6 +30,9 @@ namespace moonlight_xbox_dx
 		Windows::UI::Xaml::DispatcherTimer^ m_artworkLoadTimer;
 		Windows::Foundation::EventRegistrationToken m_selectedAppChangedToken{};
 		bool m_heroActive = false;
+		// Selection to restore after the app list is rebuilt
+		int m_restoreAppId = -1;
+		bool m_restoreShelfFocus = false;
 		// The background request in flight is the square cover standing in for missing wide art
 		bool m_artworkIsCover = false;
 		void OnSelectedAppChanged(MoonlightApp^ previous);

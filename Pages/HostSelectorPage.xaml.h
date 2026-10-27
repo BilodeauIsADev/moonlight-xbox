@@ -99,6 +99,7 @@ namespace moonlight_xbox_dx {
 		MoonlightHost^ heroHost;
 
 		// Ambient background loop
+		void Page_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void Page_Unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void StartAmbient();

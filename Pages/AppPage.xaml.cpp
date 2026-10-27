@@ -216,13 +216,42 @@ void AppPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs
 
 void AppPage::OnAppsChanged(IObservableVector<MoonlightApp^>^ sender, IVectorChangedEventArgs^ e) {
 	if (e->CollectionChange == CollectionChange::Reset) {
+		// A refresh rebuilds the list with new objects: remember what was
+		// highlighted (and whether the shelf had focus) to restore it below.
+		m_restoreAppId = SelectedApp != nullptr ? SelectedApp->Id : -1;
+		// The removed card's focus may already have fallen to the grid or nowhere;
+		// buttons (tabs, hero actions, letter picker) are the only other targets.
+		m_restoreShelfFocus = m_restoreAppId != -1 && dynamic_cast<Windows::UI::Xaml::Controls::Primitives::ButtonBase^>(FocusManager::GetFocusedElement()) == nullptr;
 		SelectedApp = nullptr;
 		return;
 	}
 	if (e->CollectionChange != CollectionChange::ItemInserted) return;
 
-	// Prefer the running app so "Resume" is the first thing on screen
 	auto inserted = sender->GetAt(e->Index);
+	if (m_restoreAppId != -1) {
+		if (inserted->Id != m_restoreAppId) {
+			if (SelectedApp == nullptr) SelectedApp = inserted; // until the remembered one arrives
+			return;
+		}
+		m_restoreAppId = -1;
+		SelectedApp = inserted;
+		if (m_restoreShelfFocus) {
+			m_restoreShelfFocus = false;
+			// Focus once the container exists, like JumpToLetter
+			Platform::WeakReference weakThis(this);
+			Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Low, ref new Windows::UI::Core::DispatchedHandler([weakThis, inserted]() {
+				auto page = weakThis.Resolve<AppPage>();
+				if (page == nullptr || page->SelectedApp != inserted) return;
+				page->HostsGrid->ScrollIntoView(inserted);
+				page->HostsGrid->UpdateLayout();
+				auto container = dynamic_cast<GridViewItem^>(page->HostsGrid->ContainerFromItem(inserted));
+				if (container != nullptr) container->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+			}));
+		}
+		return;
+	}
+
+	// Prefer the running app so "Resume" is the first thing on screen
 	if (SelectedApp == nullptr || (inserted->CurrentlyRunning && !SelectedApp->CurrentlyRunning)) {
 		SelectedApp = inserted;
 	}
@@ -555,11 +584,6 @@ void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::I
 		e->Handled = true;
 		return;
 	}
-	if (m_letterJumpOpen && (e->Key == Windows::System::VirtualKey::GamepadB || e->Key == Windows::System::VirtualKey::GoBack)) {
-		CloseLetterJump();
-		e->Handled = true;
-		return;
-	}
 	if (m_letterJumpOpen) {
 		// Move through the letters by hand: XY focus would leave the picker for the shelf
 		int delta = 0;
@@ -574,6 +598,16 @@ void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::I
 			MoveLetterFocus(delta);
 			e->Handled = true;
 			return;
+		}
+		// Triggers and bumpers would page the shelf or switch tabs behind the
+		// picker. B is left alone: OnBackRequested closes the picker, and handling
+		// it here too would let that back request go on to leave the page.
+		switch (e->Key) {
+		case Windows::System::VirtualKey::GamepadLeftTrigger: case Windows::System::VirtualKey::GamepadRightTrigger:
+		case Windows::System::VirtualKey::GamepadLeftShoulder: case Windows::System::VirtualKey::GamepadRightShoulder:
+			e->Handled = true;
+			return;
+		default: break;
 		}
 	}
 	if (OrbitInput::HandleBumpers(e, 1, hostsNavButton, libraryNavButton, settingsNavButton)) return;

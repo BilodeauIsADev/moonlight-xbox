@@ -667,7 +667,7 @@
                 <Setter Property="FontWeight" Value="Normal" />
             </Style>
             <Style x:Key="OrbitKeyPillStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyCapStyle}">
-                <Setter Property="Width" Value="NaN" />
+                <Setter Property="Width" Value="Auto" />
                 <Setter Property="MinWidth" Value="24" />
                 <Setter Property="FontSize" Value="9" />
                 <Setter Property="Template">

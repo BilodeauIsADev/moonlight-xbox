@@ -87,7 +87,6 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
                     <Button x:Name="backButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click"/>
-                    <Button Style="{StaticResource OrbitNavButtonStyle}" Content="Library" Visibility="Collapsed"/>
                     <Button x:Name="settingsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Settings" Background="{StaticResource OrbitSurfaceStrongBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
                 </StackPanel>
             </Grid>

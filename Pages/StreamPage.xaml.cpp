@@ -174,6 +174,7 @@ void StreamPage::StartConnection() {
 
 void StreamPage::Page_Unloaded(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
 	HideControlCenter();
+	if (m_summaryTimer != nullptr) m_summaryTimer->Stop();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingOutro"))->Stop();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("SummaryIntro"))->Stop();
@@ -362,24 +363,37 @@ void StreamPage::RestartConnection() {
 	// LiStopConnection inside) to finish before the new stream touches the
 	// shared decoder and device resources.
 	auto oldMain = m_main.get();
+	// Setup threw before the render loop ran: nothing is running, start over now.
+	if (!oldMain->IsRenderLoopStarted()) {
+		m_main.reset();
+		StartConnection();
+		return;
+	}
 	oldMain->SetSilentTeardown(true);
 	Platform::WeakReference weakThis(this);
 	concurrency::create_task([oldMain]() {
 		oldMain->moonlightClient->SetConnectionTerminated();
-		for (int i = 0; i < 100 && !oldMain->IsRenderLoopExited(); i++) {
+		for (int i = 0; i < 400 && !oldMain->IsRenderLoopExited(); i++) {
 			Sleep(50);
 		}
-	}).then([weakThis](concurrency::task<void> t) {
+		return oldMain->IsRenderLoopExited();
+	}).then([weakThis](concurrency::task<bool> t) {
+		bool exited = false;
 		try {
-			t.get();
+			exited = t.get();
 		} catch (...) {
 		}
-		DISPATCH_UI([weakThis]() {
+		DISPATCH_UI(([weakThis, exited]() {
 			auto that = weakThis.Resolve<StreamPage>();
 			if (that == nullptr) return;
+			if (!exited) {
+				// Never free a render loop that is still running; Retry waits again.
+				that->ShowStartFailure(0, L"The previous connection is still closing. Try again in a moment.");
+				return;
+			}
 			that->m_main.reset();
 			that->StartConnection();
-		});
+		}));
 	});
 }
 
@@ -389,7 +403,9 @@ void StreamPage::LeaveFailedStream() {
 	FailureActions->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyDown -= keyDownHandler;
 	Windows::UI::Core::CoreWindow::GetForCurrentThread()->KeyUp -= keyUpHandler;
-	if (m_main != nullptr) {
+	if (m_main != nullptr && m_main->IsRenderLoopStarted() && !m_main->IsRenderLoopExited()) {
+		// The loop's exit path navigates back; a Retry that timed out left it silent
+		m_main->SetSilentTeardown(false);
 		m_main->moonlightClient->SetConnectionTerminated();
 	} else if (this->Frame->CanGoBack) {
 		this->Frame->GoBack();

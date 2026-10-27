@@ -47,6 +47,8 @@ namespace moonlight_xbox_dx
 		// usual navigate-back.
 		void SetSilentTeardown(bool silent);
 		bool IsRenderLoopExited();
+		// False when setup threw before the loop was started
+		bool IsRenderLoopStarted();
 
 		bool mouseMode = false;
 

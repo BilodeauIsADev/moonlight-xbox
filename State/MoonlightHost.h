@@ -135,6 +135,11 @@ namespace moonlight_xbox_dx {
 				OnPropertyChanged("NotConnected");
 				OnPropertyChanged("NotPaired");
 				OnPropertyChanged("CardStatusText");
+				// What it was playing only counts while it's reachable
+				OnPropertyChanged("PlayingText");
+				OnPropertyChanged("PlayingVisibility");
+				OnPropertyChanged("PlayingImage");
+				OnPropertyChanged("PlayingArtworkVisibility");
 			}
 		}
 
@@ -282,7 +287,8 @@ namespace moonlight_xbox_dx {
 		// running app's name is not known on this screen (no app list was fetched here).
 		property Platform::String^ PlayingText {
 			Platform::String^ get() {
-				return this->playingText;
+				// The last known game is stale once the PC sleeps or drops off
+				return this->connected ? this->playingText : nullptr;
 			}
 			void set(Platform::String^ value) {
 				this->playingText = value;
@@ -293,7 +299,7 @@ namespace moonlight_xbox_dx {
 
 		property Windows::UI::Xaml::Visibility PlayingVisibility {
 			Windows::UI::Xaml::Visibility get() {
-				return this->playingText != nullptr ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+				return (this->connected && this->playingText != nullptr) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			}
 		}
 
@@ -314,14 +320,14 @@ namespace moonlight_xbox_dx {
 		// string-to-ImageSource conversion throw E_INVALIDARG.
 		property Windows::UI::Xaml::Media::ImageSource^ PlayingImage {
 			Windows::UI::Xaml::Media::ImageSource^ get() {
-				if (this->playingImageUri == nullptr || this->playingImageUri->IsEmpty()) return nullptr;
+				if (!this->connected || this->playingImageUri == nullptr || this->playingImageUri->IsEmpty()) return nullptr;
 				return ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(this->playingImageUri));
 			}
 		}
 
 		property Windows::UI::Xaml::Visibility PlayingArtworkVisibility {
 			Windows::UI::Xaml::Visibility get() {
-				return (this->playingImageUri != nullptr && !this->playingImageUri->IsEmpty()) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+				return (this->connected && this->playingImageUri != nullptr && !this->playingImageUri->IsEmpty()) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			}
 		}
 

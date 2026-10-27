@@ -117,7 +117,9 @@ void App::ApplyUiPreferences()
 	auto state = GetApplicationState();
 	ElementSoundPlayer::State = state->NavigationSounds ? ElementSoundPlayerState::On : ElementSoundPlayerState::Off;
 	if (m_rootFrame == nullptr) return;
-	bool streaming = m_rootFrame->CurrentSourcePageType.Name == L"moonlight_xbox_dx.StreamPage";
+	// Match the short name too, in case TypeName.Name is ever unqualified
+	auto page = m_rootFrame->CurrentSourcePageType.Name;
+	bool streaming = page == L"moonlight_xbox_dx.StreamPage" || page == L"StreamPage";
 	if (state->MenuSafeArea && !streaming) {
 		m_rootFrame->Margin = state->ScreenMargin;
 	} else {

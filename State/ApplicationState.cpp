@@ -194,7 +194,11 @@ long long moonlight_xbox_dx::ApplicationState::GetLastPlayedOnHost(MoonlightHost
 	const std::string prefix = LastPlayedHostKey(host) + ":";
 	long long latest = 0;
 	for (auto& stamp : lastPlayedByApp) {
-		if (stamp.first.compare(0, prefix.size(), prefix) == 0 && stamp.second > latest) latest = stamp.second;
+		if (stamp.first.compare(0, prefix.size(), prefix) != 0) continue;
+		// The rest must be just the app id: "1.2.3.4:" also prefixes "1.2.3.4:47989:12"
+		const std::string appId = stamp.first.substr(prefix.size());
+		if (appId.empty() || appId.find_first_not_of("0123456789-") != std::string::npos) continue;
+		if (stamp.second > latest) latest = stamp.second;
 	}
 	return latest;
 }

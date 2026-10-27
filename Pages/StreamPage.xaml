@@ -449,10 +449,10 @@
                 </StackPanel.RenderTransform>
                 <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="SESSION ENDED" />
                 <TextBlock Style="{StaticResource OrbitTitleTextStyle}" FontSize="44" LineHeight="48" Margin="0,6,0,0" Text="{x:Bind LoadingTitle, Mode=OneWay}" />
-                <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,14,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                     <TextBlock x:Name="SummaryDurationText" FontSize="16" />
-                    <TextBlock x:Name="SummaryLatencyText" FontSize="16" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
-                    <TextBlock x:Name="SummaryDropsText" FontSize="16" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
+                    <TextBlock x:Name="SummaryLatencyText" FontSize="16" Margin="16,0,0,0" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
+                    <TextBlock x:Name="SummaryDropsText" FontSize="16" Margin="16,0,0,0" Foreground="{StaticResource OrbitTextSecondaryBrush}" Visibility="Collapsed" />
                 </StackPanel>
             </StackPanel>
         </Grid>

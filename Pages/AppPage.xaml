@@ -82,8 +82,8 @@
 
             <!-- Hero: whatever app is focused in the shelf -->
             <StackPanel Grid.Row="1" Margin="56,12,0,0" MaxWidth="470" HorizontalAlignment="Left">
-                <StackPanel Orientation="Horizontal" Spacing="7">
-                    <Ellipse Width="7" Height="7" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" />
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="7" Height="7" Margin="0,0,7,0" Fill="{StaticResource OrbitRunningBrush}" VerticalAlignment="Center" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}" />
                     <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}">
                         <Run Text="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay, Converter={StaticResource BoolToTextConverter}, ConverterParameter='RUNNING ON|ON'}" /><Run Text=" " /><Run Text="{x:Bind Host.ComputerName, Mode=OneWay}" />
                     </TextBlock>
@@ -151,43 +151,48 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Jump-to-letter picker (View button), floating above the shelf -->
-            <Border x:Name="LetterJumpPanel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                    Margin="0,0,0,12" Padding="12,8" CornerRadius="10" Visibility="Collapsed"
-                    Background="{StaticResource OrbitPanelBrush}" BorderBrush="{StaticResource OrbitOverlayBorderBrush}" BorderThickness="1">
-                <!-- Wraps after 14 letters so the whole alphabet fits the TV-safe width -->
-                <VariableSizedWrapGrid x:Name="LetterJumpRow" Orientation="Horizontal" MaximumRowsOrColumns="14" ItemWidth="44" ItemHeight="44" />
-            </Border>
+            <!-- Jump-to-letter picker (View button): centred over the dimmed page so it
+                 never covers the hero buttons or the shelf it scrolls -->
+            <Grid x:Name="LetterJumpPanel" Grid.RowSpan="4" Visibility="Collapsed" Background="#B3000000">
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="16,12" CornerRadius="12"
+                        Background="{StaticResource OrbitPanelBrush}" BorderBrush="{StaticResource OrbitOverlayBorderBrush}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource OrbitEyebrowTextStyle}" Text="JUMP TO LETTER" Margin="4,0,0,10" />
+                        <!-- Wraps after 14 letters so the whole alphabet fits the TV-safe width -->
+                        <VariableSizedWrapGrid x:Name="LetterJumpRow" Orientation="Horizontal" MaximumRowsOrColumns="14" ItemWidth="44" ItemHeight="44" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
             <!-- Controller hints -->
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,0,56,30">
-                <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,56,30">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
                     <StackPanel Orientation="Horizontal" Spacing="3">
                         <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LB" />
                         <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RB" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
                 </StackPanel>
-                <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="6">
+                <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
                     <StackPanel Orientation="Horizontal" Spacing="3">
                         <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LT" />
                         <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RT" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Games" />
                 </StackPanel>
-                <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="6">
+                <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
                     <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
                 </StackPanel>
-                <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
+                <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="6" Margin="20,0,0,0" Visibility="Collapsed">
                     <ContentControl Style="{StaticResource OrbitKeyGlyphCapStyle}" Content="&#xEECA;" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Jump to letter" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
                     <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="X" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="20,0,0,0">
                     <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="Y" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
                 </StackPanel>
