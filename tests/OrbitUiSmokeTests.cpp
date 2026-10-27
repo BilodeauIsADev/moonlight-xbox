@@ -64,7 +64,7 @@ void Invoke(String^ name) {
 }
 
 void BrowseLibrary() {
-	for (auto item : Named<GridView>("HostsGrid")->Items) {
+	for (Platform::Object^ item : Named<GridView>("HostsGrid")->Items) {
 		auto host = dynamic_cast<MoonlightHost^>(item);
 		if (host == nullptr || !host->Connected || !host->Paired) continue;
 		// Exercise the picker destination without launching a configured autostart game.
