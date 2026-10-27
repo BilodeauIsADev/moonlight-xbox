@@ -39,7 +39,7 @@ namespace moonlight_xbox_dx {
 		bool enableHDR = false;
 		bool enableSOPS = false;
 		bool enableIntraRefresh = true;
-		bool enableDirectRendering = false;
+		bool enableDirectRendering = true;
 		bool enableStats = false;
 		bool enableGraphs = true;
 		Windows::Foundation::Collections::IVector<MoonlightApp^>^ apps;

@@ -210,7 +210,7 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center" Spacing="3">
                                                 <TextBlock Text="Direct decoder rendering" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource OrbitTextBrush}"/>
-                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Skips a copy of each frame. Faster, but can corrupt the picture on some consoles.</TextBlock>
+                                                <TextBlock Style="{StaticResource SettingsDescriptionStyle}">Skips a copy of each frame. Turn off to use the older copy path.</TextBlock>
                                             </StackPanel>
                                             <Grid Grid.Column="1" VerticalAlignment="Center">
                                                 <ToggleSwitch IsOn="{x:Bind Host.EnableDirectRendering,Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" HorizontalAlignment="Right" XYFocusLeft="{x:Bind VideoSectionButton}" AutomationProperties.Name="Direct decoder rendering"/>
