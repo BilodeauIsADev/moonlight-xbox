@@ -36,8 +36,6 @@
             </LinearGradientBrush>
 
             <local:OrbitVisualStateManager x:Key="OrbitVisualStateManager" />
-            <x:String x:Key="OrbitDialogEnterDuration">0:0:0.18</x:String>
-            <x:String x:Key="OrbitDialogExitDuration">0:0:0.13</x:String>
 
             <!-- Large white pill: the primary action on every screen -->
             <Style x:Key="OrbitPillButtonStyle" TargetType="Button">
@@ -714,15 +712,15 @@
                                             </ObjectAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
-                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" KeySpline="0.16,1,0.3,1" Value="0.985" />
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.13" KeySpline="0.16,1,0.3,1" Value="0.985" />
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
-                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" KeySpline="0.16,1,0.3,1" Value="0.985" />
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.13" KeySpline="0.16,1,0.3,1" Value="0.985" />
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource OrbitDialogExitDuration}" Value="0.0" />
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.13" Value="0.0" />
                                             </DoubleAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualTransition>
@@ -733,15 +731,15 @@
                                             </ObjectAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.97" />
-                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" KeySpline="0.16,1,0.3,1" Value="1.0" />
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.18" KeySpline="0.16,1,0.3,1" Value="1.0" />
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.97" />
-                                                <SplineDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" KeySpline="0.16,1,0.3,1" Value="1.0" />
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.18" KeySpline="0.16,1,0.3,1" Value="1.0" />
                                             </DoubleAnimationUsingKeyFrames>
                                             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LayoutRoot" Storyboard.TargetProperty="Opacity">
                                                 <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0.0" />
-                                                <LinearDoubleKeyFrame KeyTime="{StaticResource OrbitDialogEnterDuration}" Value="1.0" />
+                                                <LinearDoubleKeyFrame KeyTime="0:0:0.18" Value="1.0" />
                                             </DoubleAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualTransition>

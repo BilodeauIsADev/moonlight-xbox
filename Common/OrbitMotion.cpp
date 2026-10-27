@@ -125,13 +125,6 @@ bool OrbitMotion::Enabled() {
 	return s_uiSettings->AnimationsEnabled;
 }
 
-void OrbitMotion::RefreshSettings() {
-	const bool enabled = Enabled();
-	auto resources = Application::Current->Resources;
-	resources->Insert("OrbitDialogEnterDuration", ref new String(enabled ? L"0:0:0.18" : L"0:0:0"));
-	resources->Insert("OrbitDialogExitDuration", ref new String(enabled ? L"0:0:0.13" : L"0:0:0"));
-}
-
 void OrbitMotion::Stop(UIElement^ element) {
 	(void)KindProperty;
 	element->SetValue(s_revealActiveProperty, false);

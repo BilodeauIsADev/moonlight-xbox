@@ -31,7 +31,6 @@ using namespace Windows::UI::Xaml::Navigation;
 App::App()
 {
 	InitializeComponent();
-	OrbitMotion::RefreshSettings();
 	RequiresPointerMode = Windows::UI::Xaml::ApplicationRequiresPointerMode::WhenRequested;
 	Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
 	Resuming += ref new EventHandler<Object^>(this, &App::OnResuming);
@@ -117,7 +116,6 @@ void App::OnSuspending(Object^ sender, SuspendingEventArgs^ e)
 /// <param name="args">Details about the resume request.</param>
 void App::OnResuming(Object ^sender, Object ^args)
 {
-	OrbitMotion::RefreshSettings();
 	(void) sender; // Unused parameter
 	(void) args; // Unused parameter
 	displayRequest->RequestActive();
