@@ -36,7 +36,6 @@ namespace moonlight_xbox_dx {
 		}
 
 	private:
-		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		struct Entry {
 			bool inFlight = false;
 			int64_t retryAtMs = 0;
@@ -61,6 +60,7 @@ namespace moonlight_xbox_dx {
 		virtual void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 
 	private:
+		void Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		ApplicationState^ state;
 		bool pendingInitialFocus = true;
 		bool waitingForAutoConnect = false;

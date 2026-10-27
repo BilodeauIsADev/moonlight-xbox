@@ -87,7 +87,7 @@ HostSelectorPage::HostSelectorPage() {
 
 void HostSelectorPage::NewHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
 	dialogHostnameTextBox = ref new TextBox();
-	dialogHostnameTextBox->Style = safe_cast<Style^>(Application::Current->Resources->Lookup("OrbitTextBoxStyle"));
+	dialogHostnameTextBox->Style = safe_cast<Windows::UI::Xaml::Style^>(Application::Current->Resources->Lookup("OrbitTextBoxStyle"));
 	dialogHostnameTextBox->Header = L"Host address";
 	dialogHostnameTextBox->PlaceholderText = L"IP address or hostname";
 	dialogHostnameTextBox->AcceptsReturn = false;
@@ -95,7 +95,7 @@ void HostSelectorPage::NewHostButton_Click(Platform::Object^ sender, Windows::UI
 	dialogHostnameErrorText = ref new TextBlock();
 	dialogHostnameErrorText->TextWrapping = TextWrapping::Wrap;
 	dialogHostnameErrorText->Foreground = safe_cast<Brush^>(Application::Current->Resources->Lookup("OrbitWarningBrush"));
-	dialogHostnameErrorText->Visibility = Visibility::Collapsed;
+	dialogHostnameErrorText->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	auto content = ref new StackPanel();
 	content->Spacing = 12;
 	content->Children->Append(dialogHostnameTextBox);
@@ -114,10 +114,10 @@ void HostSelectorPage::OnNewHostDialogPrimaryClick(Windows::UI::Xaml::Controls::
 	if (hostname == nullptr || std::wstring(hostname->Data()).find_first_not_of(L" \t\r\n") == std::wstring::npos) {
 		args->Cancel = true;
 		dialogHostnameErrorText->Text = L"Enter an IP address or hostname.";
-		dialogHostnameErrorText->Visibility = Visibility::Visible;
+		dialogHostnameErrorText->Visibility = Windows::UI::Xaml::Visibility::Visible;
 		return;
 	}
-	dialogHostnameErrorText->Visibility = Visibility::Collapsed;
+	dialogHostnameErrorText->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	sender->IsPrimaryButtonEnabled = false;
 	auto def = args->GetDeferral();
 	Concurrency::create_task([def, hostname, this, args, sender]() {
@@ -134,7 +134,7 @@ void HostSelectorPage::OnNewHostDialogPrimaryClick(Windows::UI::Xaml::Controls::
 				auto page = weakThis.Resolve<HostSelectorPage>();
 				if (page != nullptr) {
 					page->dialogHostnameErrorText->Text = L"Could not connect to " + hostname + L". Check the address and try again.";
-					page->dialogHostnameErrorText->Visibility = Visibility::Visible;
+					page->dialogHostnameErrorText->Visibility = Windows::UI::Xaml::Visibility::Visible;
 				}
 				sender->IsPrimaryButtonEnabled = true;
 				def->Complete();
@@ -313,7 +313,7 @@ void HostSelectorPage::OnStateLoaded() {
 	}
 	concurrency::when_all(checks.begin(), checks.end()).then([this]() {
 		waitingForAutoConnect = false;
-		if (Frame == nullptr || Frame->Content != this) return;
+		if (this->Frame == nullptr || this->Frame->Content != this) return;
 		if (!state->autostartInstance.empty()) {
 			auto instance = Utils::StringFromStdString(state->autostartInstance);
 			for (auto host : state->SavedHosts) {
@@ -750,10 +750,10 @@ void HostSelectorPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI
 }
 
 void HostSelectorPage::TryFocusInitialHost() {
-	if (!pendingInitialFocus || !s_stateLoaded || waitingForAutoConnect || Frame == nullptr || Frame->Content != this) return;
+	if (!pendingInitialFocus || !s_stateLoaded || waitingForAutoConnect || this->Frame == nullptr || this->Frame->Content != this) return;
 	if (OrbitInput::HasOpenPopup()) return;
 	if (HostsGrid->Items->Size == 0) {
-		if (AddHostCard->Focus(FocusState::Keyboard)) pendingInitialFocus = false;
+		if (AddHostCard->Focus(Windows::UI::Xaml::FocusState::Keyboard)) pendingInitialFocus = false;
 		return;
 	}
 	auto item = dynamic_cast<GridViewItem^>(HostsGrid->ContainerFromIndex(0));
@@ -761,7 +761,7 @@ void HostSelectorPage::TryFocusInitialHost() {
 		HostsGrid->ScrollIntoView(HostsGrid->Items->GetAt(0));
 		return; // LayoutUpdated retries after the first container is realized.
 	}
-	if (item->Focus(FocusState::Keyboard)) pendingInitialFocus = false;
+	if (item->Focus(Windows::UI::Xaml::FocusState::Keyboard)) pendingInitialFocus = false;
 }
 
 void HostSelectorPage::Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e) {

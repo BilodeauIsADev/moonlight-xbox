@@ -84,10 +84,10 @@ void PrepareComboBox(ComboBox^ combo, bool opened) {
 			if (!root->Resources->HasKey(name)) continue;
 			auto storyboard = dynamic_cast<Storyboard^>(root->Resources->Lookup(name));
 			if (storyboard == nullptr) continue;
-			for (auto timeline : storyboard->Children) {
+			for (Timeline^ timeline : storyboard->Children) {
 				auto animation = dynamic_cast<DoubleAnimationUsingKeyFrames^>(timeline);
 				if (animation == nullptr) continue;
-				for (auto frame : animation->KeyFrames) {
+				for (DoubleKeyFrame^ frame : animation->KeyFrames) {
 					frame->Value = 1;
 					frame->KeyTime = KeyTimeHelper::FromTimeSpan(Milliseconds(0));
 				}
@@ -192,7 +192,7 @@ void OrbitMotion::FadeArtwork(Grid^ layers, Image^ image) {
 	// Each incoming image fades over the existing composite. Old layers remain opaque
 	// underneath until covered, avoiding a black flash even when selection changes mid-fade.
 	auto previous = ref new Platform::Collections::Vector<UIElement^>();
-	for (auto child : layers->Children) previous->Append(child);
+	for (UIElement^ child : layers->Children) previous->Append(child);
 	layers->Children->Append(image);
 	auto visual = ElementCompositionPreview::GetElementVisual(image);
 	auto batch = visual->Compositor->CreateScopedBatch(CompositionBatchTypes::Animation);
@@ -202,7 +202,7 @@ void OrbitMotion::FadeArtwork(Grid^ layers, Image^ image) {
 		[weakLayers, previous](Object^, CompositionBatchCompletedEventArgs^) {
 			auto current = weakLayers.Resolve<Grid>();
 			if (current == nullptr) return;
-			for (auto child : previous) {
+			for (UIElement^ child : previous) {
 				unsigned int index;
 				if (current->Children->IndexOf(child, &index)) current->Children->RemoveAt(index);
 			}
@@ -261,10 +261,10 @@ bool OrbitVisualStateManager::GoToStateCore(Control^ control, FrameworkElement^ 
 		group->Transitions->Append(transition);
 	}
 	if (kind == OrbitMotionKind::Dialog && group->CurrentState != state) {
-		for (auto transition : group->Transitions) {
+		for (VisualTransition^ transition : group->Transitions) {
 			if (transition->To != stateName || transition->Storyboard == nullptr) continue;
 			const int duration = stateName == L"DialogHidden" ? 130 : 180;
-			for (auto timeline : transition->Storyboard->Children) {
+			for (Timeline^ timeline : transition->Storyboard->Children) {
 				auto animation = dynamic_cast<DoubleAnimationUsingKeyFrames^>(timeline);
 				if (animation == nullptr) continue;
 				for (unsigned int i = 1; i < animation->KeyFrames->Size; ++i) {
