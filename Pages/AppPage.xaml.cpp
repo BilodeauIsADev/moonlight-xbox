@@ -617,6 +617,12 @@ void AppPage::UpdateHeroMetadata() {
 void AppPage::UpdateEmptyShelfState() {
 	const bool empty = host != nullptr && host->Apps->Size == 0;
 	ShelfEmptyPanel->Visibility = empty ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+	// Footer hints only for what the shelf can do right now
+	const auto shown = Windows::UI::Xaml::Visibility::Visible;
+	const auto hidden = Windows::UI::Xaml::Visibility::Collapsed;
+	PageHint->Visibility = empty ? hidden : shown;
+	StreamHint->Visibility = empty ? hidden : shown;
+	JumpHint->Visibility = host != nullptr && host->Apps->Size > 20 ? shown : hidden;
 	// With nothing to focus on the shelf, land on the Hosts tab instead
 	if (empty) hostsNavButton->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 }

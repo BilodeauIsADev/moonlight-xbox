@@ -661,6 +661,14 @@
                 <Setter Property="Glyph" Value="&#xF095;" />
                 <Setter Property="Foreground" Value="#FFFFCC33" />
             </Style>
+            <Style x:Key="OrbitHintViewGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xEECA;" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+            </Style>
+            <Style x:Key="OrbitHintMenuGlyphStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitHintGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xEDE3;" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+            </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->
             <Style x:Key="OrbitShelfItemStyle" TargetType="GridViewItem">

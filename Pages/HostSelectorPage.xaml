@@ -179,15 +179,16 @@
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
                 </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
+                <FontIcon Style="{StaticResource OrbitHintAGlyphStyle}" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Open" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF096;" Foreground="#FF3399FF" />
+            <!-- Only while the focused PC is offline -->
+            <StackPanel x:Name="WakeHint" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
+                <FontIcon Style="{StaticResource OrbitHintXGlyphStyle}" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Wake" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF095;" Foreground="#FFFFCC33" />
+                <FontIcon Style="{StaticResource OrbitHintYGlyphStyle}" />
                 <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Host options" />
             </StackPanel>
         </StackPanel>

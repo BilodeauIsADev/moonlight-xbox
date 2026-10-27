@@ -161,26 +161,30 @@
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LB / RB" FontWeight="SemiBold" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel x:Name="PageHint" Orientation="Horizontal" Spacing="6">
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="LT / RT" FontWeight="SemiBold" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Games" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF093;" Foreground="#FF66CC33" />
+                <StackPanel x:Name="StreamHint" Orientation="Horizontal" Spacing="6">
+                    <FontIcon Style="{StaticResource OrbitHintAGlyphStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream" />
                 </StackPanel>
+                <StackPanel x:Name="JumpHint" Orientation="Horizontal" Spacing="6" Visibility="Collapsed">
+                    <FontIcon Style="{StaticResource OrbitHintViewGlyphStyle}" />
+                    <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Jump to letter" />
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind SelectedApp.CurrentlyRunning, Mode=OneWay}">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF096;" Foreground="#FF3399FF" />
+                    <FontIcon Style="{StaticResource OrbitHintXGlyphStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Close app" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xF095;" Foreground="#FFFFCC33" />
+                    <FontIcon Style="{StaticResource OrbitHintYGlyphStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Settings" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xEECA;" Foreground="#FFFFFFFF" />
+                    <FontIcon Style="{StaticResource OrbitHintViewGlyphStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="+" />
-                    <FontIcon Style="{StaticResource OrbitHintGlyphStyle}" Glyph="&#xEDE3;" Foreground="#FFFFFFFF" />
+                    <FontIcon Style="{StaticResource OrbitHintMenuGlyphStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Stream menu, in game" Margin="2,0,0,0" />
                 </StackPanel>
             </StackPanel>

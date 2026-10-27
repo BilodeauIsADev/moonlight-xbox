@@ -380,6 +380,8 @@ void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI:
 	if (host == nullptr) return;
 	focusedHost = host;
 	focusedHostItem = item;
+	WakeHint->Visibility = !host->Connected && !host->WolPolling
+		? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 void HostSelectorPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
