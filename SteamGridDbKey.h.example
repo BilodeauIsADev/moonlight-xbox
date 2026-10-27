@@ -1,0 +1,4 @@
+// Copy this file to SteamGridDbKey.h (gitignored) and paste your SteamGridDB API key,
+// from https://www.steamgriddb.com/profile/preferences/api. Without it, the app list
+// falls back to the host's own box art.
+#define STEAMGRIDDB_API_KEY L"paste-your-key-here"

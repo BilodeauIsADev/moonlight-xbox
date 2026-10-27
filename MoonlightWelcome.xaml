@@ -11,9 +11,9 @@
     <FlipView Name="FlipView">
         <!-- Page 1-->
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Image Source="ms-appx:///Assets/StoreLogo.scale-400.png" Width="128" Height="128"></Image>
-            <TextBlock Margin="0,16,0,16" FontSize="32">Welcome to Moonlight</TextBlock>
-            <TextBlock>Moonlight allows your Xbox to control and stream your Computer!</TextBlock>
+            <Image Source="ms-appx:///Assets/LunalightMark.png" Width="128" Height="128"></Image>
+            <TextBlock Margin="0,16,0,16" FontSize="32">Welcome to Lunalight</TextBlock>
+            <TextBlock>Lunalight allows your Xbox to control and stream your Computer!</TextBlock>
             <Button Click="GoForward" HorizontalAlignment="Center" Margin="8">
                 <TextBlock>
                     <Run FontFamily="Segoe Fluent Icons">&#xF093;</Run>
@@ -24,7 +24,7 @@
         <!-- Page 2 -->
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Margin="0,16,0,16" FontSize="32">Servers</TextBlock>
-            <TextBlock Margin="0,0,0,16">To make Moonlight work, you need a Server, you can use one of the following ones:</TextBlock>
+            <TextBlock Margin="0,0,0,16">To make Lunalight work, you need a Server, you can use one of the following ones:</TextBlock>
             <StackPanel Orientation="Vertical">
                 <StackPanel Orientation="Horizontal">
                     <Image Source="ms-appx:///Assets/qrSunshine.svg" Width="128" Height="128"></Image>

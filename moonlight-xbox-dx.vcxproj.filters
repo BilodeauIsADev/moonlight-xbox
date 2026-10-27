@@ -73,6 +73,9 @@
     <ClCompile Include="State\MoonlightApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="State\CoverArt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -471,6 +474,9 @@
     <ClInclude Include="State\MoonlightApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="State\CoverArt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -579,6 +585,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\LunalightMark.png">
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\SmallTile.scale-100.png">

@@ -1,5 +1,6 @@
 #include "MoonlightClient.h"
 #include "pch.h"
+#include "State\CoverArt.h"
 
 extern "C" {
 #include <Limelight.h>
@@ -565,6 +566,11 @@ std::vector<MoonlightApp ^> MoonlightClient::GetApplications(bool fetchAssets) {
 					gs_appasset(&serverData, folder, a->Id);
 				}
 				a->ImagePath = imgPath;
+			}
+			// Swap in square SteamGridDB covers once the host's own art is showing.
+			for (auto a : values) {
+				auto cover = CoverArt::FindSquareCover(a->Name, folderString);
+				if (cover != nullptr) a->ImagePath = cover;
 			}
 		});
 	}

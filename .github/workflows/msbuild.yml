@@ -108,6 +108,15 @@ jobs:
         Set-Content "cert.pfx" -Value $encodedBytes -AsByteStream
         Get-FileHash -Path "cert.pfx"
 
+    - name: Write SteamGridDB key
+      env:
+        STEAMGRIDDB_API_KEY: ${{ secrets.STEAMGRIDDB_API_KEY }}
+      run: |
+        # Without the secret (e.g. pull requests from forks) the app falls back to host box art.
+        if ($env:STEAMGRIDDB_API_KEY) {
+          Set-Content SteamGridDbKey.h "#define STEAMGRIDDB_API_KEY L`"$env:STEAMGRIDDB_API_KEY`""
+        }
+
     - name: Build
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference

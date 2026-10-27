@@ -15,7 +15,7 @@
   <mp:PhoneIdentity PhoneProductId="05850585-e2ce-441e-beae-1c76b89fe7ed" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Moonlight UWP</DisplayName>
+    <DisplayName>Lunalight</DisplayName>
     <PublisherDisplayName>TheElixZammuto</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -33,13 +33,13 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="moonlight_xbox_dx.App">
       <uap:VisualElements
-        DisplayName="Moonlight UWP"
+        DisplayName="Lunalight"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
-        Description="moonlight-xbox-dx"
-        BackgroundColor="transparent">
+        Description="Lunalight game streaming"
+        BackgroundColor="#0C0C0E">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#0C0C0E" />
       </uap:VisualElements>
     </Application>
   </Applications>

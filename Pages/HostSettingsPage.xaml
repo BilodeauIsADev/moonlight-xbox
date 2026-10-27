@@ -49,8 +49,8 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                    <FontIcon Glyph="&#xE708;" FontSize="18" Foreground="{StaticResource OrbitTextBrush}"/>
-                    <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" Foreground="{StaticResource OrbitTextBrush}"/>
+                    <Image Source="ms-appx:///Assets/LunalightMark.png" Width="22" Height="22" />
+                    <TextBlock Text="Lunalight" FontSize="17" VerticalAlignment="Center" Foreground="{StaticResource OrbitTextBrush}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
                     <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="HostsNavButton_Click"/>

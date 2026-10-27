@@ -348,3 +348,5 @@ vcpkg_installed
 .stfolder/
 .stignore
 
+# SteamGridDB API key, baked into the build (see SteamGridDbKey.h.example)
+SteamGridDbKey.h

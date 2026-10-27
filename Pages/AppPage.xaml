@@ -67,8 +67,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                    <FontIcon Glyph="&#xE708;" FontSize="18" />
-                    <TextBlock Text="Moonlight" FontSize="17" VerticalAlignment="Center" />
+                    <Image Source="ms-appx:///Assets/LunalightMark.png" Width="22" Height="22" />
+                    <TextBlock Text="Lunalight" FontSize="17" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="36,0,0,0">
                     <Button x:Name="hostsNavButton" Style="{StaticResource OrbitNavButtonStyle}" Content="Hosts" Click="backButton_Click" />
@@ -118,8 +118,8 @@
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="local:MoonlightApp" x:DefaultBindMode="OneWay">
-                            <StackPanel Width="96">
-                                <Grid Width="96" Height="128" CornerRadius="6" Background="{StaticResource OrbitSurfaceBrush}">
+                            <StackPanel Width="128">
+                                <Grid Width="128" Height="128" CornerRadius="6" Background="{StaticResource OrbitSurfaceBrush}">
                                     <Image Source="{x:Bind ImagePath}" Stretch="UniformToFill" />
                                     <Border Visibility="{x:Bind CurrentlyRunning}" Background="{StaticResource OrbitRunningBrush}" CornerRadius="4" Padding="5,1" Margin="6" HorizontalAlignment="Left" VerticalAlignment="Top">
                                         <TextBlock Text="RUNNING" FontSize="10" FontWeight="SemiBold" Foreground="#FF04220F" />

@@ -1,40 +1,40 @@
-﻿# moonlight-xbox 
+<p align="center">
+  <img src=".github/assets/lunalight-banner.png" alt="Lunalight" width="100%">
+</p>
 
-[![Download](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/store/detail/9MW1BS08ZBTH?launch=true&mode=full)
+<p align="center">
+  Stream games from your PC to the Xbox One and Xbox Series X|S with <a href="https://github.com/LizardByte/sunshine">Sunshine</a> or GeForce Experience.
+</p>
 
-A port of [Moonlight Stream](https://moonlight-stream.org/) for playing games using GeForce Experience or [Sunshine](https://github.com/LizardByte/sunshine) for the Xbox One and Xbox Series X|S family of consoles
+<p align="center">
+  <a href="https://github.com/BilodeauIsADev/moonlight-xbox/releases">Releases</a> ·
+  <a href="https://github.com/BilodeauIsADev/moonlight-xbox/actions">Bleeding edge builds</a> ·
+  <a href="https://github.com/BilodeauIsADev/moonlight-xbox/issues">Issues</a>
+</p>
 
-**This application is still in early stages of development. Expect things to not work or working badly**
+---
 
-## Installation and Usage
+Lunalight is a fork of [Moonlight UWP](https://github.com/TheElixZammuto/moonlight-xbox), the Xbox port of [Moonlight](https://moonlight-stream.org/). It keeps the same streaming core and adds a darker, monochrome look built around square game covers.
 
-### For Retail Mode (you probably want to use this)
+> [!NOTE]
+> Lunalight is still in early development. Expect rough edges.
 
-1. Open Microsoft Edge and click the "Get it from Microsoft" Button above 
-2. Downlad Moonlight UWP from the Microsoft Store
-3. Open Moonlight on Xbox and, if not already, your host app
-4. Press the "+" button, Insert your PC IP Address and press "Connect"
-5. Pair if neeeded
-6. Choose from the list below the application you want to run
-7. ???
-8. Profit!
+## Installation
 
-### For Dev Mode
+Lunalight is not on the Microsoft Store. Install it on an Xbox in Dev Mode:
 
-**Looking for the Standard Dev Mode Builds? Can be found here:** [Link](https://github.com/TheElixZammuto/moonlight-xbox/releases)
+1. [Enable Dev Mode](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation) on your Xbox.
+2. Download a build from [Releases](https://github.com/BilodeauIsADev/moonlight-xbox/releases), or a bleeding-edge build from [Actions](https://github.com/BilodeauIsADev/moonlight-xbox/actions).
+3. In the Device Portal, install `moonlight-xbox-dx.msixbundle`, then add the dependencies `Microsoft.UI.Xaml.2.7.appx` and `Microsoft.VCLibs.x64.14.00.appx`.
 
-**Looking for the Bleeding Edge Builds? Can be found here:** [Link](https://github.com/TheElixZammuto/moonlight-xbox/actions)
+## Usage
 
-1. Enable the Dev Mode on your Xbox https://docs.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation
-2. Using the Device Portal, install the Application (moonlight-xbox-dx.msixbundle) and, in the following step, add the required dependencies (Microsoft.UI.Xaml.2.7.appx and Microsoft.VCLibs.x64.14.00.appx)
-3. Open Moonlight on Xbox and, if not already, your host app
-4. Your PC should already be on the list. If not, press the "+" button, Insert your PC IP Address and press "Connect"
-5. Pair if neeeded
-6. Choose from the list below the application you want to run
-7. ???
-8. Profit!
+1. Start your host app (Sunshine or GeForce Experience) on your PC.
+2. Open Lunalight on the Xbox. Your PC should already be in the list; if not, press **+**, enter its IP address and press **Connect**.
+3. Pair if asked.
+4. Pick a game from the list and play.
 
-### PyroWave development preview
+## PyroWave development preview
 
 This branch includes the PyroWave implementation from Andy Grundman's
 [1.19.0-pre1 prerelease](https://github.com/andygrundman/moonlight-xbox/releases/tag/1.19.0-pre1),
@@ -64,61 +64,74 @@ not required. See [the framing tests](tests/README.md) for checks that can run
 without Windows or an Xbox. GPU decoding, HDR, frame pacing, and reconnects
 still need testing on the console.
 
-## What does work
-- Connection and Pairing
-- Application List fetching
-- Video Streaming (configurable on a host-basis in the settings)
-- Gamepad Input (with Rumble, battery reporting, and a mouse mode to move the pointer using the gamepad)
-- Keyboard (both on-screen and using an Hardware one)
-- Graceful Disconnection
-- Host configuration (for resolution and bitrate) and saved host history
-- Audio
+## Features
+
+- Connection and pairing
+- App list with square cover art from [SteamGridDB](https://www.steamgriddb.com/), falling back to the host's box art
+- Video streaming, configurable per host
 - HDR
+- Audio
+- Gamepad input with rumble, battery reporting, and a mouse mode that moves the pointer with the gamepad
+- Keyboard, both on-screen and hardware
+- Host settings for resolution and bitrate, plus saved host history
+- Graceful disconnection
 
-## What does NOT work
+### Not supported
 
-- Hardware Mouse (UWP limitations sadly)
-- Everything else not listed above
+- Hardware mouse (a UWP limitation)
+- Anything not listed above
+
+## Branding
+
+<p>
+  <img src="Assets/Square150x150Logo.scale-200.png" alt="Square tile" height="150">
+  <img src="Assets/Wide310x150Logo.scale-200.png" alt="Wide tile" height="150">
+</p>
+
+Every tile, splash, store and icon asset comes from one script. To change the colors or proportions, edit the constants at the top of [`tools/generate-brand-assets.py`](tools/generate-brand-assets.py) and run:
+
+```sh
+python3 tools/generate-brand-assets.py
+```
+
+It needs Pillow and the Ubuntu Sans variable font.
 
 ## Building
 
 ### Requirements
 
-- Windows 10
-- Visual Studio 2022
-    - WinUI Application Development Workload
-        - Windows 10 SDK (10.0.19041.0) - This is marked as out of support as of VS 2022 version 17.10, but is still necessary for CMake
-        - Universal Windows Platform Tools
-        - C++ (v141, v142, v143) Universal Windows Platform Tools
+- Windows 10 or later
+- Visual Studio 2022 with the **WinUI Application Development** workload, including:
+  - Windows 10 SDK (10.0.19041.0). Visual Studio 17.10+ marks it as out of support, but CMake still needs it.
+  - Universal Windows Platform tools
+  - C++ (v141, v142, v143) Universal Windows Platform tools
 
-### Steps to build
+### Quick setup
 
-**You have two options:**
+1. Clone this repository.
+2. Run `./setup-dev.ps1`.
 
-1. Clone this repository (`moonlight-xbox`) with submodules enabled!
-1. Install [VCPKG](https://vcpkg.io/en/index.html) and all dependencies:
-    1. Run `git submodule update --init --recursive`
-    1. Run `vcpkg\bootstrap-vcpkg.bat`
-    1. Install dependencies: `.\vcpkg\vcpkg.exe install --vcpkg-root vcpkg --triplet x64-uwp`
-1. Run x64 Visual Studio Prompt (Tools → Command Line → Developer Command Prompt)
-    1. Run `generate-thirdparty-projects.bat` to generate `moonlight-common-c` VS project
-    1. Go to `libgamestream` and run `build-uwp.bat` to generate `libgamestream` VS project
-    2. Open `moonlight-xbox-dx.vcxproj` in Visual Studio 2022
-    3. In the solution explorer, right click and build each of these projects, in the following order:
-        - enet
-        - moonlight-common-c
-        - gamestream
-4. In the solution explorer, expand `moonlight-xbox-dx (Universal Windows)`, then double click `Package.appxmanifest`
-5. Under the `Packaging` tab, next to `Publisher`, click the `Choose Certificate` button
-    -If you already have a certificate, select it and skip to the final step
-6. In the `Choose a Certificate` window that appears, click the `Create...` button
-7. Fill out the create prompt which appears, password is unnecessary if only building for personal use and/or debugging purposes.
-8. After all the actions above, you can now build the entire solution.
-1. After all the actions above, you finally can open and build solution.
+### Manual setup
 
-**Or**
+1. Clone this repository with submodules.
+2. Install [vcpkg](https://vcpkg.io/en/index.html) and the dependencies:
+   1. `git submodule update --init --recursive`
+   2. `vcpkg\bootstrap-vcpkg.bat`
+   3. `.\vcpkg\vcpkg.exe install --vcpkg-root vcpkg --triplet x64-uwp`
+3. Open an x64 Developer Command Prompt (Tools → Command Line → Developer Command Prompt):
+   1. Run `generate-thirdparty-projects.bat` to generate the `moonlight-common-c` project.
+   2. In `libgamestream`, run `build-uwp.bat` to generate the `libgamestream` project.
+4. Open `moonlight-xbox-dx.sln` in Visual Studio 2022 and build these projects, in order:
+   - `enet`
+   - `moonlight-common-c`
+   - `gamestream`
+5. Set up a signing certificate:
+   1. In Solution Explorer, expand `moonlight-xbox-dx (Universal Windows)` and open `Package.appxmanifest`.
+   2. On the **Packaging** tab, next to **Publisher**, click **Choose Certificate**.
+   3. Pick an existing certificate, or click **Create...** to make one. A password isn't needed for personal or debug builds.
+6. Optional: for SteamGridDB covers, copy `SteamGridDbKey.h.example` to `SteamGridDbKey.h` and paste your [API key](https://www.steamgriddb.com/profile/preferences/api). The file is gitignored. CI builds read it from the `STEAMGRIDDB_API_KEY` repository secret.
+7. Build the solution.
 
-1. Clone this repository
-1. Run `./setup-dev.ps1`
-1. Have fun!
-   
+## Credits
+
+Lunalight builds on [Moonlight UWP](https://github.com/TheElixZammuto/moonlight-xbox) by TheElixZammuto and contributors, and on [moonlight-common-c](https://github.com/moonlight-stream/moonlight-common-c) from the Moonlight project. See [LICENSE](LICENSE).
