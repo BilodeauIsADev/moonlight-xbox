@@ -305,13 +305,23 @@ namespace moonlight_xbox_dx {
 			void set(Platform::String^ value) {
 				this->playingImageUri = value;
 				OnPropertyChanged("PlayingImageUri");
+				OnPropertyChanged("PlayingImage");
 				OnPropertyChanged("PlayingArtworkVisibility");
+			}
+		}
+
+		// Bound instead of the URI string: an empty string makes XAML's
+		// string-to-ImageSource conversion throw E_INVALIDARG.
+		property Windows::UI::Xaml::Media::ImageSource^ PlayingImage {
+			Windows::UI::Xaml::Media::ImageSource^ get() {
+				if (this->playingImageUri == nullptr || this->playingImageUri->IsEmpty()) return nullptr;
+				return ref new Windows::UI::Xaml::Media::Imaging::BitmapImage(ref new Windows::Foundation::Uri(this->playingImageUri));
 			}
 		}
 
 		property Windows::UI::Xaml::Visibility PlayingArtworkVisibility {
 			Windows::UI::Xaml::Visibility get() {
-				return this->playingImageUri != nullptr ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+				return (this->playingImageUri != nullptr && !this->playingImageUri->IsEmpty()) ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 			}
 		}
 

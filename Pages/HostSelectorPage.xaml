@@ -117,7 +117,7 @@
                             <!-- Accent gradient from the host's name so each PC gets its own card colour -->
                             <Grid Width="160" Height="100" CornerRadius="8" Background="{x:Bind CardBackground}">
                                 <!-- When the host reports a running game, its cached artwork fills the card -->
-                                <Image Source="{x:Bind PlayingImageUri}" Stretch="UniformToFill" Visibility="{x:Bind PlayingArtworkVisibility}" />
+                                <Image Source="{x:Bind PlayingImage}" Stretch="UniformToFill" Visibility="{x:Bind PlayingArtworkVisibility}" />
                                 <Grid Background="#B3000000" Visibility="{x:Bind PlayingArtworkVisibility}" />
                                 <FontIcon Glyph="&#xE7F4;" FontSize="38" Foreground="#E6FFFFFF" />
                                 <FontIcon Glyph="&#xE72E;" FontSize="16" Foreground="{StaticResource OrbitWarningBrush}" Visibility="{x:Bind NotPaired}"
