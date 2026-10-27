@@ -30,6 +30,8 @@ using namespace Windows::UI::Xaml::Navigation;
 /// </summary>
 App::App()
 {
+	// XAML resolves attached dependency properties before calling their accessors.
+	OrbitMotion::RegisterDependencyProperties();
 	InitializeComponent();
 	RequiresPointerMode = Windows::UI::Xaml::ApplicationRequiresPointerMode::WhenRequested;
 	Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);

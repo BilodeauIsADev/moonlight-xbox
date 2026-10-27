@@ -103,7 +103,7 @@ void PrepareComboBox(ComboBox^ combo, bool opened) {
 
 } // namespace
 
-DependencyProperty^ OrbitMotion::KindProperty::get() {
+void OrbitMotion::RegisterDependencyProperties() {
 	if (s_kindProperty == nullptr) {
 		s_transformProperty = DependencyProperty::RegisterAttached(
 			"OriginalTransform", Windows::UI::Xaml::Interop::TypeName(Transform::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid), ref new PropertyMetadata(nullptr));
@@ -114,8 +114,9 @@ DependencyProperty^ OrbitMotion::KindProperty::get() {
 		s_kindProperty = DependencyProperty::RegisterAttached("Kind", Windows::UI::Xaml::Interop::TypeName(OrbitMotionKind::typeid), Windows::UI::Xaml::Interop::TypeName(OrbitMotion::typeid),
 			ref new PropertyMetadata(OrbitMotionKind::None, ref new PropertyChangedCallback(&OrbitMotion::OnKindChanged)));
 	}
-	return s_kindProperty;
 }
+
+DependencyProperty^ OrbitMotion::KindProperty::get() { return s_kindProperty; }
 
 OrbitMotionKind OrbitMotion::GetKind(DependencyObject^ element) { return safe_cast<OrbitMotionKind>(element->GetValue(KindProperty)); }
 void OrbitMotion::SetKind(DependencyObject^ element, OrbitMotionKind value) { element->SetValue(KindProperty, value); }
@@ -126,7 +127,6 @@ bool OrbitMotion::Enabled() {
 }
 
 void OrbitMotion::Stop(UIElement^ element) {
-	(void)KindProperty;
 	element->SetValue(s_revealActiveProperty, false);
 	element->SetValue(s_revealGenerationProperty, safe_cast<int>(element->GetValue(s_revealGenerationProperty)) + 1);
 	auto visual = ElementCompositionPreview::GetElementVisual(element);
@@ -137,7 +137,6 @@ void OrbitMotion::Stop(UIElement^ element) {
 }
 
 void OrbitMotion::Reveal(UIElement^ element, int milliseconds, float offsetY, float initialOpacity) {
-	(void)KindProperty;
 	if (!Enabled()) { Stop(element); return; }
 	ElementCompositionPreview::SetIsTranslationEnabled(element, true);
 	auto visual = ElementCompositionPreview::GetElementVisual(element);

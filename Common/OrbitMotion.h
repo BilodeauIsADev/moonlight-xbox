@@ -24,6 +24,7 @@ public:
 	static void SetKind(Windows::UI::Xaml::DependencyObject^ element, OrbitMotionKind value);
 
 internal:
+	static void RegisterDependencyProperties();
 	static bool Enabled();
 	static void Reveal(Windows::UI::Xaml::UIElement^ element, int milliseconds, float offsetY, float initialOpacity);
 	static void Stop(Windows::UI::Xaml::UIElement^ element);
