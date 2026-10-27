@@ -88,6 +88,7 @@ namespace moonlight_xbox_dx {
 		void Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e);
 		MoonlightHost^ focusedHost;
 		Windows::UI::Xaml::Controls::GridViewItem^ focusedHostItem;
+		void UpdateFirstRunGuide();
 
 		void OnDeviceAdded(Windows::Devices::Enumeration::DeviceWatcher^ sender, Windows::Devices::Enumeration::DeviceInformation^ info);
 		void OnDeviceUpdated(Windows::Devices::Enumeration::DeviceWatcher^ sender, Windows::Devices::Enumeration::DeviceInformationUpdate^ info);

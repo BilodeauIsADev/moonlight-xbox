@@ -454,6 +454,7 @@
     <ClInclude Include="Common\OrbitMotion.h" />
     <ClInclude Include="tests\OrbitUiSmokeTests.h" />
     <ClInclude Include="Common\OrbitArtworkRequest.h" />
+    <ClInclude Include="Common\OrbitHostCard.h" />
     <ClInclude Include="Common\OrbitNavigation.h" />
     <ClInclude Include="Common\OrbitInput.h" />
     <ClInclude Include="Common\DeviceWatcherHelper.h" />

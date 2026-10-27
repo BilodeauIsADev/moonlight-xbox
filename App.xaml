@@ -621,6 +621,12 @@
                 </Setter>
             </Style>
 
+            <!-- Hosts screen first-run checklist steps, shown next to Add host while the shelf is empty -->
+            <Style x:Key="OrbitHostChecklistTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
+            </Style>
+
             <!-- Controller button glyphs (A, B, X, Y, View, Menu) for footer hints -->
             <FontFamily x:Key="OrbitGlyphFont">Segoe MDL2 Assets</FontFamily>
             <Style x:Key="OrbitHintGlyphStyle" TargetType="FontIcon">
