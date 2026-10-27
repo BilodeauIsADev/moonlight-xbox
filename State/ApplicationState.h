@@ -18,6 +18,7 @@ namespace moonlight_xbox_dx {
 		bool alternateCombination;
 		bool navigationSounds = true;
 		bool menuSafeArea = false;
+		int uiScale = 90;
 	internal:
 		Concurrency::task<void> Init();
 		bool AddHost(Platform::String^ hostname);
@@ -129,6 +130,16 @@ namespace moonlight_xbox_dx {
 			void set(bool value) {
 				this->navigationSounds = value;
 				OnPropertyChanged("NavigationSounds");
+			}
+		}
+
+		// Menu pages are drawn at this percentage (100, 90 or 80); the stream is not
+		property int UiScale
+		{
+			int get() { return this->uiScale; }
+			void set(int value) {
+				this->uiScale = (value == 100 || value == 90 || value == 80) ? value : 90;
+				OnPropertyChanged("UiScale");
 			}
 		}
 

@@ -637,48 +637,44 @@
                 <Setter Property="Foreground" Value="{StaticResource OrbitTextSecondaryBrush}" />
             </Style>
 
-            <!-- Controller button caps for footer hints: monochrome outlines, so the
-                 footer reads as one quiet line. Face buttons and View/Menu are circles,
-                 bumpers and triggers are rounded boxes. -->
+            <!-- Controller buttons in footer hints: the console's own glyphs from
+                 Segoe MDL2 Assets, all one colour so the footer reads as one quiet line -->
             <SolidColorBrush x:Key="OrbitHintKeyBrush" Color="#E6FFFFFF" />
-            <Style x:Key="OrbitKeyCapStyle" TargetType="ContentControl">
-                <Setter Property="Width" Value="18" />
-                <Setter Property="Height" Value="18" />
-                <Setter Property="FontSize" Value="10" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource OrbitHintKeyBrush}" />
-                <Setter Property="IsTabStop" Value="False" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ContentControl">
-                            <Border CornerRadius="9" BorderThickness="1.25" BorderBrush="{TemplateBinding BorderBrush}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
-                            </Border>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-            <!-- View and Menu: same circle, symbol instead of a letter -->
-            <Style x:Key="OrbitKeyGlyphCapStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyCapStyle}">
+            <Style x:Key="OrbitKeyGlyphStyle" TargetType="FontIcon">
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-                <Setter Property="FontSize" Value="8" />
-                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="Foreground" Value="{StaticResource OrbitHintKeyBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
-            <Style x:Key="OrbitKeyPillStyle" TargetType="ContentControl" BasedOn="{StaticResource OrbitKeyCapStyle}">
-                <Setter Property="Width" Value="Auto" />
-                <Setter Property="MinWidth" Value="24" />
-                <Setter Property="FontSize" Value="9" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ContentControl">
-                            <Border CornerRadius="4" BorderThickness="1.25" Padding="4,0" BorderBrush="{TemplateBinding BorderBrush}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
-                            </Border>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
+            <Style x:Key="OrbitKeyAStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF093;" />
+            </Style>
+            <Style x:Key="OrbitKeyBStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF094;" />
+            </Style>
+            <Style x:Key="OrbitKeyXStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF096;" />
+            </Style>
+            <Style x:Key="OrbitKeyYStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF095;" />
+            </Style>
+            <Style x:Key="OrbitKeyViewStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xEECA;" />
+            </Style>
+            <Style x:Key="OrbitKeyMenuStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xEDE3;" />
+            </Style>
+            <Style x:Key="OrbitKeyLTStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF10A;" />
+            </Style>
+            <Style x:Key="OrbitKeyRTStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF10B;" />
+            </Style>
+            <Style x:Key="OrbitKeyLBStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF10C;" />
+            </Style>
+            <Style x:Key="OrbitKeyRBStyle" TargetType="FontIcon" BasedOn="{StaticResource OrbitKeyGlyphStyle}">
+                <Setter Property="Glyph" Value="&#xF10D;" />
             </Style>
 
             <!-- Card items in horizontal shelves (apps, hosts): white ring on focus, no selection chrome -->

@@ -401,11 +401,11 @@
                 <!-- Controller hints -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Spacing="20" Margin="0,0,0,10">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
+                        <FontIcon Style="{StaticResource OrbitKeyAStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="B" />
+                        <FontIcon Style="{StaticResource OrbitKeyBStyle}" />
                         <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back to game" />
                     </StackPanel>
                 </StackPanel>

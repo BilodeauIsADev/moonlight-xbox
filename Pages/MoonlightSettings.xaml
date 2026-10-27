@@ -69,7 +69,10 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
-        <Grid Margin="60,36,60,36">
+        <!-- Interface size: AttachUiScale sizes the content, the Viewbox scales it to fit -->
+        <Viewbox Stretch="Fill">
+        <Grid x:Name="ScaledRoot">
+        <Grid Margin="32,20,32,18">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -98,7 +101,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Spacing="6" Margin="-18,0,0,0">
                     <Button x:Name="GeneralSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="General" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind HostSelector}" Background="{StaticResource SettingsSectionSelectedBrush}" Foreground="{StaticResource OrbitTextBrush}"/>
-                    <Button x:Name="DisplaySectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Display" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind ScreenMarginHeightSlider}"/>
+                    <Button x:Name="DisplaySectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Display" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind UiScaleSelector}"/>
                     <Button x:Name="InputSectionButton" Style="{StaticResource SettingsSectionButtonStyle}" Content="Input" GotFocus="SectionButton_GotFocus" Click="SectionButton_GotFocus" XYFocusRight="{x:Bind MouseSensitivitySlider}"/>
                 </StackPanel>
                 <Grid Grid.Column="1" MaxWidth="560" HorizontalAlignment="Left">
@@ -157,6 +160,25 @@
                             </StackPanel>
                             <StackPanel x:Name="DisplayPanel" Spacing="8" Visibility="Collapsed">
                                 <TextBlock Style="{StaticResource SettingsIntroStyle}" Margin="0,0,0,10" Text="Your TV may crop the edges of the picture. Adjust the margins until the whole white outline and its corner marks are visible."/>
+                                <Border Style="{StaticResource SettingsRowStyle}">
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Spacing="3">
+                                            <TextBlock Style="{StaticResource SettingsRowTitleStyle}" Text="Interface size"/>
+                                            <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Text="Size of the menus. The stream itself is not affected."/>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <ComboBox x:Name="UiScaleSelector" SelectionChanged="UiScaleSelector_SelectionChanged" XYFocusLeft="{x:Bind DisplaySectionButton}" AutomationProperties.Name="Interface size">
+                                                <ComboBoxItem Content="Large (100%)" Tag="100"/>
+                                                <ComboBoxItem Content="Medium (90%)" Tag="90"/>
+                                                <ComboBoxItem Content="Small (80%)" Tag="80"/>
+                                            </ComboBox>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
                                 <Border Style="{StaticResource SettingsRowStyle}">
                                     <Grid ColumnSpacing="16">
                                         <Grid.ColumnDefinitions>
@@ -253,21 +275,23 @@
             <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="20" Margin="0,18,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <StackPanel Orientation="Horizontal" Spacing="3">
-                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="LB" />
-                        <ContentControl Style="{StaticResource OrbitKeyPillStyle}" Content="RB" />
+                        <FontIcon Style="{StaticResource OrbitKeyLBStyle}" />
+                        <FontIcon Style="{StaticResource OrbitKeyRBStyle}" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Tabs"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="A" />
+                    <FontIcon Style="{StaticResource OrbitKeyAStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Select"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <ContentControl Style="{StaticResource OrbitKeyCapStyle}" Content="B" />
+                    <FontIcon Style="{StaticResource OrbitKeyBStyle}" />
                     <TextBlock Style="{StaticResource OrbitHintTextStyle}" Text="Back"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
+        </Grid>
+        </Viewbox>
         <!-- Display area calibration, shown while the Display section is open -->
         <Grid x:Name="CalibrationFrame" Margin="{x:Bind State.CalibrationMargin,Mode=OneWay}" IsHitTestVisible="False" Visibility="Collapsed">
             <Border BorderBrush="#99FFFFFF" BorderThickness="2" />

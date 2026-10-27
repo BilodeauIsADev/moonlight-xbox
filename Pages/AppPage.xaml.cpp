@@ -2,6 +2,7 @@
 #include "Common/OrbitInput.h"
 #include "Common/OrbitMotion.h"
 #include "Common/OrbitRecents.h"
+#include "Common/OrbitUiScale.h"
 #include "AppPage.Xaml.h"
 #include "Common\ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -57,6 +58,7 @@ static TimeSpan ShelfPulseTime(int milliseconds) {
 AppPage::AppPage()
 {
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
 	m_artworkLoadTimer = ref new DispatcherTimer();
 	m_artworkLoadTimer->Interval = ShelfPulseTime(120);
 	Platform::WeakReference weakThis(this);

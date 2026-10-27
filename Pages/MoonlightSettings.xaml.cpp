@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "Common/OrbitInput.h"
 #include "MoonlightSettings.xaml.h"
+#include "Common/OrbitUiScale.h"
 #include "MoonlightWelcome.xaml.h"
 #include "Utils.hpp"
 #include "Keyboard/KeyboardCommon.h"
@@ -29,7 +30,10 @@ using namespace Windows::UI::Xaml::Navigation;
 MoonlightSettings::MoonlightSettings()
 {
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
 	state = GetApplicationState();
+	// Interface size: 100, 90, 80 in list order
+	UiScaleSelector->SelectedIndex = state->UiScale == 100 ? 0 : state->UiScale == 80 ? 2 : 1;
 	HookCards();
 	auto item = ref new ComboBoxItem();
 	item->Content = "Don't autoconnect";
@@ -196,4 +200,13 @@ void MoonlightSettings::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::
 
 void MoonlightSettings::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
 	if (OrbitInput::HandleBumpers(e, 2, backButton, nullptr, settingsNavButton)) return;
+}
+
+void MoonlightSettings::UiScaleSelector_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e) {
+	auto item = dynamic_cast<ComboBoxItem^>(UiScaleSelector->SelectedItem);
+	if (item == nullptr || state == nullptr) return;
+	const int scale = _wtoi(safe_cast<Platform::String^>(item->Tag)->Data());
+	if (scale == state->UiScale) return;
+	state->UiScale = scale;
+	state->UpdateFile();
 }

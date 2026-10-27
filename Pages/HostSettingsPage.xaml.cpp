@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "Common/OrbitInput.h"
 #include "HostSettingsPage.xaml.h"
+#include "Common/OrbitUiScale.h"
 #include "MoonlightSettings.xaml.h"
 #include "Utils.hpp"
 #include <gamingdeviceinformation.h>
@@ -32,6 +33,7 @@ using namespace Windows::UI::ViewManagement::Core;
 HostSettingsPage::HostSettingsPage()
 {
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
 	Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->SetDesiredBoundsMode(Windows::UI::ViewManagement::ApplicationViewBoundsMode::UseCoreWindow);
 	this->Loaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnLoaded);
 	this->Unloaded += ref new Windows::UI::Xaml::RoutedEventHandler(this, &HostSettingsPage::OnUnloaded);

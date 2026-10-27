@@ -35,6 +35,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::Init() {
 			if (stateJson.contains("alternateCombination")) this->AlternateCombination = stateJson["alternateCombination"].get<bool>();
 			if (stateJson.contains("navigationSounds")) this->NavigationSounds = stateJson["navigationSounds"].get<bool>();
 			if (stateJson.contains("menuSafeArea")) this->MenuSafeArea = stateJson["menuSafeArea"].get<bool>();
+			if (stateJson.contains("uiScale") && stateJson["uiScale"].is_number_integer()) this->UiScale = stateJson["uiScale"].get<int>();
 			for (auto a : stateJson["hosts"]) {
 				MoonlightHost^ h = ref new MoonlightHost(Utils::StringFromStdString(a["hostname"].get<std::string>()));
 				if (a.contains("instance_id")) h->InstanceId = Utils::StringFromStdString(a["instance_id"].get<std::string>());
@@ -124,6 +125,7 @@ Concurrency::task<void> moonlight_xbox_dx::ApplicationState::UpdateFile() {
 		stateJson["alternateCombination"] = that->AlternateCombination;
 		stateJson["navigationSounds"] = that->NavigationSounds;
 		stateJson["menuSafeArea"] = that->MenuSafeArea;
+		stateJson["uiScale"] = that->UiScale;
 		stateJson["recentlyPlayed"] = nlohmann::json::object();
 		for (auto stamp : that->lastPlayedByApp) {
 			stateJson["recentlyPlayed"][stamp.first] = stamp.second;

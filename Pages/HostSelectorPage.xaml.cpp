@@ -8,6 +8,7 @@
 #include "Common/OrbitInput.h"
 // clang-format on
 #include "HostSelectorPage.xaml.h"
+#include "Common/OrbitUiScale.h"
 #include "AppPage.xaml.h"
 #include "Common/ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -47,6 +48,7 @@ static bool s_stateLoaded = false;
 HostSelectorPage::HostSelectorPage() {
 	state = GetApplicationState();
 	InitializeComponent();
+	AttachUiScale(this, ScaledRoot);
 
 	discoveredDevices = ref new Platform::Collections::Map<String^, DeviceInformation^>();
 	deviceWatcherHelper = ref new DeviceWatcherHelper(Dispatcher);
