@@ -13,6 +13,7 @@ extern "C" {
 #include <atomic>
 #include <cmath>
 #include <string>
+#include <stdexcept>
 #include <gamingdeviceinformation.h>
 #include "Streaming\FFMpegDecoder.h"
 #include "Streaming\PyroWaveDecoder.h"
@@ -549,7 +550,7 @@ int MoonlightClient::Pair() {
 }
 
 std::vector<MoonlightApp ^> MoonlightClient::GetApplications(bool fetchAssets) {
-	PAPP_LIST list;
+	PAPP_LIST list = nullptr;
 	struct app {
 		int Id;
 		Platform::String ^ Name;
@@ -557,8 +558,8 @@ std::vector<MoonlightApp ^> MoonlightClient::GetApplications(bool fetchAssets) {
 	std::vector<struct app> tempValues;
 	std::vector<MoonlightApp ^> values;
 	int status = gs_applist(&serverData, &list);
-	if (list == NULL) return values;
-	if (status != 0) return values;
+	if (status != 0) throw std::runtime_error("Could not load the host application list.");
+	if (list == nullptr) return values;
 	while (list != NULL) {
 		struct app a;
 		a.Id = list->id;
