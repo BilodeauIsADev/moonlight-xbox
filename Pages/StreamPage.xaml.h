@@ -88,6 +88,8 @@ namespace moonlight_xbox_dx
 		void OpenControlCenter();
 		// Fades out the loading screen once the first frame is ready.
 		void HideLoadingScreen();
+		void ShowKeyboard();
+		void HideKeyboard();
 		// Failure and end-of-session screens, driven from the render thread via DISPATCH_UI.
 		void ShowStartFailure(int error, Platform::String^ rawMessage);
 		void ShowSessionSummary(long long durationSeconds);
@@ -202,6 +204,8 @@ namespace moonlight_xbox_dx
 		void toggleMouseButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 	    void SetMouseMode(bool enabled);
 		void showKeyboardButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void hideKeyboardButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void signInDoneButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void toggleLogsButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 	    void SetShowLogs(bool show);
 		StreamConfiguration^ configuration;

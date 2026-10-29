@@ -74,11 +74,18 @@
 
     <Grid>
         <SwapChainPanel x:Name="swapChainPanel" Margin="{x:Bind State.ScreenMargin}">
-            <StackPanel HorizontalAlignment="Stretch" x:Name="KeyboardView" Visibility="Collapsed" VerticalAlignment="Bottom" Margin="64,0,64,16" Padding="8,8,8,8">
+            <StackPanel HorizontalAlignment="Stretch" x:Name="KeyboardView" Visibility="Collapsed" VerticalAlignment="Bottom" Margin="64,0,64,16" Padding="16" Spacing="12" XYFocusKeyboardNavigation="Enabled" TabFocusNavigation="Cycle">
                 <StackPanel.Background>
                     <SolidColorBrush Color="{ThemeResource SystemColorBackgroundColor}" Opacity="0.75" />
                 </StackPanel.Background>
+                <StackPanel x:Name="SignInHeader" Visibility="Collapsed" Spacing="4">
+                    <TextBlock Text="Sign in to your PC" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="Use Enter to dismiss the lock screen, then enter your Windows PIN or password. After signing in, choose Open library." TextWrapping="WrapWholeWords" Foreground="{StaticResource OrbitTextSecondaryBrush}" />
+                    <TextBlock Text="Right stick: pointer · LT: click · X: backspace · Menu: Enter" FontSize="13" Foreground="{StaticResource OrbitTextSecondaryBrush}" />
+                    <Button Content="Open library" Click="signInDoneButton_Click" Style="{StaticResource OrbitPillButtonStyle}" AutomationProperties.HelpText="Disconnect from the PC stream and return to the library. The PC session stays running." />
+                </StackPanel>
                 <local:KeyboardControl OnKeyDown="Keyboard_OnKeyDown" OnKeyUp="Keyboard_OnKeyUp" x:Name="Keyboard"/>
+                <Button Content="Hide keyboard (B)" Click="hideKeyboardButton_Click" Style="{StaticResource OrbitPillButtonStyle}" AutomationProperties.HelpText="Reopen the keyboard from View + Menu, then Keyboard." />
             </StackPanel>
             <Button Click="flyoutButton_Click" IsTabStop="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" x:Name="flyoutButton" AllowFocusOnInteraction="false" Grid.Column="1" Opacity="0">
             </Button>

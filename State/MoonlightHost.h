@@ -44,7 +44,9 @@ namespace moonlight_xbox_dx {
 		bool enableStats = false;
 		bool enableGraphs = true;
 		Windows::Foundation::Collections::IVector<MoonlightApp^>^ apps;
-	internal: void ApplyHostInfo(MoonlightHost^ source);
+	internal:
+		void ApplyHostInfo(MoonlightHost^ source);
+		bool OpenSignInOnConnect = false; // One navigation only; never persisted.
 
 	public:
 		// Thanks to https://phsucharee.wordpress.com/2013/06/19/data-binding-and-ccx-inotifypropertychanged/

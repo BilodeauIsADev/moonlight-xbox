@@ -70,7 +70,8 @@ namespace moonlight_xbox_dx
 	protected:
 		virtual void OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 		virtual void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
- 		void Connect(int app);
+		void Connect(int app, bool forSignIn = false);
+		void OpenSignInStream();
 	public:
 		AppPage();
 		virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;

@@ -121,3 +121,26 @@ It checks the picker hints and top-bar clocks, and opens the Library directly
 without triggering a PC's autostart game. It does not change dropdown selections
 or start a game. Controller button routing,
 streaming, and the system reduced-motion setting still require console checks.
+
+The wake/sign-in tests cover three consecutive responses, service flapping,
+real elapsed timeout, cancellation, fresh retry state, exact Desktop matching,
+and preserving existing sessions. They run as `orbit_wake` in CTest.
+
+Wake/sign-in console verification still requires Windows, Vibeshine, and Xbox:
+
+- With Windows locked, choose Sign in to PC. The keyboard appears after the
+  first streamed frame, including when the normal keyboard setting is off.
+- Test PIN and password sign-in, Tab, Enter, Backspace, Shift and symbols, a
+  physical keyboard, pointer movement and LT click. No credentials appear in
+  application logs or saved state.
+- Hide/reopen the keyboard with B and View + Menu. Closing it with a modifier
+  selected must release the modifier. Test another ordinary game stream after
+  sign-in to check that cached keyboard and session state were reset.
+- Sleep the PC and press X on Hosts. A stable service opens sign-in once. A
+  timeout permits retry. Leave Hosts or remove the PC during wake and verify
+  that a late response never opens a stream.
+- With an autostart game configured, wake still opens sign-in first. With a
+  running game, sign-in resumes it without quitting. Open library leaves the
+  host session running and skips the played-time summary.
+- Remove/rename Desktop with no host session running. The app explains how to
+  add Desktop and keeps the library usable. Test a host app-list fetch failure.

@@ -4,6 +4,10 @@ project(moonlight_xbox_tests LANGUAGES CXX)
 enable_testing()
 find_package(Threads REQUIRED)
 
+add_executable(orbit_wake_tests OrbitWakeTests.cpp)
+target_compile_features(orbit_wake_tests PRIVATE cxx_std_17)
+add_test(NAME orbit_wake COMMAND orbit_wake_tests)
+
 add_executable(orbit_navigation_tests OrbitNavigationTests.cpp)
 target_compile_features(orbit_navigation_tests PRIVATE cxx_std_17)
 add_test(NAME orbit_navigation COMMAND orbit_navigation_tests)

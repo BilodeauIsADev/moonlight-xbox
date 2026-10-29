@@ -242,7 +242,7 @@ bool moonlight_xbox_dx::ApplicationState::WakeHost(MoonlightHost^ host) {
 		47998, 47999, 48000, 48002, 48010 // Ports opened by GFE
 	};
 
-	bool result = Send_Payload(descriptor, wolPayload, "255.255.255.255", 0);
+	bool result = Send_Payload(descriptor, wolPayload, "255.255.255.255", 9);
 
 	for (int i = 0; i < addressList.size(); i++) {
 		for (int j = 0; j < ports.size(); j++) {
@@ -353,7 +353,7 @@ bool moonlight_xbox_dx::ApplicationState::Send_Payload(int descriptor, std::stri
 	addr.sin_addr.s_addr = inet_addr(address.c_str());
 	addr.sin_port = htons(port);
 
-	bind(descriptor, (struct sockaddr*)&addr, sizeof(addr));
+	// sendto binds a local endpoint; addr is the remote destination.
 
 	int status = sendto(descriptor, payload.c_str(), (int)payload.length(), 0, (struct sockaddr*)&addr, sizeof(addr));
 	if (status == SOCKET_ERROR) {

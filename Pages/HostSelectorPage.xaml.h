@@ -64,6 +64,9 @@ namespace moonlight_xbox_dx {
 		ApplicationState^ state;
 		bool pendingInitialFocus = true;
 		bool waitingForAutoConnect = false;
+		std::shared_ptr<std::atomic<bool>> wakeCancelled;
+		void signInButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ConnectForSignIn(MoonlightHost^ host);
 		void TryFocusInitialHost();
 		void Page_LayoutUpdated(Platform::Object^ sender, Platform::Object^ e);
 		void Page_PointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e);

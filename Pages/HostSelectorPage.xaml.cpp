@@ -9,6 +9,7 @@
 // clang-format on
 #include "HostSelectorPage.xaml.h"
 #include "Common/OrbitUiScale.h"
+#include "Common/OrbitWake.h"
 #include "AppPage.xaml.h"
 #include "Common/ModalDialog.xaml.h"
 #include "HostSettingsPage.xaml.h"
@@ -194,6 +195,8 @@ void HostSelectorPage::ShowHostActions(Windows::UI::Xaml::FrameworkElement^ anch
 		return;
 	}
 
+	signInButton->Visibility = currentHost->Connected && currentHost->Paired && !currentHost->WolPolling
+		? Visibility::Visible : Visibility::Collapsed;
 	if (currentHost->Connected || currentHost->WolPolling) {
 		this->wakeHostButton->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 		this->testConnectionButton->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -350,6 +353,17 @@ void HostSelectorPage::Connect(MoonlightHost^ host) {
 	bool result = this->Frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host);
 }
 
+void HostSelectorPage::ConnectForSignIn(MoonlightHost^ host) {
+	host->OpenSignInOnConnect = true;
+	ActionsFlyout->Hide();
+	Connect(host);
+}
+
+void HostSelectorPage::signInButton_Click(Platform::Object^ sender, RoutedEventArgs^ e) {
+	if (currentHost != nullptr && currentHost->Connected && currentHost->Paired)
+		ConnectForSignIn(currentHost);
+}
+
 void HostSelectorPage::HostsGrid_GotFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
 	auto item = dynamic_cast<GridViewItem^>(e->OriginalSource);
 	if (item == nullptr) return;
@@ -429,6 +443,7 @@ void HostSelectorPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEv
 }
 
 void HostSelectorPage::OnNavigatedFrom(NavigationEventArgs^ e) {
+	if (wakeCancelled) wakeCancelled->store(true);
 	Utils::Logf("[mDNS] Stopping watcher\n");
 	deviceWatcherHelper->Reset();
 	discoveredDevices->Clear();
@@ -542,72 +557,83 @@ void HostSelectorPage::OnKeyDown(Platform::Object^ sender, Windows::UI::Xaml::In
 	}
 }
 
-void moonlight_xbox_dx::HostSelectorPage::wakeHostButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
-	if (currentHost == nullptr) {
-		return;
-	}
-
+void HostSelectorPage::wakeHostButton_Click(Platform::Object^ sender, RoutedEventArgs^ e) {
+	if (currentHost == nullptr || currentHost->WolPolling) return;
+	auto host = currentHost;
+	ActionsFlyout->Hide();
 	try {
-		bool success = State->WakeHost(currentHost);
-		if (!success) {
-			ContentDialog^ fail = ref new ContentDialog();
-			fail->Title = "Wake Host Failed";
-			fail->Content = "Failed to send Wake-on-LAN packet.\n\nPlease check if Wake-on-LAN is enabled on the host.";
-			fail->PrimaryButtonText = "OK";
-			concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(fail));
+		if (!State->WakeHost(host)) {
+			auto fail = ref new ContentDialog();
+			fail->Title = L"Could not wake PC";
+			fail->Content = L"The wake packet could not be sent. Check the Xbox network connection and try again.";
+			fail->CloseButtonText = L"OK";
+			concurrency::create_task(ModalDialog::ShowOnceAsync(fail));
+			return;
 		}
-
-		// After sending WoL successfully, aggressively poll this host for a short period
-		// to detect when it comes online (hosts can take time to boot/respond).
-		// Poll every 1s for up to 60s, stop early if Connected becomes true.
-		if (success) {
-			auto host = currentHost;
-			host->WolPolling = true;
-			concurrency::create_task(concurrency::create_async([host]() {
-				int consecutiveSuccess = 0;
-				auto wakeStarted = std::chrono::steady_clock::now();
-				for (int i = 0; i < 60; ++i) {
-					// Probes can time out, so show real elapsed time rather than the attempt count.
-					host->WolPollingSeconds = (int)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - wakeStarted).count();
-					try {
-						host->UpdateHostInfo(false);
-						if (host->Connected) {
-							consecutiveSuccess++;
-							if (consecutiveSuccess >= 3) {
-								host->WolPolling = false;
-								break;
-							}
+		if (wakeCancelled) wakeCancelled->store(true);
+		auto cancelled = std::make_shared<std::atomic<bool>>(false);
+		wakeCancelled = cancelled;
+		host->WolPolling = true;
+		auto hostname = host->LastHostname;
+		auto instanceId = host->InstanceId;
+		auto dispatcher = Dispatcher;
+		Platform::WeakReference weakThis(this);
+		concurrency::create_task([host, hostname, instanceId, dispatcher, cancelled]() {
+			OrbitWake::Attempt attempt;
+			auto started = std::chrono::steady_clock::now();
+			// Probe separately so discovery and library refresh never share this client.
+			auto probe = ref new MoonlightHost(hostname);
+			auto result = OrbitWake::Result::Waiting;
+			while (result == OrbitWake::Result::Waiting) {
+				if (cancelled->load()) return OrbitWake::Result::Cancelled;
+				auto elapsed = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(
+					std::chrono::steady_clock::now() - started).count());
+				if (elapsed >= 60) return OrbitWake::Result::TimedOut;
+				bool connected = false;
+				try {
+					probe->UpdateHostInfo(false);
+					connected = probe->Connected && (instanceId == nullptr || instanceId->IsEmpty() ||
+						probe->InstanceId == instanceId);
+				} catch (...) {}
+				elapsed = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(
+					std::chrono::steady_clock::now() - started).count());
+				result = attempt.Observe(connected, elapsed, cancelled->load());
+				concurrency::create_task(dispatcher->RunAsync(CoreDispatcherPriority::High,
+					ref new DispatchedHandler([host, probe, connected, elapsed, cancelled]() {
+						if (cancelled->load()) return;
+						host->WolPollingSeconds = elapsed;
+						if (connected) host->ApplyHostInfo(probe);
+						else host->Connected = false;
+					}))).get();
+				if (result == OrbitWake::Result::Waiting) Sleep(1000);
+			}
+			return result;
+		}).then([host, dispatcher, weakThis, cancelled](concurrency::task<OrbitWake::Result> previous) {
+			auto result = OrbitWake::Result::TimedOut;
+			try { result = previous.get(); } catch (...) {}
+			dispatcher->RunAsync(CoreDispatcherPriority::Normal,
+				ref new DispatchedHandler([host, weakThis, cancelled, result]() {
+					host->WolPolling = false;
+					if (cancelled->load()) return;
+					host->WakeTimedOut = result == OrbitWake::Result::TimedOut && !host->Connected;
+					auto page = weakThis.Resolve<HostSelectorPage>();
+					if (result != OrbitWake::Result::Ready || page == nullptr ||
+						page->Frame == nullptr || page->Frame->Content != page) return;
+					// Removing a PC or leaving the picker must not open a late stream.
+					for (auto saved : page->State->SavedHosts) {
+						if (saved == host) {
+							page->ConnectForSignIn(host);
+							return;
 						}
-						else {
-							consecutiveSuccess = 0;
-						}
 					}
-					catch (...) {
-						consecutiveSuccess = 0;
-					}
-					Sleep(1000);
-				}
-				})).then([host](concurrency::task<void> t) {
-					try {
-						t.get();
-					}
-					catch (...) {
-					}
-					Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([host]() {
-						host->WolPolling = false;
-						// Polling gave up without ever reaching the host: dim the card
-						// until the next wake attempt clears the timeout.
-						if (!host->Connected) host->WakeTimedOut = true;
-						}));
-					});
-		}
-	}
-	catch (std::exception ex) {
-		ContentDialog^ dialog = ref new ContentDialog();
-		dialog->Title = "Wake Host Error";
-		dialog->Content = "An error occurred while trying to wake the host:\n\n" + Utils::StringFromChars((char*)ex.what());
-		dialog->PrimaryButtonText = "OK";
-		concurrency::create_task(::moonlight_xbox_dx::ModalDialog::ShowOnceAsync(dialog));
+				}));
+		});
+	} catch (const std::exception& ex) {
+		auto dialog = ref new ContentDialog();
+		dialog->Title = L"Could not wake PC";
+		dialog->Content = Utils::StringFromStdString(ex.what());
+		dialog->CloseButtonText = L"OK";
+		concurrency::create_task(ModalDialog::ShowOnceAsync(dialog));
 	}
 }
 

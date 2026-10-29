@@ -25,10 +25,13 @@
                     <SymbolIcon Symbol="Help" />
                 </MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
-            <MenuFlyoutItem x:Name="wakeHostButton" Click="wakeHostButton_Click" Text="Wake Host" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
+            <MenuFlyoutItem x:Name="wakeHostButton" Click="wakeHostButton_Click" Text="Wake and sign in" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5" >
                 <MenuFlyoutItem.Icon>
                     <SymbolIcon Symbol="MapDrive" />
                 </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="signInButton" Click="signInButton_Click" Text="Sign in to PC" Visibility="Collapsed" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5">
+                <MenuFlyoutItem.Icon><SymbolIcon Symbol="Permissions" /></MenuFlyoutItem.Icon>
             </MenuFlyoutItem>
             <MenuFlyoutItem x:Name="testConnectionButton" Click="testConnectionButton_Click" Text="Test Connection" AllowFocusOnInteraction="false" FocusVisualSecondaryThickness="0.5">
                 <MenuFlyoutItem.Icon>

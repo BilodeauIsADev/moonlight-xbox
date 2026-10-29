@@ -2,6 +2,7 @@
 #include "Common/OrbitInput.h"
 #include "Common/OrbitMotion.h"
 #include "Common/OrbitRecents.h"
+#include "Common/OrbitWake.h"
 #include "Common/OrbitUiScale.h"
 #include "Common/OrbitClock.h"
 #include "AppPage.Xaml.h"
@@ -113,7 +114,9 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 	continueAppFetch.store(true);
 	wasConnected.store(host->Connected);
 
-	bool autostart = host->AutostartID >= 0 && GetApplicationState()->shouldAutoConnect;
+	bool forSignIn = host->OpenSignInOnConnect;
+	host->OpenSignInOnConnect = false;
+	bool autostart = !forSignIn && host->AutostartID >= 0 && GetApplicationState()->shouldAutoConnect;
 	GetApplicationState()->shouldAutoConnect = false;
 
 	Platform::WeakReference weakThis(this);
@@ -121,9 +124,11 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 		auto that = weakThis.Resolve<AppPage>();
 		if (that == nullptr) return;
 		that->host->UpdateApps();
-	}).then([weakThis, autostart](concurrency::task<void> previous) {
+	}).then([weakThis, autostart, forSignIn](concurrency::task<void> previous) {
+		bool fetched = false;
 		try {
 			previous.get();
+			fetched = true;
 		} catch (const std::exception &e) {
 			Utils::Logf("[AppPage] Failed to refresh host and app list. Exception: %s\n", e.what());
 		} catch (...) {
@@ -131,12 +136,23 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 		}
 		auto that = weakThis.Resolve<AppPage>();
 		if (that == nullptr) return;
-		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([weakThis, autostart]() {
+		that->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([weakThis, autostart, forSignIn, fetched]() {
 			auto inner = weakThis.Resolve<AppPage>();
 			// The page may have connected (autostart) or navigated away already
 			if (inner == nullptr || !inner->continueAppFetch.load()) return;
 			inner->ShowShelfLoading(false);
 			inner->UpdateEmptyShelfState();
+			if (forSignIn && fetched) {
+				inner->OpenSignInStream();
+				return;
+			}
+			if (forSignIn) {
+				auto dialog = ref new ContentDialog();
+				dialog->Title = L"Could not open sign-in";
+				dialog->Content = L"The PC responded, but its app list could not be loaded. Check that Vibeshine is running as a service, then try Sign in to PC from the PC options.";
+				dialog->CloseButtonText = L"OK";
+				create_task(ModalDialog::ShowOnceAsync(dialog));
+			}
 			// Autostart once the list is in, so the loading screen has the game's name and art
 			if (autostart) {
 				inner->Connect(inner->host->AutostartID);
@@ -312,18 +328,40 @@ void AppPage::StartOrResume(MoonlightApp^ app) {
 	this->Connect(app->Id);
 }
 
-void AppPage::Connect(int appId) {
+void AppPage::OpenSignInStream() {
+	int desktopId = -1;
+	for (auto app : host->Apps) {
+		if (app->Name != nullptr && OrbitWake::IsDesktop(app->Name->Data())) {
+			desktopId = app->Id;
+			break;
+		}
+	}
+	const int appId = OrbitWake::SignInAppId(desktopId, host->CurrentlyRunningAppId);
+	if (appId >= 0) {
+		Connect(appId, true);
+		return;
+	}
+	StartAppPolling();
+	auto dialog = ref new ContentDialog();
+	dialog->Title = L"Desktop is unavailable";
+	dialog->Content = L"Add an application named Desktop in Vibeshine with its command left empty. Then choose Sign in to PC from the PC options.";
+	dialog->CloseButtonText = L"OK";
+	create_task(ModalDialog::ShowOnceAsync(dialog));
+}
+
+void AppPage::Connect(int appId, bool forSignIn) {
 
 	continueAppFetch.store(false);
 
 	// Remember the launch so the shelf can put recently played apps first
-	GetApplicationState()->RecordAppPlayed(host, appId);
+	if (!forSignIn) GetApplicationState()->RecordAppPlayed(host, appId);
 
 	MoonlightApp^ app = GetAppById(host, appId);
 
 	StreamConfiguration ^ config = ref new StreamConfiguration();
 	config->hostname = host->LastHostname;
 	config->appID = appId;
+	config->signIn = forSignIn;
 	config->appName = app ? app->Name : "App";
 	config->appImagePath = app ? app->ImagePath : nullptr;
 	config->width = host->Resolution->Width;

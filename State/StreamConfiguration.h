@@ -6,6 +6,7 @@ namespace moonlight_xbox_dx
 	public:
 		property Platform::String^ hostname;
 		property int appID;
+		property bool signIn;
 	    property Platform::String^ appName;
 		property Platform::String^ appImagePath;
 		property int width;

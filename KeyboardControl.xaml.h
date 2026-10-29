@@ -40,6 +40,7 @@ namespace moonlight_xbox_dx
 	{
 	public:
 		KeyboardControl();
+		void ResetModifiers();
 		event SoftwareKeyboardDown^ OnKeyDown;
 		event SoftwareKeyboardUp^ OnKeyUp;
 	private:

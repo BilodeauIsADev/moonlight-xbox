@@ -27,7 +27,7 @@ namespace moonlight_xbox_dx
 		void StopRenderLoop();
 		void SetFlyoutOpened(bool value);
 		Concurrency::critical_section& GetCriticalSection() { return m_criticalSection; }
-		bool keyboardMode = false;
+		std::atomic<bool> keyboardMode{ false };
 		void OnKeyDown(unsigned short virtualKey, char modifiers);
 		void OnKeyUp(unsigned short virtualKey, char modifiers);
 		// IDeviceNotify

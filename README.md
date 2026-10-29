@@ -34,6 +34,13 @@ Lunalight is not on the Microsoft Store. Install it on an Xbox in Dev Mode:
 3. Pair if asked.
 4. Pick a game from the list and play.
 
+## Wake and sign in
+
+Focus a sleeping paired PC and press **X** to wake it and open its Windows
+sign-in screen with a controller keyboard. For an awake PC, choose **Sign in
+to PC** from its options. After Windows unlocks, choose **Open library**.
+See [setup and ASUS B550-F Gaming instructions](docs/wake-and-sign-in.md).
+
 ## PyroWave development preview
 
 This branch includes the PyroWave implementation from Andy Grundman's

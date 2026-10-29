@@ -624,14 +624,8 @@ void moonlight_xbox_dxMain::ProcessInput(int64_t now) {
 
 			// B to close
 			if (PressedEdge(reading, prevReading, GamepadButtons::B)) {
-				if (GetApplicationState()->EnableKeyboard) {
-					m_streamPage->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this]() {
-						                                   m_streamPage->m_keyboardView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-					                                   }));
-					keyboardMode = false;
-				} else {
-					CoreInputView::GetForCurrentView()->TryHide();
-				}
+				m_streamPage->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal,
+					ref new Windows::UI::Core::DispatchedHandler([this]() { m_streamPage->HideKeyboard(); }));
 			}
 			// X to backspace
 			if (PressedEdge(reading, prevReading, GamepadButtons::X)) {
@@ -713,14 +707,8 @@ void moonlight_xbox_dxMain::ProcessInput(int64_t now) {
 			}
 			// Keyboard (Y)
 			if (PressedEdge(reading, prevReading, GamepadButtons::Y)) {
-				if (GetApplicationState()->EnableKeyboard) {
-					m_streamPage->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, ref new Windows::UI::Core::DispatchedHandler([this]() {
-						                                   m_streamPage->m_keyboardView->Visibility = Windows::UI::Xaml::Visibility::Visible;
-					                                   }));
-					keyboardMode = true;
-				} else {
-					CoreInputView::GetForCurrentView()->TryShow(CoreInputViewKind::Keyboard);
-				}
+				m_streamPage->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal,
+					ref new Windows::UI::Core::DispatchedHandler([this]() { m_streamPage->ShowKeyboard(); }));
 			}
 			// Scroll
 			short scrollV, scrollH;

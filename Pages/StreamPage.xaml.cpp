@@ -69,6 +69,8 @@ void StreamPage::OnBackRequested(Platform::Object^ e,Windows::UI::Core::BackRequ
 		DismissSessionSummary();
 	} else if (m_startFailureShown) {
 		LeaveFailedStream();
+	} else if (KeyboardView->Visibility == Visibility::Visible) {
+		HideKeyboard();
 	} else if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) {
 		HideControlCenter();
 	}
@@ -123,6 +125,7 @@ void StreamPage::Page_Loaded(Platform::Object ^ sender, Windows::UI::Xaml::Route
 
 // Restores the loading screen for a fresh attempt, first load or Retry alike.
 void StreamPage::ResetLoadingVisuals() {
+	HideKeyboard();
 	this->m_progressView->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	this->m_progressView->Opacity = 1;
 	this->m_progressRing->IsActive = true;
@@ -173,6 +176,7 @@ void StreamPage::StartConnection() {
 }
 
 void StreamPage::Page_Unloaded(Platform::Object ^ sender, Windows::UI::Xaml::RoutedEventArgs ^ e) {
+	HideKeyboard();
 	HideControlCenter();
 	if (m_summaryTimer != nullptr) m_summaryTimer->Stop();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
@@ -233,6 +237,7 @@ void StreamPage::OpenControlCenter()
 		HideControlCenter();
 		return;
 	}
+	HideKeyboard();
 	m_main->SetFlyoutOpened(true);
 	ControlCenter->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	// Capture stops itself when it hits the size limit, so resync the button text.
@@ -303,6 +308,9 @@ void StreamPage::HideLoadingScreen()
 void StreamPage::OnLoadingOutroCompleted(Platform::Object^ sender, Platform::Object^ e)
 {
 	ProgressView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	if (configuration != nullptr && configuration->signIn && !m_startFailureShown &&
+		Frame != nullptr && Frame->Content == this && m_main != nullptr &&
+		!m_main->moonlightClient->IsConnectionTerminated()) ShowKeyboard();
 	dynamic_cast<Windows::UI::Xaml::Media::Animation::Storyboard^>(Resources->Lookup("LoadingIntro"))->Stop();
 }
 
@@ -311,6 +319,7 @@ void StreamPage::OnLoadingOutroCompleted(Platform::Object^ sender, Platform::Obj
 void StreamPage::ShowStartFailure(int error, Platform::String^ rawMessage) {
 	if (m_startFailureShown) return;
 	m_startFailureShown = true;
+	HideKeyboard();
 
 	std::string raw = rawMessage != nullptr ? Utils::PlatformStringToStdString(rawMessage) : std::string();
 	std::string reason = OrbitStreamUi::DescribeStartFailure(error, raw);
@@ -416,6 +425,10 @@ void StreamPage::LeaveFailedStream() {
 // library when the timer fires or A/B is pressed.
 void StreamPage::ShowSessionSummary(long long durationSeconds) {
 	if (m_main == nullptr) return;
+	if (configuration != nullptr && configuration->signIn) {
+		m_main->ExitStreamPage();
+		return;
+	}
 	if (m_sessionEnded) return;
 	m_sessionEnded = true;
 
@@ -623,21 +636,40 @@ void StreamPage::SetMouseMode(bool enabled)
 	if (m_main) m_main->mouseMode = this->MouseMode;
 }
 
-void StreamPage::showKeyboardButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void StreamPage::showKeyboardButton_Click(Platform::Object^ sender, RoutedEventArgs^ e)
 {
-	HideControlCenter();
-	if (!m_main) return;
-	if (GetApplicationState()->EnableKeyboard) {
-		m_main->keyboardMode = true;
+	ShowKeyboard();
+}
 
-		this->Dispatcher->RunAsync(
-			Windows::UI::Core::CoreDispatcherPriority::Normal,
-			ref new Windows::UI::Core::DispatchedHandler([this]() {
-				this->m_keyboardView->Visibility = Windows::UI::Xaml::Visibility::Visible;
-			}));
+void StreamPage::ShowKeyboard() {
+	HideControlCenter();
+	if (!m_main || m_startFailureShown || m_main->moonlightClient->IsConnectionTerminated()) return;
+	const bool signIn = configuration != nullptr && configuration->signIn;
+	if (signIn || GetApplicationState()->EnableKeyboard) {
+		Keyboard->ResetModifiers();
+		SignInHeader->Visibility = signIn ? Visibility::Visible : Visibility::Collapsed;
+		m_main->keyboardMode = true;
+		KeyboardView->Visibility = Visibility::Visible;
+		safe_cast<Button^>(Keyboard->FindName("Key_02"))->Focus(FocusState::Keyboard);
 	} else {
 		CoreInputView::GetForCurrentView()->TryShow(CoreInputViewKind::Keyboard);
 	}
+}
+
+void StreamPage::HideKeyboard() {
+	Keyboard->ResetModifiers();
+	KeyboardView->Visibility = Visibility::Collapsed;
+	if (m_main) m_main->keyboardMode = false;
+}
+
+void StreamPage::hideKeyboardButton_Click(Platform::Object^ sender, RoutedEventArgs^ e) {
+	HideKeyboard();
+}
+
+void StreamPage::signInDoneButton_Click(Platform::Object^ sender, RoutedEventArgs^ e) {
+	HideKeyboard();
+	// Windows decides whether sign-in succeeded. Leave the host session running.
+	if (m_main) disonnectButton_Click(sender, e);
 }
 
 void StreamPage::toggleLogsButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -672,6 +704,8 @@ void StreamPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArg
 	OnPropertyChanged("LoadingArtPath");
 	OnPropertyChanged("LoadingTitle");
 
+	m_sessionEnded = false;
+	m_closingApp = false;
 	m_streamStart = std::chrono::steady_clock::now();
 	SetCaptureMode(false);
 	SetMouseMode(false);
@@ -721,6 +755,7 @@ void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::C
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Menu) == (CoreVirtualKeyStates::Down) ? MODIFIER_ALT : 0;
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Shift) == (CoreVirtualKeyStates::Down) ? MODIFIER_SHIFT : 0;
 	this->m_main->OnKeyDown((unsigned short)e->VirtualKey,modifiers);
+	if (KeyboardView->Visibility == Visibility::Visible) e->Handled = true;
 }
 
 
@@ -738,6 +773,7 @@ void StreamPage::OnKeyUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Cor
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Menu) == (CoreVirtualKeyStates::Down) ? MODIFIER_ALT : 0;
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Shift) == (CoreVirtualKeyStates::Down) ? MODIFIER_SHIFT : 0;
 	this->m_main->OnKeyUp((unsigned short) e->VirtualKey, modifiers);
+	if (KeyboardView->Visibility == Visibility::Visible) e->Handled = true;
 
 }
 
@@ -775,13 +811,13 @@ void StreamPage::disconnectAndCloseButton_Click(Platform::Object ^ sender, Windo
 
 void StreamPage::Keyboard_OnKeyDown(KeyboardControl^ sender, KeyEvent^ e)
 {
-	this->m_main->OnKeyDown(e->VirtualKey, e->Modifiers);
+	if (m_main && !m_main->moonlightClient->IsConnectionTerminated()) m_main->OnKeyDown(e->VirtualKey, e->Modifiers);
 }
 
 
 void StreamPage::Keyboard_OnKeyUp(KeyboardControl^ sender, KeyEvent^ e)
 {
-	this->m_main->OnKeyUp(e->VirtualKey, e->Modifiers);
+	if (m_main) m_main->OnKeyUp(e->VirtualKey, e->Modifiers);
 }
 
 

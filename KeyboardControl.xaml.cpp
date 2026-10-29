@@ -27,11 +27,25 @@ KeyboardControl::KeyboardControl()
 {
 	InitializeComponent();
 	std::string layoutName = "us";
-	if (GetApplicationState()->EnableKeyboard && GetApplicationState()->KeyboardLayout != nullptr && GetApplicationState()->KeyboardLayout->Length() > 0) {
+	if (GetApplicationState()->KeyboardLayout != nullptr && GetApplicationState()->KeyboardLayout->Length() > 0) {
 		layoutName = Utils::PlatformStringToStdString(GetApplicationState()->KeyboardLayout);
 	}
-	layout = keyboardLayouts[layoutName];
- 	UpdateKeys();
+	auto found = keyboardLayouts.find(layoutName);
+	layout = found != keyboardLayouts.end() ? found->second : keyboardLayouts.at("us");
+	UpdateKeys();
+}
+
+void KeyboardControl::ResetModifiers() {
+	const unsigned short keys[] = { VK_SHIFT, VK_CONTROL, VK_MENU };
+	const bool held[] = { toggleShift, toggleCtrl, toggleAlt };
+	for (int i = 0; i < 3; ++i) {
+		if (!held[i]) continue;
+		auto ev = ref new KeyEvent();
+		ev->VirtualKey = keys[i];
+		OnKeyUp(this, ev);
+	}
+	toggleShift = toggleCtrl = toggleAlt = false;
+	UpdateKeys();
 }
 
 void KeyboardControl::UpdateLabel(int virtualCode, wchar_t c) {
