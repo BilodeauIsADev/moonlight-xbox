@@ -144,3 +144,16 @@ Wake/sign-in console verification still requires Windows, Vibeshine, and Xbox:
   host session running and skips the played-time summary.
 - Remove/rename Desktop with no host session running. The app explains how to
   add Desktop and keeps the library usable. Test a host app-list fetch failure.
+
+The `wake_on_lan` tests use the production packet/MAC/prefix helpers. They cover
+host `10.0.0.3` and MAC `04:42:1a:0a:5c:07` on an Xbox interface at
+`10.0.0.42/24`, asserting the exact `10.0.0.255` broadcast and 102-byte magic
+packet. They also cover /16, /23 and /25 prefixes, overlapping adapters, missing
+or invalid prefixes, off-subnet hosts, ports 7 and 9, and rejection of hidden,
+empty, malformed, multicast and broadcast MACs by the shared setter guard.
+
+On Windows/Xbox, check that an HTTPS-to-HTTP serverinfo fallback and a discovery
+refresh leave the saved MAC unchanged. With the test PC in S3 sleep and Xbox on
+the same /24 LAN, verify wake packets reach `10.0.0.255:7` and `:9`, then verify
+that the PC wakes. These hardware and WinRT integration checks are not covered
+by portable CTest.

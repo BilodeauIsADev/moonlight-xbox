@@ -5,6 +5,7 @@
 // clang-format on
 #include "State\MoonlightClient.h"
 #include "Common\OrbitHostCard.h"
+#include "Common/WakeOnLan.h"
 #include "State\ScreenResolution.h"
 namespace moonlight_xbox_dx {
 
@@ -14,7 +15,7 @@ namespace moonlight_xbox_dx {
 		Platform::String^ lastHostname;
 		Platform::String^ computerName;
 		Platform::String^ serverAddress;
-		Platform::String^ macAddress;
+		Platform::String^ macAddress = L"";
 		bool paired;
 		bool connected;
 		bool loading = true;
@@ -108,6 +109,8 @@ namespace moonlight_xbox_dx {
 				return this->macAddress;
 			}
 			void set(Platform::String^ value) {
+				// HTTP serverinfo deliberately hides the MAC; retain the last usable value.
+				if (value == nullptr || !WakeOnLan::IsUsableMac(std::wstring(value->Data(), value->Length()))) return;
 				this->macAddress = value;
 				OnPropertyChanged("MacAddress");
 			}

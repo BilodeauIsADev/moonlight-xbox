@@ -2,6 +2,7 @@
 #include "pch.h"
 // clang-format on
 #include "ApplicationState.h"
+#include "Common/WakeOnLan.h"
 #include <Utils.hpp>
 #include <nlohmann/json.hpp>
 
@@ -90,7 +91,8 @@ bool moonlight_xbox_dx::ApplicationState::AddHost(Platform::String^ hostname) {
 			bool missingIdentity = saved->InstanceId == nullptr || saved->InstanceId->IsEmpty();
 			if (sameIdentity || (missingIdentity && host->LastHostname == saved->LastHostname)) {
 				bool metadataChanged = saved->LastHostname != host->LastHostname || saved->InstanceId != host->InstanceId ||
-					saved->ComputerName != host->ComputerName || saved->ServerAddress != host->ServerAddress || saved->MacAddress != host->MacAddress;
+					saved->ComputerName != host->ComputerName || saved->ServerAddress != host->ServerAddress ||
+					(!host->MacAddress->IsEmpty() && saved->MacAddress != host->MacAddress);
 				saved->ApplyHostInfo(host);
 				Utils::Logf("[Hosts] Available: %s (%s)\n", Utils::PlatformStringToStdString(saved->ComputerName).c_str(),
 					Utils::PlatformStringToStdString(saved->LastHostname).c_str());
@@ -233,20 +235,14 @@ moonlight_xbox_dx::ApplicationState^ moonlight_xbox_dx::GetApplicationState() {
 bool moonlight_xbox_dx::ApplicationState::WakeHost(MoonlightHost^ host) {
 	Validate_WoL(host);
 	std::string wolPayload = WoL_Payload(Utils::PlatformStringToStdString(host->MacAddress));
-	int descriptor = Open_Socket();
 	auto addressList = Build_Unique_Addresses(host);
+	int descriptor = Open_Socket();
 
-	std::vector<int> ports = {
-		9,                                // Standard WOL port (privileged port)
-		47009,                            // Port opened by Moonlight Internet Hosting Tool for WoL (non-privileged port)
-		47998, 47999, 48000, 48002, 48010 // Ports opened by GFE
-	};
-
-	bool result = Send_Payload(descriptor, wolPayload, "255.255.255.255", 9);
+	bool result = false;
 
 	for (int i = 0; i < addressList.size(); i++) {
-		for (int j = 0; j < ports.size(); j++) {
-			bool sendResult = Send_Payload(descriptor, wolPayload, addressList[i], ports[j]);
+		for (auto port : WakeOnLan::Ports) {
+			bool sendResult = Send_Payload(descriptor, wolPayload, addressList[i], port);
 
 			if (sendResult) {
 				result = true;
@@ -271,7 +267,7 @@ void moonlight_xbox_dx::ApplicationState::Validate_WoL(MoonlightHost^ host) {
 		Throw_Error("No recorded address was found. Connect to host to resolve.");
 	}
 
-	if (host->MacAddress == nullptr || host->MacAddress->IsEmpty() || host->MacAddress == "00:00:00:00:00:00") {
+	if (host->MacAddress == nullptr || !WakeOnLan::IsUsableMac(host->MacAddress->Data())) {
 		Throw_Error("No recorded Mac address. Connect to host to resolve.");
 	}
 
@@ -279,31 +275,7 @@ void moonlight_xbox_dx::ApplicationState::Validate_WoL(MoonlightHost^ host) {
 }
 
 std::string moonlight_xbox_dx::ApplicationState::WoL_Payload(std::string macAddress) {
-	std::string etherAddr;
-	std::string cleanMac;
-
-	for (char c : macAddress) {
-		if (isxdigit(c)) cleanMac += c;
-	}
-
-	if (cleanMac.length() != 12) {
-		throw std::runtime_error(macAddress + " is not a valid ether address");
-	}
-
-	for (size_t i = 0; i < 12; i += 2) {
-		char byte = static_cast<char>(std::stoi(cleanMac.substr(i, 2), nullptr, 16));
-		etherAddr += byte;
-	}
-
-	if (etherAddr.length() != 6)
-		throw std::runtime_error(macAddress + " is not a valid ether address");
-
-	std::string payload(6, 0xFF);
-	for (size_t i = 0; i < 16; ++i) {
-		payload += etherAddr;
-	}
-
-	return payload;
+	return WakeOnLan::MagicPacket(std::wstring(macAddress.begin(), macAddress.end()));
 }
 
 int moonlight_xbox_dx::ApplicationState::Open_Socket() {
@@ -313,6 +285,7 @@ int moonlight_xbox_dx::ApplicationState::Open_Socket() {
 
 	const int optval{ 1 };
 	if (setsockopt(descriptor, SOL_SOCKET, SO_BROADCAST, (char*)&optval, sizeof(optval)) < 0) {
+		closesocket(descriptor);
 		Throw_Error("Failed to set socket options");
 	}
 
@@ -320,28 +293,17 @@ int moonlight_xbox_dx::ApplicationState::Open_Socket() {
 }
 
 std::vector<std::string> moonlight_xbox_dx::ApplicationState::Build_Unique_Addresses(MoonlightHost^ host) {
-	std::vector<std::string> addresses;
-
-	if (host->ServerAddress) {
-		addresses.push_back(Utils::PlatformStringToStdString(host->ServerAddress));
+	std::vector<std::string> addresses{ "255.255.255.255" };
+	for (auto endpoint : { host->ServerAddress, host->LastHostname }) {
+		if (endpoint == nullptr || endpoint->IsEmpty()) continue;
+		const auto address = WakeOnLan::HostIPv4(Utils::PlatformStringToStdString(endpoint));
+		if (address.empty()) continue;
+		addresses.push_back(address);
+		const auto broadcast = Get_Broadcast_IP(address);
+		if (!broadcast.empty()) addresses.push_back(broadcast);
 	}
-
-	if (host->LastHostname) {
-		auto hostnameSplit = Split_IP_Address(Utils::PlatformStringToStdString(host->LastHostname), ':');
-		std::string hostIp = hostnameSplit.first;
-		addresses.push_back(hostIp);
-	}
-
-	if (inet_addr(Utils::PlatformStringToStdString(host->ServerAddress).c_str()) != -1) {
-		std::string broadcastIP = Get_Broadcast_IP(Utils::PlatformStringToStdString(host->ServerAddress));
-		if (broadcastIP != "") {
-			addresses.push_back(broadcastIP);
-		}
-	}
-
 	sort(addresses.begin(), addresses.end());
 	addresses.erase(unique(addresses.begin(), addresses.end()), addresses.end());
-
 	return addresses;
 }
 
@@ -350,8 +312,8 @@ bool moonlight_xbox_dx::ApplicationState::Send_Payload(int descriptor, std::stri
 	memset(&addr, 0, sizeof(struct sockaddr_in));
 
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(address.c_str());
-	addr.sin_port = htons(port);
+	if (port <= 0 || port > 65535 || inet_pton(AF_INET, address.c_str(), &addr.sin_addr) != 1) return false;
+	addr.sin_port = htons(static_cast<unsigned short>(port));
 
 	// sendto binds a local endpoint; addr is the remote destination.
 
@@ -368,54 +330,19 @@ bool moonlight_xbox_dx::ApplicationState::Send_Payload(int descriptor, std::stri
 }
 
 std::string moonlight_xbox_dx::ApplicationState::Get_Broadcast_IP(std::string ipAddress) {
-	uint32_t subnetMask;
-	uint32_t ipAddress_int;
-	struct in_addr ip_addr;
-
-	auto splitIP = Split_IP_Address(ipAddress, '/');
-	if (inet_pton(AF_INET, splitIP.first.c_str(), &ip_addr) != 1) {
-		throw std::invalid_argument("The given IP address was invalid.\n");
-	}
-
-	if (splitIP.second > 0) {
-		struct sockaddr_in sa;
-		inet_pton(AF_INET, splitIP.first.c_str(), &(sa.sin_addr));
-		ipAddress_int = sa.sin_addr.s_addr;
-		uint32_t mask = htonl(~((1 << (32 - splitIP.second)) - 1));
-		uint32_t ip_num = ipAddress_int | ~mask;
-		sa.sin_addr.s_addr = ip_num;
-		char ip_stra[INET_ADDRSTRLEN];
-		inet_ntop(AF_INET, &(sa.sin_addr), ip_stra, INET_ADDRSTRLEN);
-		return std::string(ip_stra);
-	}
-
-	ipAddress_int = ntohl(ip_addr.s_addr);
-	if ((ipAddress_int & 0xF0000000) == 0x00000000) {        // Class A
-		subnetMask = 4278190080;                             // 255.0.0.0
-	}
-	else if ((ipAddress_int & 0xE0000000) == 0x80000000) { // Class B
-		subnetMask = 4294901760;                             // 255.255.0.0
-	}
-	else if ((ipAddress_int & 0xC0000000) == 0xC0000000) { // Class C
-		subnetMask = 4294967040;                             // 255.255.255.0
-	}
-	else {
-		Utils::Log("Could not determine subnet mask from IP address.\n");
-		WSACleanup();
-		return "";
-	}
-
-	auto broadcastInt = ipAddress_int | (~subnetMask);
-
-	std::stringstream ss3;
-	for (int i = 3; i >= 0; --i) {
-		ss3 << ((broadcastInt >> (8 * i)) & 0xFF);
-		if (i > 0) {
-			ss3 << ".";
+	std::vector<WakeOnLan::InterfaceIPv4> interfaces;
+	try {
+		for (auto local : Windows::Networking::Connectivity::NetworkInformation::GetHostNames()) {
+			if (local->Type != Windows::Networking::HostNameType::Ipv4) continue;
+			auto info = local->IPInformation;
+			if (info == nullptr || info->NetworkAdapter == nullptr || info->PrefixLength == nullptr) continue;
+			interfaces.push_back({ Utils::PlatformStringToStdString(local->CanonicalName), info->PrefixLength->Value });
 		}
+	} catch (Platform::Exception^) {
+		// Limited broadcast and saved unicast addresses still work without interface metadata.
+		Utils::Log("Could not read local interface prefixes for Wake-on-LAN.\n");
 	}
-
-	return ss3.str();
+	return WakeOnLan::DirectedBroadcast(ipAddress, interfaces);
 }
 
 std::pair<std::string, int> moonlight_xbox_dx::ApplicationState::Split_IP_Address(const std::string& address, char deliminator) {

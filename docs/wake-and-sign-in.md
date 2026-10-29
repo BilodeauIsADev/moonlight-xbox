@@ -96,3 +96,9 @@ autostart game is skipped for the sign-in connection.
 
 Keep your Windows sign-in settings enabled. This flow handles the Windows lock
 screen; it cannot enter a pre-boot disk-encryption PIN or a BIOS password.
+
+Lunalight derives the directed broadcast from a matching Xbox IPv4 interface's
+reported prefix. For example, host `10.0.0.3` with a matching `/24` interface
+uses `10.0.0.255`, rather than `10.255.255.255`. Wake packets go to ports 7 and 9
+on both the local directed broadcast and `255.255.255.255`. Saved real MAC
+addresses survive empty or zero MACs returned by HTTP serverinfo and discovery.
