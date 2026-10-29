@@ -47,8 +47,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/AppData/Local/vcpkg/archives
-          key: xbox-uwp-v143-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'vcpkg-overlays/**') }}
-          restore-keys: xbox-uwp-v143-
+          # Refresh archives even when runner toolchain changes invalidate cached package ABIs.
+          key: xbox-uwp-v143-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'vcpkg-overlays/**') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            xbox-uwp-v143-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'vcpkg-overlays/**') }}-
+            xbox-uwp-v143-
 
       - name: Install pinned dependencies
         shell: pwsh

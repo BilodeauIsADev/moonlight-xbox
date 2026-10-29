@@ -196,7 +196,7 @@ void HostSelectorPage::ShowHostActions(Windows::UI::Xaml::FrameworkElement^ anch
 	}
 
 	signInButton->Visibility = currentHost->Connected && currentHost->Paired && !currentHost->WolPolling
-		? Visibility::Visible : Visibility::Collapsed;
+		? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 	if (currentHost->Connected || currentHost->WolPolling) {
 		this->wakeHostButton->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 		this->testConnectionButton->Visibility = Windows::UI::Xaml::Visibility::Visible;

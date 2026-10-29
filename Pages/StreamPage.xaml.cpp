@@ -69,7 +69,7 @@ void StreamPage::OnBackRequested(Platform::Object^ e,Windows::UI::Core::BackRequ
 		DismissSessionSummary();
 	} else if (m_startFailureShown) {
 		LeaveFailedStream();
-	} else if (KeyboardView->Visibility == Visibility::Visible) {
+	} else if (KeyboardView->Visibility == Windows::UI::Xaml::Visibility::Visible) {
 		HideKeyboard();
 	} else if (ControlCenter->Visibility == Windows::UI::Xaml::Visibility::Visible) {
 		HideControlCenter();
@@ -647,10 +647,10 @@ void StreamPage::ShowKeyboard() {
 	const bool signIn = configuration != nullptr && configuration->signIn;
 	if (signIn || GetApplicationState()->EnableKeyboard) {
 		Keyboard->ResetModifiers();
-		SignInHeader->Visibility = signIn ? Visibility::Visible : Visibility::Collapsed;
+		SignInHeader->Visibility = signIn ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
 		m_main->keyboardMode = true;
-		KeyboardView->Visibility = Visibility::Visible;
-		safe_cast<Button^>(Keyboard->FindName("Key_02"))->Focus(FocusState::Keyboard);
+		KeyboardView->Visibility = Windows::UI::Xaml::Visibility::Visible;
+		safe_cast<Button^>(Keyboard->FindName("Key_02"))->Focus(Windows::UI::Xaml::FocusState::Keyboard);
 	} else {
 		CoreInputView::GetForCurrentView()->TryShow(CoreInputViewKind::Keyboard);
 	}
@@ -658,7 +658,7 @@ void StreamPage::ShowKeyboard() {
 
 void StreamPage::HideKeyboard() {
 	Keyboard->ResetModifiers();
-	KeyboardView->Visibility = Visibility::Collapsed;
+	KeyboardView->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	if (m_main) m_main->keyboardMode = false;
 }
 
@@ -755,7 +755,7 @@ void StreamPage::OnKeyDown(Windows::UI::Core::CoreWindow^ sender, Windows::UI::C
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Menu) == (CoreVirtualKeyStates::Down) ? MODIFIER_ALT : 0;
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Shift) == (CoreVirtualKeyStates::Down) ? MODIFIER_SHIFT : 0;
 	this->m_main->OnKeyDown((unsigned short)e->VirtualKey,modifiers);
-	if (KeyboardView->Visibility == Visibility::Visible) e->Handled = true;
+	if (KeyboardView->Visibility == Windows::UI::Xaml::Visibility::Visible) e->Handled = true;
 }
 
 
@@ -773,7 +773,7 @@ void StreamPage::OnKeyUp(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Cor
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Menu) == (CoreVirtualKeyStates::Down) ? MODIFIER_ALT : 0;
 	modifiers |= CoreWindow::GetForCurrentThread()->GetKeyState(Windows::System::VirtualKey::Shift) == (CoreVirtualKeyStates::Down) ? MODIFIER_SHIFT : 0;
 	this->m_main->OnKeyUp((unsigned short) e->VirtualKey, modifiers);
-	if (KeyboardView->Visibility == Visibility::Visible) e->Handled = true;
+	if (KeyboardView->Visibility == Windows::UI::Xaml::Visibility::Visible) e->Handled = true;
 
 }
 
