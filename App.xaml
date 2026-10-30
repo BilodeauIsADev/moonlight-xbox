@@ -1098,6 +1098,7 @@
                                             HorizontalAlignment="Stretch" />
                                         <Button
                                             x:Name="SecondaryButton"
+                                            Grid.Column="2"
                                             IsTabStop="False"
                                             Content="{TemplateBinding SecondaryButtonText}"
                                             IsEnabled="{TemplateBinding IsSecondaryButtonEnabled}"
