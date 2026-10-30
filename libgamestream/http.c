@@ -179,7 +179,8 @@ int http_request(CURL* curl, char* url, PHTTP_DATA data) {
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _write_curl);
 
   if (debug)
-    http_log("http_request: %s\n", url);
+    // Query parameters include the input encryption key and pairing secrets.
+    http_log("http_request: %.*s\n", (int)strcspn(url, "?"), url);
 
   if (data->size > 0) {
     free(data->memory);
@@ -210,7 +211,7 @@ int http_request_binary(CURL *curl, char* url, FILE *data) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _write_curl_binary);
 
     if (debug)
-        http_log("http_request_binary: %s\n", url);
+        http_log("http_request_binary: %.*s\n", (int)strcspn(url, "?"), url);
 
     CURLcode res = curl_easy_perform(curl);
 
