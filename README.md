@@ -36,9 +36,11 @@ Lunalight is not on the Microsoft Store. Install it on an Xbox in Dev Mode:
 
 ## Wake and sign in
 
-Focus a sleeping paired PC and press **X** to wake it and open its Windows
-sign-in screen with a controller keyboard. For an awake PC, choose **Sign in
-to PC** from its options. After Windows unlocks, choose **Open library**.
+Focus a sleeping paired PC and press **X** to wake it and enter your Windows PIN
+directly on Xbox. Lunalight uses Vibeshine's **Remote Input** connection, dismisses
+the Windows lock screen, and sends the PIN without showing the desktop. For an
+awake PC, choose **Sign in to PC** from its options. **View PC sign-in** keeps the
+streamed keyboard available for passwords or checking Windows.
 See [setup and ASUS B550-F Gaming instructions](docs/wake-and-sign-in.md).
 
 ## PyroWave development preview

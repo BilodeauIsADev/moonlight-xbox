@@ -1,27 +1,40 @@
 # Wake your PC and sign in from Xbox
 
-Lunalight can wake a paired PC, wait for its streaming service, and open a stream
-with a controller keyboard for the Windows sign-in screen. Your Windows PIN or
-password stays enabled. The app sends key presses to Windows and does not save
-credentials or decide whether Windows accepted them.
+Lunalight can wake a paired PC, wait for Vibeshine, and show a Windows PIN prompt
+directly on Xbox. It sends the PIN through Vibeshine's **Remote Input** connection
+without opening the desktop stream. Your Windows sign-in stays enabled.
+
+The prompt accepts numeric PINs of 4 to 127 digits, including leading zeroes.
+Lunalight does not save or log the PIN, clears the field on submission or cancel,
+and overwrites its temporary delivery buffer when the connection ends. It sends
+one submission and never automatically retries after an uncertain result.
 
 ## Prepare Vibeshine
 
 1. Install Vibeshine as a Windows service and ensure that it starts automatically.
    It must be available while Windows is locked and before you sign in.
-2. In Vibeshine's application list, keep an application named **Desktop** with its
-   command left empty. Case and surrounding spaces do not matter.
+2. Enable **Remote Input** in Vibeshine if needed and check that its built-in
+   **Remote Input** entry appears in the Xbox library. A configured game renamed
+   Remote Input is not a substitute. Update Vibeshine if this entry is unavailable.
+   Keep an application named **Desktop**, with its command empty, for the optional
+   **View PC sign-in** fallback.
 3. While the PC is awake, pair it with Lunalight and connect once. This records
    the host address and MAC address needed to wake it later.
 4. Before testing wake, lock Windows with **Win + L**. On Xbox, focus your PC,
-   open its options with **Y**, and choose **Sign in to PC**. Verify that you can
-   see and interact with the Windows sign-in screen.
+   open its options with **Y**, and choose **Sign in to PC**. Enter the PIN in the
+   Xbox prompt and choose **Send PIN**. Verify locally that Windows unlocks.
+   Windows must have your intended account and its PIN sign-in option selected.
 
-Vibeshine documents automatic capture switching for the Windows login screen
-and UAC prompts in its [project README](https://github.com/Nonary/vibeshine).
-If the stream is black, check its service and capture/display configuration on
-an already-awake PC first. A virtual display setup must capture the screen where
-Windows shows sign-in.
+Vibeshine documents Remote Input and Windows login-screen support in its
+[project README](https://github.com/Nonary/vibeshine). Its input-only connection
+may send synthetic black frames for protocol compatibility. Lunalight discards
+these without starting a video decoder or audio player. It does not request a
+desktop, change stream display settings, or resume/quit a running game.
+
+The Xbox prompt cannot see whether Windows is locked, which account is selected,
+or whether the PIN was accepted. **PIN sent** reports delivery, not a verified
+Windows sign-in. Use **View PC sign-in** if Windows needs a different account,
+password, another sign-in option, or a secure-attention prompt.
 
 ## Enable Wake-on-LAN on ASUS ROG Strix B550-F Gaming
 
@@ -74,21 +87,33 @@ wake from full shutdown depends on the adapter, firmware, and Windows setup.
 2. On the Xbox Hosts screen, focus the PC and press **X**, or choose **Wake and
    sign in** from its options.
 3. Lunalight waits up to about a minute for the service to respond consistently,
-   then opens the stream and keyboard. Slow network probes can delay the final
-   timeout message. Leaving Hosts cancels the automatic opening of the stream.
-4. Use **Enter** to dismiss the Windows lock screen, then enter your PIN or
-   password. Use **Tab** to change fields or the **right stick** to move the
-   pointer and **LT** to click. The D-pad moves through the keyboard and **A**
-   presses a key. **X** deletes a character and **Menu** sends Enter.
-5. When you see your unlocked desktop, choose **Open library** and pick a game.
-   Windows validates your credentials; the button does not automatically detect
-   or complete sign-in.
+   then opens the local PIN prompt. Slow network probes can delay the final
+   timeout message. Leaving Hosts cancels the automatic opening of the prompt.
+4. Enter your Windows PIN on Xbox and choose **Send PIN**. Lunalight connects to
+   Remote Input, sends a space press to dismiss the lock-screen wallpaper, waits
+   1.5 seconds, clears partial input with **Ctrl+A**, **Backspace**, then sends
+   the PIN and **Enter** once. It disconnects after allowing queued input to drain.
+5. After **PIN sent**, choose **Open library** and pick a game. If Windows is
+   still locked, use **View PC sign-in** to inspect it before another attempt.
+
+**Cancel** stops a pending operation and waits for its connection to close.
+Partially delivered input is not submitted or retried automatically. Windows can
+accept some PINs on the final digit, so cancellation cannot undo a completed sign-in.
+
+### Optional streamed sign-in
+
+Choose **View PC sign-in** for a password, an alphanumeric PIN, selecting an
+account or sign-in option, or checking a delivery result. Use **Enter** to dismiss
+the lock screen, **Tab** to change fields, or the **right stick** and **LT** to
+point and click. The D-pad moves through the keyboard and **A** presses a key.
+**X** deletes a character and **Menu** sends Enter. After unlocking Windows,
+choose **Open library**.
 
 **B** hides the keyboard. Reopen it with **View + Menu → Keyboard**. The sign-in
 stream always uses Lunalight's controller keyboard, even if the normal keyboard
 setting is off. A physical keyboard also works.
 
-If the PC already has a running host session, Lunalight resumes it for sign-in
+If the PC already has a running host session, this fallback resumes it for sign-in
 without closing the game. **Open library** disconnects the stream and leaves
 that session running. If no session is running and Desktop is missing, the app
 explains how to add it rather than starting an arbitrary game. A configured

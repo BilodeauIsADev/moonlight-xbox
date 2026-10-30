@@ -126,10 +126,28 @@ The wake/sign-in tests cover three consecutive responses, service flapping,
 real elapsed timeout, cancellation, fresh retry state, exact Desktop matching,
 and preserving existing sessions. They run as `orbit_wake` in CTest.
 
+The `pc_pin` suite checks Remote Input identity matching, PIN validation and
+leading zeroes, a complete lock-screen dismissal before the 1.5-second delay,
+clearing partial input, matching key-up events, exactly one submission, transport
+failure and cancellation without a retry, releasing Control on cancel, and
+overwriting the temporary PIN buffer. The input-only client uses the normal
+protocol library with stub media callbacks, without a video decoder/audio player.
+
 Wake/sign-in console verification still requires Windows, Vibeshine, and Xbox:
 
-- With Windows locked, choose Sign in to PC. The keyboard appears after the
-  first streamed frame, including when the normal keyboard setting is off.
+- With Windows locked, choose Sign in to PC. Enter the PIN in the Xbox prompt.
+  Test both the wallpaper lock screen and the already-visible PIN field, including
+  a partially entered PIN. Verify that dismissal happens before the digits arrive.
+- Cancel before submission, during connection and during dismissal. Do not type
+  a real PIN into an unlocked PC. Check that Cancel waits for cleanup, the prompt
+  cannot start two deliveries, and no PIN is persisted or logged.
+- Check PIN sent, an incorrect PIN, dropped transport and an unavailable Remote
+  Input entry. No result is automatically retried or reported as a confirmed
+  Windows unlock. View PC sign-in must remain available after cleanup.
+- With a game running on the host, PIN delivery explicitly launches Remote Input
+  alongside it, rather than resuming or quitting the game.
+- Choose View PC sign-in. The keyboard appears after the first streamed frame,
+  including when the normal keyboard setting is off.
 - Test PIN and password sign-in, Tab, Enter, Backspace, Shift and symbols, a
   physical keyboard, pointer movement and LT click. No credentials appear in
   application logs or saved state.
@@ -139,9 +157,9 @@ Wake/sign-in console verification still requires Windows, Vibeshine, and Xbox:
 - Sleep the PC and press X on Hosts. A stable service opens sign-in once. A
   timeout permits retry. Leave Hosts or remove the PC during wake and verify
   that a late response never opens a stream.
-- With an autostart game configured, wake still opens sign-in first. With a
-  running game, sign-in resumes it without quitting. Open library leaves the
-  host session running and skips the played-time summary.
+- With an autostart game configured, wake still opens the PIN prompt first. In
+  the streamed fallback, sign-in resumes a running game without quitting. Open
+  library leaves that session running and skips the played-time summary.
 - Remove/rename Desktop with no host session running. The app explains how to
   add Desktop and keeps the library usable. Test a host app-list fetch failure.
 

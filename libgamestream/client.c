@@ -790,7 +790,7 @@ int gs_applist(PSERVER_DATA server, PAPP_LIST *list) {
   return ret;
 }
 
-int gs_start_app(PSERVER_DATA server, STREAM_CONFIGURATION *config, int appId, bool sops, bool localaudio, int gamepad_mask) {
+static int start_app(PSERVER_DATA server, STREAM_CONFIGURATION *config, int appId, bool sops, bool localaudio, int gamepad_mask, bool forceLaunch) {
   int ret = GS_OK;
   uuid_t uuid;
   char* result = NULL;
@@ -834,7 +834,7 @@ int gs_start_app(PSERVER_DATA server, STREAM_CONFIGURATION *config, int appId, b
   // on GFE 3.20.3.
   int fps = (server->isNvidiaSoftware && config->fps > 60) ? 0 : config->fps;
   snprintf(url, sizeof(url), "https://%s:%u/%s?uniqueid=%s&uuid=%s&appid=%d&mode=%dx%dx%d&additionalStates=1&sops=%d&rikey=%s&rikeyid=%d&localAudioPlayMode=%d&surroundAudioInfo=%d&remoteControllersBitmap=%d&gcmap=%d%s%s",
-      server->serverInfo.address, server->httpsPort, server->currentGame ? "resume" : "launch", unique_id, uuid_str, appId, config->width, config->height, fps, sops, rikey_hex, rikeyid, localaudio, surround_info, gamepad_mask, gamepad_mask,
+      server->serverInfo.address, server->httpsPort, server->currentGame && !forceLaunch ? "resume" : "launch", unique_id, uuid_str, appId, config->width, config->height, fps, sops, rikey_hex, rikeyid, localaudio, surround_info, gamepad_mask, gamepad_mask,
       (config->supportedVideoFormats & VIDEO_FORMAT_MASK_10BIT) ? "&hdrMode=1&clientHdrCapVersion=0&clientHdrCapSupportedFlagsInUint32=0&clientHdrCapMetaDataId=NV_STATIC_METADATA_TYPE_1&clientHdrCapDisplayData=0x0x0x0x0x0x0x0x0x0x0" : "", LiGetLaunchUrlQueryParameters());
   CURL* curl = get_curl_handle();
   if ((ret = http_request(curl, url, data)) == GS_OK)
@@ -868,6 +868,15 @@ int gs_start_app(PSERVER_DATA server, STREAM_CONFIGURATION *config, int appId, b
   http_cleanup(curl);
   http_free_data(data);
   return ret;
+}
+
+int gs_start_app(PSERVER_DATA server, PSTREAM_CONFIGURATION config, int appId, bool sops, bool localaudio, int gamepad_mask) {
+  return start_app(server, config, appId, sops, localaudio, gamepad_mask, false);
+}
+
+int gs_launch_app(PSERVER_DATA server, PSTREAM_CONFIGURATION config, int appId) {
+  // Remote Input attaches beside an existing game. /resume would select the game.
+  return start_app(server, config, appId, false, false, 0, true);
 }
 
 int gs_quit_app(PSERVER_DATA server) {

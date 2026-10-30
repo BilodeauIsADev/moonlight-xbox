@@ -143,7 +143,7 @@ void AppPage::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ 
 			inner->ShowShelfLoading(false);
 			inner->UpdateEmptyShelfState();
 			if (forSignIn && fetched) {
-				inner->OpenSignInStream();
+				inner->OpenSignInPrompt();
 				return;
 			}
 			if (forSignIn) {
@@ -224,6 +224,8 @@ void AppPage::StartAppPolling() {
 }
 
 void AppPage::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) {
+	if (m_pinCancelled) m_pinCancelled->store(true);
+	if (m_pinDialog != nullptr) m_pinDialog->Hide();
 	StopHeroMotion();
 	continueAppFetch.store(false);
 	CloseLetterJump();
@@ -291,6 +293,7 @@ void AppPage::AppTile_PointerEntered(Platform::Object^ sender, Windows::UI::Xaml
 }
 
 void AppPage::Page_KeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (m_pinDialog != nullptr || OrbitInput::HasOpenPopup()) return;
 	switch (e->Key) {
 	case Windows::System::VirtualKey::GamepadX:
 		if (SelectedApp != nullptr && SelectedApp->CurrentlyRunning) {
@@ -326,6 +329,162 @@ void AppPage::StartOrResume(MoonlightApp^ app) {
 	}
 
 	this->Connect(app->Id);
+}
+
+void AppPage::OpenSignInPrompt() {
+	if (m_pinDialog != nullptr) return;
+	int inputId = -1;
+	for (auto app : host->Apps) {
+		if (app->Name != nullptr && PcPin::IsRemoteInput(app->Id, app->Name->Data())) {
+			inputId = app->Id;
+			break;
+		}
+	}
+
+	auto dialog = ref new ContentDialog();
+	m_pinDialog = dialog;
+	m_pinSending = false;
+	m_pinSent = false;
+	m_pinCancelled = std::make_shared<std::atomic<bool>>(false);
+	dialog->Title = L"Sign in to " + host->ComputerName;
+	dialog->PrimaryButtonText = inputId >= 0 ? L"Send PIN" : L"Open library";
+	dialog->SecondaryButtonText = L"View PC sign-in";
+	dialog->CloseButtonText = L"Cancel";
+	dialog->IsPrimaryButtonEnabled = inputId < 0;
+
+	auto panel = ref new StackPanel();
+	panel->Spacing = 16;
+	auto status = ref new TextBlock();
+	status->TextWrapping = TextWrapping::Wrap;
+	status->Text = inputId >= 0
+		? L"Use while Windows is locked, with your account's PIN sign-in selected. Lunalight will reveal the PIN field before typing. Your PIN is not saved."
+		: L"Remote Input is unavailable on this PC. Enable Remote Input in Vibeshine or update Vibeshine. You can also view the PC sign-in screen.";
+	panel->Children->Append(status);
+	auto input = ref new PasswordBox();
+	input->Header = L"Windows PIN";
+	input->MaxLength = static_cast<int>(PcPin::Value::MaxLength);
+	input->PasswordRevealMode = PasswordRevealMode::Hidden;
+	input->Visibility = inputId >= 0 ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+	auto scope = ref new InputScope();
+	auto scopeName = ref new InputScopeName();
+	scopeName->NameValue = InputScopeNameValue::NumericPin;
+	scope->Names->Append(scopeName);
+	input->InputScope = scope;
+	panel->Children->Append(input);
+	dialog->Content = panel;
+
+	Platform::WeakReference weakThis(this);
+	Platform::WeakReference weakDialog(dialog);
+	input->PasswordChanged += ref new RoutedEventHandler([weakDialog](Platform::Object^ sender, RoutedEventArgs^) {
+		auto prompt = weakDialog.Resolve<ContentDialog>();
+		auto field = safe_cast<PasswordBox^>(sender);
+		const auto text = field->Password;
+		if (prompt != nullptr)
+			prompt->IsPrimaryButtonEnabled = PcPin::Value::IsValid(text->Data(), text->Length());
+	});
+	dialog->Opened += ref new TypedEventHandler<ContentDialog^, ContentDialogOpenedEventArgs^>(
+		[input, inputId](ContentDialog^, ContentDialogOpenedEventArgs^) {
+			if (inputId >= 0) input->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+		});
+	dialog->PrimaryButtonClick += ref new TypedEventHandler<ContentDialog^, ContentDialogButtonClickEventArgs^>(
+		[weakThis, input, status, inputId](ContentDialog^ sender, ContentDialogButtonClickEventArgs^ args) {
+			auto page = weakThis.Resolve<AppPage>();
+			if (page != nullptr && inputId >= 0 && !page->m_pinSent)
+				page->SendPcPin(sender, input, status, inputId, args);
+		});
+	dialog->Closing += ref new TypedEventHandler<ContentDialog^, ContentDialogClosingEventArgs^>(
+		[weakThis, status](ContentDialog^ sender, ContentDialogClosingEventArgs^ args) {
+			auto page = weakThis.Resolve<AppPage>();
+			if (page == nullptr || !page->m_pinSending) return;
+			args->Cancel = true;
+			page->m_pinCancelled->store(true);
+			status->Text = L"Disconnecting from PC...";
+			sender->IsPrimaryButtonEnabled = false;
+			sender->IsSecondaryButtonEnabled = false;
+		});
+
+	// This interactive dialog owns its controls and handlers on the UI thread.
+	// The shared text-dialog helper clones content and cannot host a PIN field.
+	Windows::Foundation::IAsyncOperation<ContentDialogResult>^ operation;
+	try { operation = dialog->ShowAsync(); }
+	catch (Platform::Exception^) {
+		m_pinDialog = nullptr;
+		StartAppPolling();
+		Utils::Log("[PIN] Could not open the PIN prompt.\n");
+		return;
+	}
+	create_task(operation).then([weakThis, dialog, input](task<ContentDialogResult> previous) {
+		input->Password = L"";
+		auto result = ContentDialogResult::None;
+		try { result = previous.get(); } catch (...) {}
+		auto page = weakThis.Resolve<AppPage>();
+		if (page == nullptr || page->m_pinDialog != dialog) return;
+		page->m_pinCancelled->store(true);
+		page->m_pinDialog = nullptr;
+		if (!page->continueAppFetch.load() || page->Frame == nullptr || page->Frame->Content != page) return;
+		if (result == ContentDialogResult::Secondary) page->OpenSignInStream();
+		else page->StartAppPolling();
+	}, task_continuation_context::use_current());
+}
+
+void AppPage::SendPcPin(ContentDialog^ dialog, PasswordBox^ input, TextBlock^ status,
+	int appId, ContentDialogButtonClickEventArgs^ args) {
+	args->Cancel = true;
+	if (m_pinSending) return;
+	auto pin = std::make_shared<PcPin::Value>();
+	const auto text = input->Password;
+	if (!pin->Assign(text->Data(), text->Length())) {
+		status->Text = L"Enter a PIN containing 4 to 127 digits. For a password or a PIN with letters, choose View PC sign-in.";
+		return;
+	}
+	std::shared_ptr<MoonlightClient> client;
+	try { client = std::make_shared<MoonlightClient>(); }
+	catch (...) {
+		pin->Clear();
+		status->Text = L"Could not prepare the PC connection. Try again or choose View PC sign-in.";
+		return;
+	}
+	input->Password = L"";
+	input->IsEnabled = false;
+	m_pinSending = true;
+	m_pinCancelled->store(false);
+	dialog->IsPrimaryButtonEnabled = false;
+	dialog->IsSecondaryButtonEnabled = false;
+	status->Text = L"Connecting to PC and revealing the PIN field...";
+	auto cancelled = m_pinCancelled;
+	auto hostname = host->LastHostname;
+	auto instanceId = host->InstanceId;
+	auto dispatcher = Dispatcher;
+	Platform::WeakReference weakThis(this);
+	create_task([client, hostname, instanceId, appId, pin, cancelled]() {
+		try { return client->SendPcPin(hostname, instanceId, appId, *pin, *cancelled); }
+		catch (...) {
+			pin->Clear();
+			Utils::Log("[PIN] Input-only connection failed; no automatic retry.\n");
+			return PcPin::Delivery::Failed;
+		}
+	}).then([weakThis, dispatcher, dialog, input, status, cancelled](PcPin::Delivery result) {
+		dispatcher->RunAsync(CoreDispatcherPriority::Normal,
+			ref new DispatchedHandler([weakThis, dialog, input, status, cancelled, result]() {
+				auto page = weakThis.Resolve<AppPage>();
+				if (page == nullptr || page->m_pinDialog != dialog) { dialog->Hide(); return; }
+				page->m_pinSending = false;
+				if (cancelled->load()) { dialog->Hide(); return; }
+				dialog->IsSecondaryButtonEnabled = true;
+				if (result == PcPin::Delivery::Sent) {
+					page->m_pinSent = true;
+					input->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+					dialog->PrimaryButtonText = L"Open library";
+					dialog->CloseButtonText = L"Close";
+					dialog->IsPrimaryButtonEnabled = true;
+					status->Text = L"PIN sent. Open the library to choose a game, or view PC sign-in to check Windows.";
+				} else {
+					input->IsEnabled = true;
+					status->Text = L"The PIN could not be sent completely and was not retried. Check Windows with View PC sign-in before trying again.";
+					input->Focus(Windows::UI::Xaml::FocusState::Keyboard);
+				}
+			}));
+	});
 }
 
 void AppPage::OpenSignInStream() {
@@ -613,6 +772,11 @@ void AppPage::settingsButton_Click(Platform::Object ^ sender, Windows::UI::Xaml:
 
 void AppPage::OnBackRequested(Platform::Object^ e, Windows::UI::Core::BackRequestedEventArgs^ args)
 {
+	if (m_pinDialog != nullptr) {
+		m_pinDialog->Hide();
+		args->Handled = true;
+		return;
+	}
 	// UWP on Xbox One triggers a back request whenever the B
 	// button is pressed which can result in the app being
 	// suspended if unhandled
@@ -645,6 +809,8 @@ void AppPage::OnLoaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventA
 }
 
 void AppPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e) {
+	if (m_pinCancelled) m_pinCancelled->store(true);
+	if (m_pinDialog != nullptr) m_pinDialog->Hide();
 	StopHeroMotion();
 	auto navigation = Windows::UI::Core::SystemNavigationManager::GetForCurrentView();
 	navigation->BackRequested -= m_back_cookie;
@@ -653,6 +819,7 @@ void AppPage::OnUnloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEven
 }
 
 void AppPage::Page_PreviewKeyDown(Platform::Object^ sender, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ e) {
+	if (m_pinDialog != nullptr) return;
 	// The closing screen covers the shelf; keep input from reaching it
 	if (m_closingApp) {
 		e->Handled = true;

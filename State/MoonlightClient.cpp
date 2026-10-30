@@ -1,6 +1,7 @@
 #include "MoonlightClient.h"
 #include "pch.h"
 #include "State\CoverArt.h"
+#include "Common/PcPin.h"
 
 extern "C" {
 #include <Limelight.h>
@@ -173,6 +174,10 @@ bool MoonlightClient::SetDisplayHDR(bool enabled, const SS_HDR_METADATA &sunshin
 }
 
 MoonlightClient *connectedInstance;
+// moonlight-common-c owns one global connection. A PIN operation must finish
+// disconnecting before another page can start its game connection.
+static std::mutex protocolMutex;
+static std::atomic<bool> inputOnlyDisconnected{false};
 
 MoonlightClient::MoonlightClient()
     : m_isHDR(false),
@@ -200,7 +205,85 @@ MoonlightClient::~MoonlightClient() {
 void MoonlightClient::StopApp() {
 	gs_quit_app(&serverData);
 }
+
+PcPin::Delivery MoonlightClient::SendPcPin(Platform::String^ host, Platform::String^ instanceId,
+	int appId, PcPin::Value& pin, const std::atomic<bool>& cancelled) {
+	std::lock_guard<std::mutex> lock(protocolMutex);
+	bool protocolStarted = false;
+	auto cleanup = [&]() {
+		if (protocolStarted) m_streamSession.Stop([]() { LiStopConnection(); });
+		pin.Clear();
+	};
+	auto result = PcPin::Delivery::Failed;
+	try {
+		if (cancelled.load()) result = PcPin::Delivery::Cancelled;
+		else if (StartInputOnly(host, instanceId, appId, cancelled, protocolStarted) == 0) {
+			auto wait = [&](int milliseconds) {
+				for (int elapsed = 0; elapsed < milliseconds; elapsed += 10) {
+					if (cancelled.load() || inputOnlyDisconnected.load()) return false;
+					Sleep(10);
+				}
+				return !cancelled.load() && !inputOnlyDisconnected.load();
+			};
+			result = PcPin::Send(pin, [](unsigned short code, bool down, char modifiers) {
+				return !inputOnlyDisconnected.load() &&
+					LiSendKeyboardEvent2(code, down ? KEY_ACTION_DOWN : KEY_ACTION_UP, modifiers, 0) == 0;
+			}, wait, [&]() { return cancelled.load(); });
+		}
+	} catch (...) {
+		cleanup();
+		throw;
+	}
+	cleanup();
+	return result;
+}
+
+int MoonlightClient::StartInputOnly(Platform::String^ host, Platform::String^ instanceId, int appId,
+	const std::atomic<bool>& cancelled, bool& protocolStarted) {
+	return m_streamSession.Start([&]() {
+		const int connected = Connect(Utils::PlatformStringToStdString(host).c_str());
+		if (connected != 0) return connected;
+		if (!IsPaired() || instanceId == nullptr || instanceId->IsEmpty() || GetInstanceID() != instanceId)
+			return GS_FAILED;
+
+		bool inputAvailable = false;
+		for (auto app : GetApplications(false)) {
+			if (app->Id == appId && app->Name != nullptr && PcPin::IsRemoteInput(appId, app->Name->Data()))
+				inputAvailable = true;
+		}
+		if (!inputAvailable || cancelled.load()) return GS_FAILED;
+
+		STREAM_CONFIGURATION config;
+		LiInitializeStreamConfiguration(&config);
+		config.width = 1280;
+		config.height = 720;
+		config.fps = 30;
+		config.bitrate = 1000;
+		config.packetSize = 1392;
+		config.streamingRemotely = STREAM_CFG_AUTO;
+		config.supportedVideoFormats = VIDEO_FORMAT_H264;
+		config.audioConfiguration = AUDIO_CONFIGURATION_STEREO;
+		config.encryptionFlags = ENCFLG_ALL;
+		const int launched = gs_launch_app(&serverData, &config, appId);
+		if (launched != 0) return launched;
+		// Complete an accepted launch even after cancellation so disconnect can
+		// release its Remote Input owner. No keys are sent after cancellation.
+
+		inputOnlyDisconnected.store(false);
+		CONNECTION_LISTENER_CALLBACKS callbacks;
+		LiInitializeConnectionCallbacks(&callbacks);
+		callbacks.logMessage = log_message;
+		callbacks.connectionTerminated = [](int) { inputOnlyDisconnected.store(true); };
+		// Remote Input never captures the desktop. Discard its compatibility
+		// frames using the protocol library's stubs, with no decoder or audio player.
+		protocolStarted = true;
+		return LiStartConnection(&serverData.serverInfo, &config, &callbacks,
+			nullptr, nullptr, nullptr, 0, nullptr, 0);
+	});
+}
+
 int MoonlightClient::StartStreaming(std::shared_ptr<DX::DeviceResources> res, StreamConfiguration^ sConfig) {
+	std::lock_guard<std::mutex> lock(protocolMutex);
 	return m_streamSession.Start([&]() {
 		return StartStreamingImpl(res, sConfig);
 	});
@@ -391,6 +474,8 @@ int MoonlightClient::StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res
 }
 
 void MoonlightClient::StopStreaming() {
+	m_streamSession.Terminate();
+	std::lock_guard<std::mutex> lock(protocolMutex);
 	m_streamSession.Stop([]() {
 		LiStopConnection();
 	});

@@ -6,6 +6,7 @@
 #include "../Common/DeviceResources.h"
 #include "State\MoonlightApp.h"
 #include "StreamSession.h"
+#include "Common/PcPin.h"
 
 extern "C" {
 #include <Limelight.h>
@@ -22,6 +23,8 @@ class MoonlightClient {
 	~MoonlightClient();
 	bool SetDisplayHDR(bool enabled, const SS_HDR_METADATA &sunshineHdrMetadata);
 	int StartStreaming(std::shared_ptr<DX::DeviceResources> res, StreamConfiguration ^ config);
+	PcPin::Delivery SendPcPin(Platform::String^ host, Platform::String^ instanceId,
+		int appId, PcPin::Value& pin, const std::atomic<bool>& cancelled);
 	int Connect(const char *hostname);
 	bool IsConnectionTerminated();
 	void SetConnectionTerminated();
@@ -63,9 +66,11 @@ class MoonlightClient {
 	std::function<void(unsigned short, unsigned short, unsigned short)> OnTriggerRumble;
 
   private:
+	int StartInputOnly(Platform::String^ host, Platform::String^ instanceId, int appId,
+		const std::atomic<bool>& cancelled, bool& protocolStarted);
 	int StartStreamingImpl(std::shared_ptr<DX::DeviceResources> res, StreamConfiguration^ config);
 	StreamSession m_streamSession;
-	SERVER_DATA serverData;
+	SERVER_DATA serverData{};
 	std::atomic<int> m_terminationStatus{-1};
 	char *connectionPin = NULL;
 	char *hostname = NULL;

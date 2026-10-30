@@ -72,7 +72,16 @@ namespace moonlight_xbox_dx
 		virtual void OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e) override;
 	private:
 		void Connect(int app, bool forSignIn = false);
+		void OpenSignInPrompt();
 		void OpenSignInStream();
+		void SendPcPin(Windows::UI::Xaml::Controls::ContentDialog^ dialog,
+			Windows::UI::Xaml::Controls::PasswordBox^ input,
+			Windows::UI::Xaml::Controls::TextBlock^ status, int appId,
+			Windows::UI::Xaml::Controls::ContentDialogButtonClickEventArgs^ args);
+		Windows::UI::Xaml::Controls::ContentDialog^ m_pinDialog;
+		std::shared_ptr<std::atomic<bool>> m_pinCancelled;
+		bool m_pinSending = false;
+		bool m_pinSent = false;
 	public:
 		AppPage();
 		virtual event Windows::UI::Xaml::Data::PropertyChangedEventHandler^ PropertyChanged;

@@ -4,6 +4,10 @@ project(moonlight_xbox_tests LANGUAGES CXX)
 enable_testing()
 find_package(Threads REQUIRED)
 
+add_executable(pc_pin_tests PcPinTests.cpp)
+target_compile_features(pc_pin_tests PRIVATE cxx_std_17)
+add_test(NAME pc_pin COMMAND pc_pin_tests)
+
 add_executable(wake_on_lan_tests WakeOnLanTests.cpp)
 target_compile_features(wake_on_lan_tests PRIVATE cxx_std_17)
 add_test(NAME wake_on_lan COMMAND wake_on_lan_tests)

@@ -29,6 +29,7 @@ DispatcherTimer^ timer;
 Frame^ frame;
 uint64_t progressToken;
 int settingsBackStackDepth;
+PasswordBox^ pinFieldUnderTest;
 
 // Flush each checkpoint before interacting with XAML so an asynchronous crash
 // still leaves its triggering step in LocalState. Never log host or pairing data.
@@ -120,6 +121,14 @@ ContentDialog^ FindDialog(DependencyObject^ root) {
 	if (auto dialog = dynamic_cast<ContentDialog^>(root)) return dialog;
 	for (int i = 0; i < VisualTreeHelper::GetChildrenCount(root); ++i) {
 		auto dialog = FindDialog(VisualTreeHelper::GetChild(root, i));
+		if (dialog != nullptr) return dialog;
+	}
+	return nullptr;
+}
+
+ContentDialog^ CurrentDialog() {
+	for (auto popup : VisualTreeHelper::GetOpenPopups(Window::Current)) {
+		auto dialog = FindDialog(popup->Child);
 		if (dialog != nullptr) return dialog;
 	}
 	return nullptr;
@@ -251,6 +260,45 @@ void BuildSteps() {
 	Page<AppPage>(L"Library after host settings unload");
 	Action(L"Return to Hosts", []() { frame->GoBack(); });
 	Page<HostSelectorPage>(L"Hosts after Library unload");
+	Action(L"Open local PC PIN prompt", []() {
+		for (auto host : GetApplicationState()->SavedHosts) {
+			if (!host->Connected || !host->Paired) continue;
+			host->OpenSignInOnConnect = true;
+			if (!frame->Navigate(Windows::UI::Xaml::Interop::TypeName(AppPage::typeid), host))
+				throw ref new FailureException("PIN library navigation failed");
+			return;
+		}
+		throw ref new FailureException("No paired PC for PIN prompt");
+	});
+	steps.push_back({ L"Local PIN prompt is visible", []() { return CurrentDialog() != nullptr; } });
+	Action(L"Validate PIN prompt without sending any input", []() {
+		auto dialog = CurrentDialog();
+		auto panel = safe_cast<StackPanel^>(dialog->Content);
+		pinFieldUnderTest = safe_cast<PasswordBox^>(panel->Children->GetAt(1));
+		if (pinFieldUnderTest->Visibility == Visibility::Collapsed) {
+			Record(L"INFO: host does not advertise Remote Input; fallback prompt verified");
+			return;
+		}
+		if (dialog->IsPrimaryButtonEnabled || pinFieldUnderTest->PasswordRevealMode != PasswordRevealMode::Hidden)
+			throw ref new FailureException("PIN prompt must begin empty and masked");
+		pinFieldUnderTest->Password = L"123";
+		if (dialog->IsPrimaryButtonEnabled) throw ref new FailureException("Short PIN accepted");
+		pinFieldUnderTest->Password = L"12a4";
+		if (dialog->IsPrimaryButtonEnabled) throw ref new FailureException("Non-numeric PIN accepted");
+		pinFieldUnderTest->Password = L"001204";
+		if (!dialog->IsPrimaryButtonEnabled) throw ref new FailureException("Numeric PIN rejected");
+		// Never invoke Send PIN. The fixture stays inside this local control.
+	});
+	Action(L"Cancel PIN prompt", []() { CurrentDialog()->Hide(); });
+	steps.push_back({ L"PIN prompt closed and cleared", []() {
+		if (CurrentDialog() != nullptr) return false;
+		if (pinFieldUnderTest == nullptr || !pinFieldUnderTest->Password->IsEmpty())
+			throw ref new FailureException("PIN field retained its value after cancel");
+		pinFieldUnderTest = nullptr;
+		return true;
+	} });
+	Action(L"Leave PIN library", []() { frame->GoBack(); });
+	Page<HostSelectorPage>(L"Hosts after PIN prompt");
 	for (int i = 0; i < 3; ++i) {
 		Action(L"Repeat Library from picker", BrowseLibrary);
 		Page<AppPage>(L"Repeated Library loaded");
