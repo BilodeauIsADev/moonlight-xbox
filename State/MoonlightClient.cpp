@@ -277,8 +277,10 @@ int MoonlightClient::StartInputOnly(Platform::String^ host, Platform::String^ in
 		// Remote Input never captures the desktop. Discard its compatibility
 		// frames using the protocol library's stubs, with no decoder or audio player.
 		protocolStarted = true;
-		return LiStartConnection(&serverData.serverInfo, &config, &callbacks,
+		const int status = LiStartConnection(&serverData.serverInfo, &config, &callbacks,
 			nullptr, nullptr, nullptr, 0, nullptr, 0);
+		if (status == 0 && OnCompleted != nullptr) OnCompleted();
+		return status;
 	});
 }
 

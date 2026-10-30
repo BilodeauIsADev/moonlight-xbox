@@ -30,6 +30,8 @@ Frame^ frame;
 uint64_t progressToken;
 int settingsBackStackDepth;
 PasswordBox^ pinFieldUnderTest;
+std::atomic<bool> inputProbeDone{false};
+std::atomic<bool> inputProbePassed{false};
 
 // Flush each checkpoint before interacting with XAML so an asynchronous crash
 // still leaves its triggering step in LocalState. Never log host or pairing data.
@@ -289,6 +291,44 @@ void BuildSteps() {
 		if (!dialog->IsPrimaryButtonEnabled) throw ref new FailureException("Numeric PIN rejected");
 		// Never invoke Send PIN. The fixture stays inside this local control.
 	});
+	Action(L"Connect Remote Input and cancel before sending keys", []() {
+		auto host = safe_cast<AppPage^>(frame->Content)->Host;
+		int inputId = -1;
+		for (auto app : host->Apps) {
+			if (app->Name != nullptr && PcPin::IsRemoteInput(app->Id, app->Name->Data())) inputId = app->Id;
+		}
+		if (inputId < 0) {
+			Record(L"INFO: Remote Input transport check unavailable on this host");
+			inputProbePassed.store(true);
+			inputProbeDone.store(true);
+			return;
+		}
+		auto client = std::make_shared<MoonlightClient>();
+		auto connected = std::make_shared<std::atomic<bool>>(false);
+		auto cancelled = std::make_shared<std::atomic<bool>>(false);
+		client->OnCompleted = [connected, cancelled]() {
+			connected->store(true);
+			cancelled->store(true); // Cancel synchronously before the first key.
+		};
+		auto hostname = host->LastHostname;
+		auto instanceId = host->InstanceId;
+		concurrency::create_task([client, connected, cancelled, hostname, instanceId, inputId]() {
+			bool passed = false;
+			try {
+				PcPin::Value fixture;
+				fixture.Assign(L"001204", 6);
+				const auto result = client->SendPcPin(hostname, instanceId, inputId, fixture, *cancelled);
+				passed = connected->load() && result == PcPin::Delivery::Cancelled && fixture.Size() == 0;
+			} catch (...) {}
+			inputProbePassed.store(passed);
+			inputProbeDone.store(true);
+		});
+	});
+	steps.push_back({ L"Remote Input transport connected and cleaned up", []() {
+		if (!inputProbeDone.load()) return false;
+		if (!inputProbePassed.load()) throw ref new FailureException("Remote Input transport or cancellation failed");
+		return true;
+	} });
 	Action(L"Cancel PIN prompt", []() { CurrentDialog()->Hide(); });
 	steps.push_back({ L"PIN prompt closed and cleared", []() {
 		if (CurrentDialog() != nullptr) return false;

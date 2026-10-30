@@ -119,7 +119,11 @@ then repeats Library/Hosts/Settings navigation three times. It stops at the firs
 failure and leaves the last checkpoint available if a later XAML event crashes.
 It checks the picker hints and top-bar clocks, and opens the Library directly
 without triggering a PC's autostart game. It does not change dropdown selections
-or start a game. Controller button routing,
+or start a game. It opens the local PIN prompt, checks masked input and validation,
+then cancels it and verifies that the field is cleared. If the paired host advertises
+Remote Input, it also establishes that connection and cancels synchronously on
+readiness, before any lock-screen key or PIN digit is sent. It checks connection
+cleanup and erasure of the temporary fixture. Controller button routing,
 streaming, and the system reduced-motion setting still require console checks.
 
 The wake/sign-in tests cover three consecutive responses, service flapping,
