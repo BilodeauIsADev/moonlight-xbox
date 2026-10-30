@@ -163,13 +163,14 @@ int http_init(const char* keyDirectory, int logLevel) {
   return GS_OK;
 }
 
-static void http_log(const char* format, const char* msg) {
+static void http_log(const char* label, const char* url) {
   char buffer[4096];
-  snprintf(buffer, sizeof(buffer), format, msg);
+  // Query parameters include the input encryption key and pairing secrets.
+  snprintf(buffer, sizeof(buffer), "%s%.*s\n", label, (int)strcspn(url, "?"), url);
 #ifdef _WIN32
   OutputDebugStringA(buffer);
 #else
-  printf(buffer);
+  fputs(buffer, stdout);
 #endif
 }
 
@@ -179,8 +180,7 @@ int http_request(CURL* curl, char* url, PHTTP_DATA data) {
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _write_curl);
 
   if (debug)
-    // Query parameters include the input encryption key and pairing secrets.
-    http_log("http_request: %.*s\n", (int)strcspn(url, "?"), url);
+    http_log("http_request: ", url);
 
   if (data->size > 0) {
     free(data->memory);
@@ -211,7 +211,7 @@ int http_request_binary(CURL *curl, char* url, FILE *data) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _write_curl_binary);
 
     if (debug)
-        http_log("http_request_binary: %.*s\n", (int)strcspn(url, "?"), url);
+        http_log("http_request_binary: ", url);
 
     CURLcode res = curl_easy_perform(curl);
 
